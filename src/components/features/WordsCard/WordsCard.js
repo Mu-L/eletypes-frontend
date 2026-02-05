@@ -218,6 +218,7 @@ const WordsCard = ({ soundType, soundMode }) => {
   };
 
   const getCharDisplay = (idx, char) => {
+    if (mode !== "vocab") return char; //fixed hiding in vocab mode only
     if (idx < currInput.length) {
       if (currInput[idx] === char) {
         return char;
@@ -416,6 +417,7 @@ const WordsCard = ({ soundType, soundMode }) => {
   }
 
   const setSelective = () => {
+    setHideWord(false);      
     setSelectiveWord(() => word(alphabetSet));
     setMode("selective")
   }
