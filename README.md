@@ -189,6 +189,9 @@ https://www.buymeacoffee.com/daguozi
 Thanks [@rendi12345678](https://github.com/rendi12345678) for his continuous contributions and making the feature of data visualization for the typing stats!
 
 
+## Roblox Game
+
+Recently a Roblox game "Type!" was built on top of the Ele Types by @WheelMakerStudio and expanded features such as leaderboards and battle modes. You can find it [here](https://www.roblox.com/games/89217440428554/Type) here.
 
 
 
