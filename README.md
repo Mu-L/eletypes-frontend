@@ -191,8 +191,10 @@ Thanks [@rendi12345678](https://github.com/rendi12345678) for his continuous con
 
 ## Roblox Game
 
-Recently a Roblox game "Type!" was built on top of the Ele Types by @WheelMakerStudio and expanded features such as leaderboards and battle modes. You can find it [here](https://www.roblox.com/games/89217440428554/Type) here.
+Recently a Roblox game "Type!" was built on top of the Ele Types by [@WheelMakerStudio](https://www.roblox.com/users/10692403745/profile/) and expanded features such as leaderboards and battle modes. You can find it [here](https://www.roblox.com/games/89217440428554/Type).
 
+
+<img width="800" height="600" alt="Screenshot 2026-03-23 at 11 13 27 PM" src="https://github.com/user-attachments/assets/ea36bc86-50c1-48c9-acea-7350e7f4669a" />
 
 
 
