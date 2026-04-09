@@ -147,7 +147,7 @@ const FooterMenu = ({
                 size="small"
                 onClick={() => setLeaderboardOpen(true)}
               >
-                <Tooltip title="Leaderboard">
+                <Tooltip title="Stats">
                   <span className="nav-item">
                     <LeaderboardIcon fontSize="small" />
                   </span>

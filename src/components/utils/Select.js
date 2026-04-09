@@ -5,6 +5,7 @@ export default styled(Select)`
 .Select__control {
     min-height: 28px;
     height: 28px;
+    min-width: 120px;
     width: 100%;
     border: none;
     border-radius: 4px;

@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { red } from "@mui/material/colors";
 import Leaderboard from "../Leaderboard/Leaderboard";
-import { addScore, getScores } from "../../../services/scoreHistory";
+import { addScore } from "../../../services/scoreHistory";
 
 const Stats = ({
   status,
@@ -133,11 +133,6 @@ const Stats = ({
       setHistorySaved(false);
     }
   }, [status, historySaved, data, accuracy, modeParams]);
-
-  const scoreHistory = useMemo(
-    () => (status === "finished" ? getScores(modeParams) : []),
-    [status, modeParams, historySaved]
-  );
 
   const getFormattedLanguageLanguageName = (value) => {
     switch (value) {
@@ -328,91 +323,6 @@ const Stats = ({
               {renderTime()}
             </section>
             <section>{renderResetButton()}</section>
-            {scoreHistory.length > 1 && (
-              <section style={{ marginTop: "8px" }}>
-                <h3
-                  style={{
-                    margin: "0 0 8px 0",
-                    fontSize: "16px",
-                    color: theme.text,
-                    fontWeight: 400,
-                  }}
-                >
-                  Your History{" "}
-                  <span
-                    style={{
-                      color: theme.textTypeBox,
-                      fontSize: "13px",
-                    }}
-                  >
-                    last {scoreHistory.length} sessions
-                  </span>
-                </h3>
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
-                  <ResponsiveContainer width="100%" height={80}>
-                    <ComposedChart
-                      data={scoreHistory}
-                      margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-                    >
-                      <Line
-                        type="monotone"
-                        dataKey="wpm"
-                        stroke={theme.text}
-                        dot={{ r: 2, fill: theme.stats }}
-                        strokeWidth={1.5}
-                      />
-                      <YAxis
-                        hide
-                        domain={["dataMin - 5", "dataMax + 5"]}
-                      />
-                      <TooltipChart
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            const d = payload[0].payload;
-                            return (
-                              <div
-                                style={{
-                                  background: theme.background,
-                                  border: `1px solid ${theme.textTypeBox}`,
-                                  padding: "4px 8px",
-                                  fontSize: "12px",
-                                  opacity: 0.9,
-                                }}
-                              >
-                                <div>{d.wpm} WPM</div>
-                                <div>{d.accuracy}% ACC</div>
-                                <div style={{ color: theme.textTypeBox }}>
-                                  {new Date(d.date).toLocaleDateString()}
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                  <div style={{ fontSize: "12px", color: theme.textTypeBox, whiteSpace: "nowrap" }}>
-                    <div>
-                      best:{" "}
-                      <span style={{ color: theme.stats }}>
-                        {Math.max(...scoreHistory.map((s) => s.wpm))} WPM
-                      </span>
-                    </div>
-                    <div>
-                      avg:{" "}
-                      <span style={{ color: theme.text }}>
-                        {Math.round(
-                          scoreHistory.reduce((a, b) => a + b.wpm, 0) /
-                            scoreHistory.length
-                        )}{" "}
-                        WPM
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
             <Leaderboard
               wpm={
                 data.length > 1

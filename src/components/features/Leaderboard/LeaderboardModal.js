@@ -3,6 +3,7 @@ import { Dialog, DialogContent, IconButton as MuiIconButton } from "@mui/materia
 import CloseIcon from "@mui/icons-material/Close";
 import { fetchLeaderboard } from "../../../services/leaderboard";
 import { supabase } from "../../../services/supabase";
+import ScoreHistoryPanel from "./ScoreHistoryPanel";
 import {
   DEFAULT_COUNT_DOWN,
   DEFAULT_DIFFICULTY,
@@ -21,6 +22,9 @@ const LANGUAGES = [
   { value: ENGLISH_MODE, label: "eng" },
   { value: CHINESE_MODE, label: "chn" },
 ];
+
+const TAB_LEADERBOARD = "leaderboard";
+const TAB_HISTORY = "history";
 
 const LeaderboardModal = ({ open, onClose, theme }) => {
   const [language, setLanguage] = useState(() => {
@@ -46,6 +50,7 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
 
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(TAB_LEADERBOARD);
 
   const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
@@ -62,12 +67,10 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
   }, [language, difficulty, duration, numberAddon, symbolAddon]);
 
   useEffect(() => {
-    if (open) {
+    if (open && activeTab === TAB_LEADERBOARD) {
       loadLeaderboard();
     }
-  }, [open, loadLeaderboard]);
-
-  if (!supabase) return null;
+  }, [open, loadLeaderboard, activeTab]);
 
   const pillStyle = (active) => ({
     background: "transparent",
@@ -78,6 +81,19 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
     cursor: "pointer",
     fontSize: "13px",
     fontFamily: theme.fontFamily,
+    transition: "all 0.2s",
+  });
+
+  const tabStyle = (isActive) => ({
+    background: "transparent",
+    border: "none",
+    borderBottom: isActive ? `2px solid ${theme.stats}` : `2px solid transparent`,
+    color: isActive ? theme.stats : theme.textTypeBox,
+    padding: "8px 16px",
+    cursor: "pointer",
+    fontSize: "15px",
+    fontFamily: theme.fontFamily,
+    fontWeight: isActive ? 600 : 400,
     transition: "all 0.2s",
   });
 
@@ -101,10 +117,24 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "16px 24px 0",
+          padding: "12px 24px 0",
+          borderBottom: `1px solid ${theme.textTypeBox}30`,
         }}
       >
-        <h3 style={{ margin: 0, color: theme.text }}>Leaderboard</h3>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            style={tabStyle(activeTab === TAB_LEADERBOARD)}
+            onClick={() => setActiveTab(TAB_LEADERBOARD)}
+          >
+            Leaderboard
+          </button>
+          <button
+            style={tabStyle(activeTab === TAB_HISTORY)}
+            onClick={() => setActiveTab(TAB_HISTORY)}
+          >
+            Your History
+          </button>
+        </div>
         <MuiIconButton onClick={onClose} style={{ color: theme.textTypeBox }}>
           <CloseIcon fontSize="small" />
         </MuiIconButton>
@@ -156,68 +186,88 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
           </button>
         </div>
 
-        {/* Table */}
-        {loading ? (
-          <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>Loading...</p>
-        ) : leaderboardData.length === 0 ? (
-          <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-            No scores yet for this mode.
-          </p>
-        ) : (
-          <div style={{ maxHeight: "400px", overflowY: "auto", scrollbarWidth: "thin" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-              <thead>
-                <tr
-                  style={{
-                    color: theme.textTypeBox,
-                    borderBottom: `1px solid ${theme.textTypeBox}`,
-                  }}
-                >
-                  <th style={{ textAlign: "left", padding: "6px 8px" }}>#</th>
-                  <th style={{ textAlign: "left", padding: "6px 8px" }}>Name</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px" }}>WPM</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px" }}>ACC</th>
-                  <th style={{ textAlign: "right", padding: "6px 8px" }}>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboardData.map((entry, idx) => (
-                  <tr
-                    key={idx}
-                    style={{
-                      color: idx < 3 ? theme.stats : theme.text,
-                      borderBottom: `1px solid ${theme.textTypeBox}33`,
-                    }}
-                  >
-                    <td style={{ padding: "5px 8px" }}>
-                      {idx === 0
-                        ? "1st"
-                        : idx === 1
-                        ? "2nd"
-                        : idx === 2
-                        ? "3rd"
-                        : `${idx + 1}th`}
-                    </td>
-                    <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
-                    <td style={{ textAlign: "right", padding: "5px 8px" }}>{entry.wpm}</td>
-                    <td style={{ textAlign: "right", padding: "5px 8px" }}>
-                      {Math.round(entry.accuracy)}%
-                    </td>
-                    <td
+        {/* Leaderboard tab */}
+        {activeTab === TAB_LEADERBOARD && (
+          <>
+            {!supabase ? (
+              <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
+                Leaderboard unavailable.
+              </p>
+            ) : loading ? (
+              <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>Loading...</p>
+            ) : leaderboardData.length === 0 ? (
+              <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
+                No scores yet for this mode.
+              </p>
+            ) : (
+              <div style={{ maxHeight: "400px", overflowY: "auto", scrollbarWidth: "thin" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                  <thead>
+                    <tr
                       style={{
-                        textAlign: "right",
-                        padding: "5px 8px",
                         color: theme.textTypeBox,
-                        fontSize: "12px",
+                        borderBottom: `1px solid ${theme.textTypeBox}`,
                       }}
                     >
-                      {new Date(entry.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <th style={{ textAlign: "left", padding: "6px 8px" }}>#</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px" }}>Name</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px" }}>WPM</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px" }}>ACC</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px" }}>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboardData.map((entry, idx) => (
+                      <tr
+                        key={idx}
+                        style={{
+                          color: idx < 3 ? theme.stats : theme.text,
+                          borderBottom: `1px solid ${theme.textTypeBox}33`,
+                        }}
+                      >
+                        <td style={{ padding: "5px 8px" }}>
+                          {idx === 0
+                            ? "1st"
+                            : idx === 1
+                            ? "2nd"
+                            : idx === 2
+                            ? "3rd"
+                            : `${idx + 1}th`}
+                        </td>
+                        <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
+                        <td style={{ textAlign: "right", padding: "5px 8px" }}>{entry.wpm}</td>
+                        <td style={{ textAlign: "right", padding: "5px 8px" }}>
+                          {Math.round(entry.accuracy)}%
+                        </td>
+                        <td
+                          style={{
+                            textAlign: "right",
+                            padding: "5px 8px",
+                            color: theme.textTypeBox,
+                            fontSize: "12px",
+                          }}
+                        >
+                          {new Date(entry.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* History tab */}
+        {activeTab === TAB_HISTORY && (
+          <ScoreHistoryPanel
+            language={language}
+            difficulty={difficulty}
+            duration={duration}
+            numberAddon={numberAddon}
+            symbolAddon={symbolAddon}
+            theme={theme}
+          />
         )}
       </DialogContent>
     </Dialog>

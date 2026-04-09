@@ -954,6 +954,10 @@ const TypeBox = ({
                   </span>
                 </Tooltip>
               </IconButton>
+              <IconButton>
+                {" "}
+                <span className="menu-separator"> | </span>{" "}
+              </IconButton>
               <IconButton
                 onClick={() => {
                   reset(
@@ -1030,10 +1034,10 @@ const TypeBox = ({
                   </span>
                 </Tooltip>
               </IconButton>
-            </Box>
-          )}
-          {menuEnabled && (
-            <Box display="flex" flexDirection="row">
+              <IconButton>
+                {" "}
+                <span className="menu-separator"> | </span>{" "}
+              </IconButton>
               <IconButton
                 onClick={() => {
                   setPacingStyle(PACING_PULSE);
