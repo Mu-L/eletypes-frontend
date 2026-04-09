@@ -3,13 +3,23 @@ import Select from 'react-select';
 
 export default styled(Select)`
 .Select__control {
-    height: 20px;
+    min-height: 28px;
+    height: 28px;
     width: 100%;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     color: ${({ theme }) => theme.text};
     background: transparent;
+  }
+  .Select__value-container {
+    padding: 0 4px;
+  }
+  .Select__indicators {
+    height: 28px;
+  }
+  .Select__dropdown-indicator {
+    padding: 2px;
   }
   .Select__single-value {
     font-size: 12px;

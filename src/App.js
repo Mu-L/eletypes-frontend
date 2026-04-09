@@ -191,7 +191,7 @@ function App() {
         <DynamicBackground theme={theme}></DynamicBackground>
         <div className="canvas">
           <GlobalStyles />
-          <Logo isFocusedMode={isFocusedMode} isMusicMode={isMusicMode}></Logo>
+          <Logo isFocusedMode={isFocusedMode}></Logo>
           {isWordGameMode && (
             <TypeBox
               isUltraZenMode={isUltraZenMode}
