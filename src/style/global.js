@@ -135,6 +135,10 @@ display: flex;
 padding-inline: 1rem;
 flex-direction: column;
 gap: 20px;
+max-height: 90vh;
+overflow-y: auto;
+scrollbar-width: thin;
+scrollbar-color: ${({ theme }) => theme.stats} transparent;
 }
 
 .custom-tooltip {

@@ -8,7 +8,7 @@ An elegant typing test tool.
 
 > Typing rule and interactions was inspired by the famous [monkeytype.com](www.monkeytype.com);
 
-> The app was created purely in react.
+> The app was created purely in react, with a Supabase backend for the leaderboard.
 
 
 ## Feature Requests / Issues / Bug Reports
@@ -45,6 +45,13 @@ To join the community, please go to the website and hit "discord" icon.
     - Accuracy
     - Error analysis (correct/error/missing/extra chars count)
     - Visualizations
+  - Anonymous Leaderboard (per mode combination):
+    - Top 50 scores ranked by WPM (accuracy as tiebreaker)
+    - One entry per user per mode — only personal best is kept
+    - No sign-up required — uses browser fingerprint + localStorage identity
+    - Submit score after completing a typing session
+    - Browse leaderboards via the footer nav icon
+    - Anti-cheat via FingerprintJS
   - Pacing Style (word pulse/ character caret):
     - Pulse mode: the active word will have an underline pulse, which helps improve the speed typing habit.
     - Caret mode: a pacing caret, advancing character by character, which aligns normal typing habit.
@@ -164,6 +171,12 @@ Regular Mode and Recite Mode
 
 ## For Devs
 
+### Setup
+
+1. `npm install`
+2. Copy `.env.example` to `.env` and fill in your Supabase project URL and anon key
+3. Run the SQL in `supabase_migration.sql` in your Supabase SQL Editor to create the scores table
+
 ### `npm start`
 
 Runs the app in the development mode.\
@@ -172,6 +185,15 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 ### `npm run build`
 
 Builds the app for production to the `build` folder.\
+
+### Environment Variables
+
+| Variable | Description |
+|---|---|
+| `REACT_APP_SUPABASE_URL` | Supabase project URL |
+| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anon/public API key |
+
+For Netlify deploys, set these in **Site configuration > Environment variables**.
 
 ### Pull Requests
 
