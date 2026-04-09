@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import ZoomInMapIcon from "@mui/icons-material/ZoomInMap";
+import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import { Grid, AppBar } from "@mui/material";
 import { Box } from "@mui/system";
 import { Tooltip } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import LeaderboardModal from "../features/Leaderboard/LeaderboardModal";
 import Select from "../utils/Select";
 import {
   FOCUS_MODE,
@@ -61,6 +63,7 @@ const FooterMenu = ({
   isWordGameMode,
   toggleWordsCardMode,
 }) => {
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const isSiteInfoDisabled = isMusicMode || isFocusedMode;
   const isBottomLogoEnabled = isFocusedMode && !isMusicMode;
   const isTypeTestEnabled = !isCoffeeMode && !isTrainerMode && !isWordsCardMode;
@@ -177,13 +180,22 @@ const FooterMenu = ({
                 </span>
               </IconButton>
               {isWordGameMode && (
-                <IconButton onClick={toggleUltraZenMode}>
-                  <Tooltip title={ULTRA_ZEN_MODE}>
-                    <span className={getModeButtonClassName(isUltraZenMode)}>
-                      <ZoomInMapIcon fontSize="small" />
-                    </span>
-                  </Tooltip>{" "}
-                </IconButton>
+                <>
+                  <IconButton onClick={toggleUltraZenMode}>
+                    <Tooltip title={ULTRA_ZEN_MODE}>
+                      <span className={getModeButtonClassName(isUltraZenMode)}>
+                        <ZoomInMapIcon fontSize="small" />
+                      </span>
+                    </Tooltip>{" "}
+                  </IconButton>
+                  <IconButton onClick={() => setLeaderboardOpen(true)}>
+                    <Tooltip title="Leaderboard">
+                      <span className="zen-button-deactive">
+                        <LeaderboardIcon fontSize="small" />
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                </>
               )}
               <IconButton
                 onClick={() => {
@@ -266,6 +278,11 @@ const FooterMenu = ({
           </Box>
         )}
       </Grid>
+      <LeaderboardModal
+        open={leaderboardOpen}
+        onClose={() => setLeaderboardOpen(false)}
+        theme={theme}
+      />
     </AppBar>
   );
 };

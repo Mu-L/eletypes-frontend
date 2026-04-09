@@ -12,6 +12,7 @@ import {
   ComposedChart,
 } from "recharts";
 import { red } from "@mui/material/colors";
+import Leaderboard from "../Leaderboard/Leaderboard";
 
 const Stats = ({
   status,
@@ -25,6 +26,9 @@ const Stats = ({
   renderResetButton,
   setIncorrectCharsCount,
   incorrectCharsCount,
+  difficulty,
+  numberAddon,
+  symbolAddon,
 }) => {
   const [roundedRawWpm, setRoundedRawWpm] = useState(0);
   const roundedWpm = Math.round(wpm);
@@ -293,6 +297,23 @@ const Stats = ({
               {renderTime()}
             </section>
             <section>{renderResetButton()}</section>
+            <Leaderboard
+              wpm={
+                data.length > 1
+                  ? Math.round(
+                      data.map((e) => e.wpm).reduce((a, b) => a + b, 0) /
+                        (data.length - 1)
+                    )
+                  : 0
+              }
+              accuracy={accuracy}
+              language={language}
+              difficulty={difficulty}
+              duration={countDownConstant}
+              numberAddon={numberAddon}
+              symbolAddon={symbolAddon}
+              theme={theme}
+            />
           </section>
         </div>
       )}

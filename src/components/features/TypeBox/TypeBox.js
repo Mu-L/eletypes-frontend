@@ -1152,6 +1152,9 @@ const TypeBox = ({
             rawKeyStrokes={rawKeyStrokes}
             wpmKeyStrokes={wpmKeyStrokes}
             renderResetButton={renderResetButton}
+            difficulty={difficulty}
+            numberAddon={numberAddOn}
+            symbolAddon={symbolAddOn}
           ></Stats>
           {status !== "finished" && renderResetButton()}
         </div>
