@@ -120,16 +120,35 @@ opacity: 1;
 display: flex;
 align-items: baseline;
 gap: 16px;
-justify-content: center;
+justify-content: flex-start;
+width: 100%;
+padding-left: 0.5rem;
 }
 .logo-title {
 font-size: 28px;
 font-weight: 300;
-letter-spacing: 6px;
-text-transform: lowercase;
+letter-spacing: 4px;
 color: ${({ theme }) => theme.title};
 opacity: 0.9;
 margin: 4px 0;
+display: flex;
+align-items: center;
+gap: 2px;
+}
+.logo-accent {
+font-weight: 400;
+}
+.logo-gant {
+font-size: 16px;
+font-weight: 300;
+color: ${({ theme }) => theme.textTypeBox};
+letter-spacing: 1px;
+opacity: 0.6;
+}
+.logo-icon {
+font-size: 24px;
+margin-left: 4px;
+opacity: 0.7;
 }
 .user-greeting {
 font-size: 13px;

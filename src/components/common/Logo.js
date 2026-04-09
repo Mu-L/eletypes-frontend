@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
+import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
 import { getUserName } from "../../services/userIdentity";
 
 const BANNER_DISMISS_KEY = "eletypes-banner-dismissed";
@@ -73,8 +74,14 @@ const Logo = ({ isFocusedMode }) => {
         </div>
       ))}
       <div className="logo-row">
-        <h1 className="logo-title">eletypes</h1>
-        {userName && <span className="user-greeting">👋 {userName}</span>}
+        <h1 className="logo-title">
+          <span className="logo-accent">Ele Types</span>
+          {" "}
+          <KeyboardAltIcon className="logo-icon" />
+        </h1>
+        <span className="user-greeting">
+          {userName && `👋 ${userName}, `}enjoy typing elegantly
+        </span>
       </div>
     </div>
   );
