@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import Fab from "@mui/material/Fab";
+import { Tooltip } from "@mui/material";
 import { getUserName } from "../../services/userIdentity";
 import { useLocale } from "../../context/LocaleContext";
+import ProfileModal from "./ProfileModal";
 
 const BANNER_DISMISS_KEY = "eletypes-banner-dismissed";
 const BANNER_VERSION = "banners-v2";
@@ -16,8 +20,20 @@ const BANNER_KEYS = [
   },
 ];
 
-const Logo = ({ isFocusedMode }) => {
+const Logo = ({
+  isFocusedMode,
+  theme,
+  soundMode,
+  toggleSoundMode,
+  isMusicMode,
+  toggleMusicMode,
+  toggleFocusedMode,
+  isUltraZenMode,
+  toggleUltraZenMode,
+}) => {
   const { t } = useLocale();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [userName, setUserNameState] = useState(() => getUserName());
   const [dismissed, setDismissed] = useState(() => {
     try {
       const stored = localStorage.getItem(BANNER_DISMISS_KEY);
@@ -30,7 +46,6 @@ const Logo = ({ isFocusedMode }) => {
     }
   });
 
-  const userName = getUserName();
   const visibleBanners = BANNER_KEYS.filter((b) => !dismissed.includes(b.id));
 
   const dismissBanner = (id) => {
@@ -43,6 +58,7 @@ const Logo = ({ isFocusedMode }) => {
   };
 
   return (
+    <>
     <div
       className="header"
       style={{ visibility: isFocusedMode ? "hidden" : "visible" }}
@@ -82,6 +98,47 @@ const Logo = ({ isFocusedMode }) => {
         </span>
       </div>
     </div>
+    {theme && (
+      <>
+        <Tooltip title={t("profile")} placement="left">
+          <Fab
+            size="small"
+            onClick={() => setProfileOpen(true)}
+            sx={{
+              position: "fixed",
+              right: 24,
+              top: 24,
+              zIndex: 1000,
+              backgroundColor: "transparent",
+              border: `1px solid ${theme.textTypeBox}50`,
+              color: theme.text,
+              boxShadow: "none",
+              "&:hover": {
+                backgroundColor: `${theme.textTypeBox}20`,
+                boxShadow: "none",
+              },
+            }}
+          >
+            <PersonOutlineIcon fontSize="small" />
+          </Fab>
+        </Tooltip>
+        <ProfileModal
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          theme={theme}
+          onNameChange={(newName) => setUserNameState(newName)}
+          isFocusedMode={isFocusedMode}
+          toggleFocusedMode={toggleFocusedMode}
+          soundMode={soundMode}
+          toggleSoundMode={toggleSoundMode}
+          isMusicMode={isMusicMode}
+          toggleMusicMode={toggleMusicMode}
+          isUltraZenMode={isUltraZenMode}
+          toggleUltraZenMode={toggleUltraZenMode}
+        />
+      </>
+    )}
+    </>
   );
 };
 

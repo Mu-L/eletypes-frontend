@@ -105,9 +105,15 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      slotProps={{
+        backdrop: {
+          sx: { backgroundColor: "rgba(0, 0, 0, 0.7)" },
+        },
+      }}
       PaperProps={{
         style: {
           background: theme.background,
+          backdropFilter: "blur(20px)",
           color: theme.text,
           borderRadius: "8px",
           border: `1px solid ${theme.textTypeBox}33`,

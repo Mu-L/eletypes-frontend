@@ -145,6 +145,25 @@ toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a4
   - [Tab] + [Enter] / [Tab] + [Tab] for quickly reset
   - [Tab] + [Any Key] to exit the dialog
 
+#### 12. Chinese / English UI (i18n)
+
+  - Toggle between Chinese and English interface via the settings or profile menu
+  - All tooltips, labels, stats, leaderboard text, and banners are translated
+  - Preference persisted in localStorage
+
+#### 13. Profile Menu
+
+  - Accessible via the profile button (top-right corner), always visible including in focus mode
+  - **Profile** — edit your display name (no sign-up required, stored locally)
+  - **My History** — browse local score history per mode combination with filters
+  - **Site** — toggle switches for Focus Mode, Sound, Music, Ultra Zen, and Interface Language
+  - **News** — view all announcements including previously dismissed banners
+
+#### 14. Words Card Auto-Play Audio
+
+  - Auto-play pronunciation audio when navigating words in vocab mode
+  - Toggle on/off next to the speaker button, persisted in localStorage
+  - Defaults to on
 
 ### Some Themes
 

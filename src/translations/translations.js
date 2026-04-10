@@ -106,6 +106,24 @@ export const translations = {
     vocab_mode_tooltip: "Learn typing from the word cards",
     selective_mode_tooltip: "Selectively practice from chosen keys",
 
+    // Profile
+    profile: "Profile",
+    edit_name: "Edit Name",
+    save: "Save",
+    cancel: "Cancel",
+    name_updated: "Name updated!",
+    my_history: "My History",
+    news: "News",
+    site: "Site",
+    no_news: "No announcements at this time.",
+    profile_note:
+      "No sign-up required. Your name is only used for the leaderboard when you submit a score. History is stored locally in your browser.",
+    site_focus_mode: "Focus Mode",
+    site_sound: "Typing Sound",
+    site_music: "Music Player",
+    site_ultra_zen: "Ultra Zen Mode",
+    site_language: "Interface Language",
+
     // Audio
     auto_play_on: "Auto-play: ON",
     auto_play_off: "Auto-play: OFF",
@@ -221,6 +239,24 @@ export const translations = {
     recite_mode: "隐藏单词（默写模式）",
     vocab_mode_tooltip: "单词卡打字学习",
     selective_mode_tooltip: "按键选择性练习",
+
+    // Profile
+    profile: "个人中心",
+    edit_name: "修改名字",
+    save: "保存",
+    cancel: "取消",
+    name_updated: "名字已更新！",
+    my_history: "我的历史",
+    news: "消息",
+    site: "站点",
+    no_news: "暂无公告。",
+    profile_note:
+      "无需注册。名字仅在提交成绩时用于排行榜显示。历史记录保存在本地浏览器中。",
+    site_focus_mode: "专注模式",
+    site_sound: "打字音效",
+    site_music: "音乐播放器",
+    site_ultra_zen: "极简模式",
+    site_language: "界面语言",
 
     // Audio
     auto_play_on: "自动播放：开",

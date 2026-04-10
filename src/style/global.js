@@ -251,6 +251,8 @@ transition: all 0.2s;
 .stats-overlay {
 position: fixed;
 background: ${({ theme }) => theme.background};
+backdrop-filter: blur(20px);
+-webkit-backdrop-filter: blur(20px);
 inset: 0;
 z-index: 99;
 padding-inline: 1rem;
