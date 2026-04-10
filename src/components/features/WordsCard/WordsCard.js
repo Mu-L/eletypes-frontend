@@ -36,7 +36,7 @@ const WordsCard = ({ soundType, soundMode }) => {
   const [hideWord, setHideWord] = useState(false);
 
   const [autoPlayAudio, setAutoPlayAudio] = useLocalPersistState(
-    false,
+    true,
     "wordscard-auto-audio"
   );
 
