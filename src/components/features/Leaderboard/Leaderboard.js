@@ -7,6 +7,7 @@ import {
 import { getUserName, setUserName } from "../../../services/userIdentity";
 import { supabase } from "../../../services/supabase";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
+import { useLocale } from "../../../context/LocaleContext";
 
 const TAB_LEADERBOARD = "leaderboard";
 const TAB_HISTORY = "history";
@@ -21,6 +22,7 @@ const Leaderboard = ({
   symbolAddon,
   theme,
 }) => {
+  const { t } = useLocale();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [playerRank, setPlayerRank] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,11 +62,11 @@ const Leaderboard = ({
     });
     setSubmitted(true);
     if (response?.result === "new") {
-      setSubmitMessage("Score submitted!");
+      setSubmitMessage(t("score_submitted"));
     } else if (response?.result === "improved") {
-      setSubmitMessage(`New personal best! (previous: ${response.previousBest} WPM)`);
+      setSubmitMessage(t("new_personal_best", response.previousBest));
     } else if (response?.result === "no_improvement") {
-      setSubmitMessage(`Your best is ${response.previousBest} WPM — keep going!`);
+      setSubmitMessage(t("your_best_is", response.previousBest));
     }
     await loadLeaderboard();
   };
@@ -134,13 +136,13 @@ const Leaderboard = ({
             style={tabStyle(activeTab === TAB_LEADERBOARD)}
             onClick={() => setActiveTab(TAB_LEADERBOARD)}
           >
-            Leaderboard
+            {t("leaderboard")}
           </button>
           <button
             style={tabStyle(activeTab === TAB_HISTORY)}
             onClick={() => setActiveTab(TAB_HISTORY)}
           >
-            Your History
+            {t("your_history")}
           </button>
         </div>
         <span style={{ color: theme.textTypeBox, fontSize: "13px", paddingBottom: "6px" }}>
@@ -174,7 +176,7 @@ const Leaderboard = ({
                   onKeyDown={handleNameKeyDown}
                   autoFocus
                   maxLength={20}
-                  placeholder="Your name"
+                  placeholder={t("your_name_placeholder")}
                   style={{
                     background: "transparent",
                     border: `1px solid ${theme.textTypeBox}`,
@@ -199,7 +201,7 @@ const Leaderboard = ({
                     borderBottom: `1px dashed ${theme.textTypeBox}`,
                   }}
                 >
-                  {name || "Click to set name"}
+                  {name || t("click_to_set_name")}
                 </span>
               )}
               <button
@@ -218,22 +220,22 @@ const Leaderboard = ({
                 onMouseEnter={(e) => (e.target.style.opacity = "0.7")}
                 onMouseLeave={(e) => (e.target.style.opacity = "1")}
               >
-                Submit Score
+                {t("submit_score")}
               </button>
             </div>
           )}
 
           {!supabase ? (
             <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-              Leaderboard unavailable.
+              {t("leaderboard_unavailable")}
             </p>
           ) : loading ? (
             <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-              Loading leaderboard...
+              {t("loading_leaderboard")}
             </p>
           ) : leaderboardData.length === 0 ? (
             <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-              No scores yet. Be the first!
+              {t("no_scores_yet")}
             </p>
           ) : (
             <div
@@ -258,11 +260,11 @@ const Leaderboard = ({
                       borderBottom: `1px solid ${theme.textTypeBox}`,
                     }}
                   >
-                    <th style={{ textAlign: "left", padding: "6px 8px" }}>#</th>
-                    <th style={{ textAlign: "left", padding: "6px 8px" }}>Name</th>
+                    <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("rank_header")}</th>
+                    <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("name_header")}</th>
                     <th style={{ textAlign: "right", padding: "6px 8px" }}>WPM</th>
                     <th style={{ textAlign: "right", padding: "6px 8px" }}>ACC</th>
-                    <th style={{ textAlign: "right", padding: "6px 8px" }}>Date</th>
+                    <th style={{ textAlign: "right", padding: "6px 8px" }}>{t("date_header")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -276,12 +278,12 @@ const Leaderboard = ({
                     >
                       <td style={{ padding: "5px 8px" }}>
                         {idx === 0
-                          ? "1st"
+                          ? t("rank_1")
                           : idx === 1
-                          ? "2nd"
+                          ? t("rank_2")
                           : idx === 2
-                          ? "3rd"
-                          : `${idx + 1}th`}
+                          ? t("rank_3")
+                          : t("rank_n", idx + 1)}
                       </td>
                       <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
                       <td style={{ textAlign: "right", padding: "5px 8px" }}>

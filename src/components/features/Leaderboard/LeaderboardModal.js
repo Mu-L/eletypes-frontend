@@ -4,6 +4,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { fetchLeaderboard } from "../../../services/leaderboard";
 import { supabase } from "../../../services/supabase";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
+import { useLocale } from "../../../context/LocaleContext";
 import {
   DEFAULT_COUNT_DOWN,
   DEFAULT_DIFFICULTY,
@@ -27,6 +28,7 @@ const TAB_LEADERBOARD = "leaderboard";
 const TAB_HISTORY = "history";
 
 const LeaderboardModal = ({ open, onClose, theme }) => {
+  const { t } = useLocale();
   const [language, setLanguage] = useState(() => {
     const stored = localStorage.getItem("language");
     return stored ? JSON.parse(stored) : ENGLISH_MODE;
@@ -126,13 +128,13 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
             style={tabStyle(activeTab === TAB_LEADERBOARD)}
             onClick={() => setActiveTab(TAB_LEADERBOARD)}
           >
-            Leaderboard
+            {t("leaderboard")}
           </button>
           <button
             style={tabStyle(activeTab === TAB_HISTORY)}
             onClick={() => setActiveTab(TAB_HISTORY)}
           >
-            Your History
+            {t("your_history")}
           </button>
         </div>
         <MuiIconButton onClick={onClose} style={{ color: theme.textTypeBox }}>
@@ -191,13 +193,13 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
           <>
             {!supabase ? (
               <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-                Leaderboard unavailable.
+                {t("leaderboard_unavailable")}
               </p>
             ) : loading ? (
-              <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>Loading...</p>
+              <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>{t("loading")}</p>
             ) : leaderboardData.length === 0 ? (
               <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-                No scores yet for this mode.
+                {t("no_scores_for_mode")}
               </p>
             ) : (
               <div style={{ maxHeight: "400px", overflowY: "auto", scrollbarWidth: "thin" }}>
@@ -209,11 +211,11 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
                         borderBottom: `1px solid ${theme.textTypeBox}`,
                       }}
                     >
-                      <th style={{ textAlign: "left", padding: "6px 8px" }}>#</th>
-                      <th style={{ textAlign: "left", padding: "6px 8px" }}>Name</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("rank_header")}</th>
+                      <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("name_header")}</th>
                       <th style={{ textAlign: "right", padding: "6px 8px" }}>WPM</th>
                       <th style={{ textAlign: "right", padding: "6px 8px" }}>ACC</th>
-                      <th style={{ textAlign: "right", padding: "6px 8px" }}>Date</th>
+                      <th style={{ textAlign: "right", padding: "6px 8px" }}>{t("date_header")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -227,12 +229,12 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
                       >
                         <td style={{ padding: "5px 8px" }}>
                           {idx === 0
-                            ? "1st"
+                            ? t("rank_1")
                             : idx === 1
-                            ? "2nd"
+                            ? t("rank_2")
                             : idx === 2
-                            ? "3rd"
-                            : `${idx + 1}th`}
+                            ? t("rank_3")
+                            : t("rank_n", idx + 1)}
                         </td>
                         <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
                         <td style={{ textAlign: "right", padding: "5px 8px" }}>{entry.wpm}</td>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { ThemeProvider } from "styled-components";
 import { defaultTheme, themesOptions } from "./style/theme";
 import { GlobalStyles } from "./style/global";
+import { LocaleProvider } from "./context/LocaleContext";
 import TypeBox from "./components/features/TypeBox/TypeBox";
 import SentenceBox from "./components/features/SentenceBox/SentenceBox";
 import Logo from "./components/common/Logo";
@@ -186,6 +187,7 @@ function App() {
   ]);
 
   return (
+    <LocaleProvider>
     <ThemeProvider theme={theme}>
       <>
         <DynamicBackground theme={theme}></DynamicBackground>
@@ -265,6 +267,7 @@ function App() {
         </div>
       </>
     </ThemeProvider>
+    </LocaleProvider>
   );
 }
 

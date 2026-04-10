@@ -2,8 +2,10 @@ import React from "react";
 import { Slide } from "@mui/material";
 import { Alert } from "@mui/material";
 import { Snackbar } from "@mui/material";
+import { useLocale } from "../../context/LocaleContext";
 
 const CapsLockSnackbar = ({open}) => {
+  const { t } = useLocale();
 
   return (
     <div>
@@ -16,7 +18,7 @@ const CapsLockSnackbar = ({open}) => {
     >
       <Slide in={open} mountOnEnter unmountOnExit>
         <Alert className="alert" severity="warning" sx={{ width: "100%" }}>
-          Caps Locked
+          {t("caps_locked")}
         </Alert>
       </Slide>
     </Snackbar>

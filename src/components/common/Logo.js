@@ -2,23 +2,22 @@ import React, { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
 import { getUserName } from "../../services/userIdentity";
+import { useLocale } from "../../context/LocaleContext";
 
 const BANNER_DISMISS_KEY = "eletypes-banner-dismissed";
 const BANNER_VERSION = "banners-v2";
 
-const BANNERS = [
-  {
-    id: "leaderboard",
-    text: "Leaderboard is live — no sign-up needed, just type and submit your scores!",
-  },
+const BANNER_KEYS = [
+  { id: "leaderboard", textKey: "banner_leaderboard" },
   {
     id: "roblox",
-    text: 'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes',
+    textKey: "banner_roblox",
     link: "https://www.roblox.com/games/89217440428554/Type",
   },
 ];
 
 const Logo = ({ isFocusedMode }) => {
+  const { t } = useLocale();
   const [dismissed, setDismissed] = useState(() => {
     try {
       const stored = localStorage.getItem(BANNER_DISMISS_KEY);
@@ -32,8 +31,7 @@ const Logo = ({ isFocusedMode }) => {
   });
 
   const userName = getUserName();
-
-  const visibleBanners = BANNERS.filter((b) => !dismissed.includes(b.id));
+  const visibleBanners = BANNER_KEYS.filter((b) => !dismissed.includes(b.id));
 
   const dismissBanner = (id) => {
     const updated = [...dismissed, id];
@@ -59,10 +57,10 @@ const Logo = ({ isFocusedMode }) => {
                 rel="noopener noreferrer"
                 style={{ color: "inherit", textDecoration: "underline" }}
               >
-                {banner.text}
+                {t(banner.textKey)}
               </a>
             ) : (
-              banner.text
+              t(banner.textKey)
             )}
           </span>
           <button
@@ -75,12 +73,12 @@ const Logo = ({ isFocusedMode }) => {
       ))}
       <div className="logo-row">
         <h1 className="logo-title">
-          <span className="logo-accent">Ele Types</span>
-          {" "}
+          <span className="logo-accent">Ele Types</span>{" "}
           <KeyboardAltIcon className="logo-icon" />
         </h1>
         <span className="user-greeting">
-          {userName && `👋 ${userName}, `}enjoy typing elegantly
+          {userName && `👋 ${userName}, `}
+          {t("greeting_suffix")}
         </span>
       </div>
     </div>

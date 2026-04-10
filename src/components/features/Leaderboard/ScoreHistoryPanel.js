@@ -7,14 +7,16 @@ import {
   ComposedChart,
 } from "recharts";
 import { getScores } from "../../../services/scoreHistory";
+import { useLocale } from "../../../context/LocaleContext";
 
 const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbolAddon, theme }) => {
+  const { t } = useLocale();
   const scores = getScores({ language, difficulty, duration, numberAddon, symbolAddon });
 
   if (scores.length === 0) {
     return (
       <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
-        No history yet. Complete a session to start tracking.
+        {t("no_history")}
       </p>
     );
   }
@@ -30,17 +32,17 @@ const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbol
         }}
       >
         <span style={{ color: theme.textTypeBox, fontSize: "13px" }}>
-          last {scores.length} session{scores.length !== 1 ? "s" : ""}
+          {scores.length === 1 ? t("last_session") : t("last_sessions", scores.length)}
         </span>
         <div style={{ fontSize: "13px", color: theme.textTypeBox, display: "flex", gap: "16px" }}>
           <span>
-            best:{" "}
+            {t("best")}:{" "}
             <span style={{ color: theme.stats }}>
               {Math.max(...scores.map((s) => s.wpm))} WPM
             </span>
           </span>
           <span>
-            avg:{" "}
+            {t("avg")}:{" "}
             <span style={{ color: theme.text }}>
               {Math.round(scores.reduce((a, b) => a + b.wpm, 0) / scores.length)} WPM
             </span>
@@ -92,10 +94,10 @@ const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbol
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", marginTop: "8px" }}>
         <thead>
           <tr style={{ color: theme.textTypeBox, borderBottom: `1px solid ${theme.textTypeBox}` }}>
-            <th style={{ textAlign: "left", padding: "6px 8px" }}>#</th>
+            <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("rank_header")}</th>
             <th style={{ textAlign: "right", padding: "6px 8px" }}>WPM</th>
             <th style={{ textAlign: "right", padding: "6px 8px" }}>ACC</th>
-            <th style={{ textAlign: "right", padding: "6px 8px" }}>Date</th>
+            <th style={{ textAlign: "right", padding: "6px 8px" }}>{t("date_header")}</th>
           </tr>
         </thead>
         <tbody>

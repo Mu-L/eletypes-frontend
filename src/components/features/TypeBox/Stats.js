@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Tooltip } from "@mui/material";
-import { CHAR_TOOLTIP_TITLE } from "../../../constants/Constants";
 import {
   Line,
   XAxis,
@@ -14,6 +13,7 @@ import {
 import { red } from "@mui/material/colors";
 import Leaderboard from "../Leaderboard/Leaderboard";
 import { addScore } from "../../../services/scoreHistory";
+import { useLocale } from "../../../context/LocaleContext";
 
 const Stats = ({
   status,
@@ -31,6 +31,7 @@ const Stats = ({
   numberAddon,
   symbolAddon,
 }) => {
+  const { t } = useLocale();
   const [roundedRawWpm, setRoundedRawWpm] = useState(0);
   const roundedWpm = Math.round(wpm);
 
@@ -148,11 +149,11 @@ const Stats = ({
   const renderCharStats = () => (
     <Tooltip
       title={
-        <span style={{ whiteSpace: "pre-line" }}>{CHAR_TOOLTIP_TITLE}</span>
+        <span style={{ whiteSpace: "pre-line" }}>{t("char_tooltip")}</span>
       }
     >
       <div>
-        <p className="stats-title">Characters</p>
+        <p className="stats-title">{t("characters_label")}</p>
         <h2 className="stats-value">
           <span className="correct-char-stats">{statsCharCount[1]}</span>/
           <span className="incorrect-char-stats">{statsCharCount[2]}</span>/
@@ -186,15 +187,15 @@ const Stats = ({
           </p>
           <p className="desc tooltip">
             {renderIndicator(red[400])}
-            {`Errors: ${payloadData.error}`}
+            {`${t("errors_label")}: ${payloadData.error}`}
           </p>
           <p className="desc tooltip">
             {renderIndicator(theme.textTypeBox)}
-            {`Raw WPM: ${payloadData.rawWpm}`}
+            {`${t("raw_wpm_label")}: ${payloadData.rawWpm}`}
           </p>
           <p className="desc tooltip">
             {renderIndicator(theme.text)}
-            {`WPM: ${payloadData.wpm}`}
+            {`${t("wpm_label")}: ${payloadData.wpm}`}
           </p>
         </div>
       );
@@ -205,14 +206,14 @@ const Stats = ({
 
   const renderAccuracy = () => (
     <div style={{ marginTop: "16px" }}>
-      <h2 className="primary-stats-title">ACC</h2>
+      <h2 className="primary-stats-title">{t("acc_label")}</h2>
       <h1 className="primary-stats-value">{accuracy}%</h1>
     </div>
   );
 
   const renderRawKpm = () => (
     <div>
-      <p className="stats-title">KPM</p>
+      <p className="stats-title">{t("kpm_label")}</p>
       <h2 className="stats-value">
         {Math.round((rawKeyStrokes / Math.max(countDownConstant, 1)) * 60.0)}
       </h2>
@@ -221,7 +222,7 @@ const Stats = ({
 
   const renderLanguage = () => (
     <div>
-      <p className="stats-title">Test Mode</p>
+      <p className="stats-title">{t("test_mode_label")}</p>
       <h2 className="stats-value">
         {getFormattedLanguageLanguageName(language)}
       </h2>
@@ -230,7 +231,7 @@ const Stats = ({
 
   const renderTime = () => (
     <div>
-      <p className="stats-title">Time</p>
+      <p className="stats-title">{t("time_label")}</p>
       <h2 className="stats-value">{countDownConstant} s</h2>
     </div>
   );
@@ -240,7 +241,7 @@ const Stats = ({
     const averageWpm = data.length > 1 ? totalWpm / (data.length - 1) : 0;
     return (
       <div>
-        <h2 className="primary-stats-title">WPM</h2>
+        <h2 className="primary-stats-title">{t("wpm_label")}</h2>
         <h1 className="primary-stats-value">{Math.round(averageWpm)}</h1>
       </div>
     );
@@ -302,7 +303,7 @@ const Stats = ({
       {status !== "finished" && (
         <>
           <h3>{countDown} s</h3>
-          <h3>WPM: {Math.round(wpm)}</h3>
+          <h3>{t("wpm_label")}: {Math.round(wpm)}</h3>
         </>
       )}
 

@@ -1,13 +1,7 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { DICTIONARY_SOURCE_CATALOG } from "../../../constants/DictionaryConstants";
-import {
-  RECITE_MODE_TITLE,
-  RESTART_BUTTON_TOOLTIP_TITLE_WORDSCARD,
-  SELECT_ONE_OR_MORE_CHAPTERS,
-  SELECTIVE_MODE,
-  VOCAB_MODE
-} from "../../../constants/Constants";
+import { useLocale } from "../../../context/LocaleContext";
 import useLocalPersistState from "../../../hooks/useLocalPersistState";
 import { wordsCardVocabGenerator } from "../../../scripts/wordsGenerator";
 import { Grid, Box, Tooltip } from "@mui/material";
@@ -23,9 +17,12 @@ import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import useSound from "use-sound";
 import { SOUND_MAP } from "../sound/sound";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
 
 const WordsCard = ({ soundType, soundMode }) => {
   // set up game loop status state
+  const { t } = useLocale();
   const [status, setStatus] = useState("waiting");
 
   const [mode, setMode] = useLocalPersistState("vocab", "mode");  // selective, vocab
@@ -37,6 +34,11 @@ const WordsCard = ({ soundType, soundMode }) => {
   const [showCatalog, setShowCatalog] = useState(false);
 
   const [hideWord, setHideWord] = useState(false);
+
+  const [autoPlayAudio, setAutoPlayAudio] = useLocalPersistState(
+    false,
+    "wordscard-auto-audio"
+  );
 
   // tab-enter restart dialog
   const [openRestart, setOpenRestart] = useState(false);
@@ -210,7 +212,7 @@ const WordsCard = ({ soundType, soundMode }) => {
   const getChapterTitle = () => {
     return (
       <div>
-        <Tooltip title={SELECT_ONE_OR_MORE_CHAPTERS}>
+        <Tooltip title={t("select_chapters")}>
           <UnfoldMoreIcon></UnfoldMoreIcon>
         </Tooltip>
       </div>
@@ -384,7 +386,7 @@ const WordsCard = ({ soundType, soundMode }) => {
   const getEyeIconDisplay = () => {
     if (!hideWord) {
       return (
-        <Tooltip title={RECITE_MODE_TITLE}>
+        <Tooltip title={t("recite_mode")}>
           <RemoveRedEyeIcon></RemoveRedEyeIcon>
         </Tooltip>
       );
@@ -402,6 +404,17 @@ const WordsCard = ({ soundType, soundMode }) => {
       audio.play();
     }
   };
+
+  // Auto-play audio when word changes
+  useEffect(() => {
+    if (autoPlayAudio && mode === "vocab" && currWord) {
+      // Small delay to let the audio source update
+      const timer = setTimeout(() => {
+        playAudio();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [currWord, autoPlayAudio, mode]);
   const getSelected = () => {
     return (
       <div className="Catalog-Selected">
@@ -456,16 +469,32 @@ const WordsCard = ({ soundType, soundMode }) => {
         <div className="wordcard-meaning-display-field">{currMeaning}</div>
         {
           mode === "vocab" &&
-          <IconButton
-            aria-label="restart"
-            color="secondary"
-            size="medium"
-            onClick={() => {
-              playAudio();
-            }}
-          >
-            <VolumeUpIcon />
-          </IconButton>
+          <>
+            <IconButton
+              aria-label="play-audio"
+              color="secondary"
+              size="medium"
+              onClick={() => {
+                playAudio();
+              }}
+            >
+              <VolumeUpIcon />
+            </IconButton>
+            <Tooltip title={autoPlayAudio ? t("auto_play_on") : t("auto_play_off")}>
+              <IconButton
+                aria-label="toggle-auto-play"
+                color="secondary"
+                size="medium"
+                onClick={() => setAutoPlayAudio(!autoPlayAudio)}
+              >
+                {autoPlayAudio ? (
+                  <PauseCircleOutlineIcon />
+                ) : (
+                  <PlayCircleOutlineIcon />
+                )}
+              </IconButton>
+            </Tooltip>
+          </>
         }
         <div className="wordcard-word-display-field">
           {currWord.split("").map((char, idx) => (
@@ -528,7 +557,7 @@ const WordsCard = ({ soundType, soundMode }) => {
                       setIndex(0);
                     }}
                   >
-                    <Tooltip title={RESTART_BUTTON_TOOLTIP_TITLE_WORDSCARD}>
+                    <Tooltip title={t("restart_tooltip_wordscard")}>
                       <RestartAltIcon />
                     </Tooltip>
                   </IconButton>
@@ -573,12 +602,12 @@ const WordsCard = ({ soundType, soundMode }) => {
             </Grid>
             <Box display="flex" flexDirection="row">
               <IconButton onClick={() => setMode("vocab")}>
-                <Tooltip title={VOCAB_MODE}>
+                <Tooltip title={t("vocab_mode_tooltip")}>
                   <span className={getModeActivation("vocab")}>Vocab</span>
                 </Tooltip>
               </IconButton>
               <IconButton onClick={setSelective}>
-                <Tooltip title={SELECTIVE_MODE}>
+                <Tooltip title={t("selective_mode_tooltip")}>
                   <span className={getModeActivation("selective")}>Selective</span>
                 </Tooltip>
               </IconButton>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import ZoomInMapIcon from "@mui/icons-material/ZoomInMap";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import TranslateIcon from "@mui/icons-material/Translate";
 import { AppBar } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
@@ -10,24 +11,13 @@ import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import LeaderboardModal from "../features/Leaderboard/LeaderboardModal";
 import Select from "../utils/Select";
 import {
-  FOCUS_MODE,
-  FREE_MODE,
-  MUSIC_MODE,
   WORD_MODE_LABEL,
   SENTENCE_MODE_LABEL,
   GAME_MODE_DEFAULT,
   GAME_MODE_SENTENCE,
-  TRAINER_MODE,
-  WORDS_CARD_MODE,
-  ULTRA_ZEN_MODE,
 } from "../../constants/Constants";
 import { Link } from "@mui/material";
 import SupportMe from "../features/SupportMe";
-import {
-  GITHUB_TOOLTIP_TITLE,
-  AUTHOR,
-  GITHUB_REPO_LINK,
-} from "../../constants/Constants";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import EmojiFoodBeverageIcon from "@mui/icons-material/EmojiFoodBeverage";
@@ -35,7 +25,7 @@ import { ReactComponent as DiscordIcon } from "../../assets/Icons/discord.svg";
 import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
 import SchoolIcon from "@mui/icons-material/School";
-import { SOUND_MODE_TOOLTIP } from "../features/sound/sound";
+import { useLocale } from "../../context/LocaleContext";
 
 const FooterMenu = ({
   themesOptions,
@@ -63,6 +53,7 @@ const FooterMenu = ({
   toggleWordsCardMode,
 }) => {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const { locale, setLocale, t } = useLocale();
   const isSiteInfoDisabled = isMusicMode || isFocusedMode;
   const isSpecialMode = isCoffeeMode || isTrainerMode || isWordsCardMode;
 
@@ -73,7 +64,6 @@ const FooterMenu = ({
   };
 
   const handleWordSentenceMode = (mode) => {
-    // Clicking word/sentence deactivates any special mode
     if (isCoffeeMode) toggleCoffeeMode();
     if (isTrainerMode) toggleTrainerMode();
     if (isWordsCardMode) toggleWordsCardMode();
@@ -90,7 +80,7 @@ const FooterMenu = ({
       <div className="nav-container">
         {/* Group 1: Game Modes */}
         <div className="nav-group">
-          <span className="nav-group-label">mode</span>
+          <span className="nav-group-label">{t("nav_mode")}</span>
           <div className="nav-group-items">
             <IconButton
               size="small"
@@ -109,21 +99,21 @@ const FooterMenu = ({
               </span>
             </IconButton>
             <IconButton size="small" onClick={toggleCoffeeMode}>
-              <Tooltip title={FREE_MODE}>
+              <Tooltip title={t("free_mode")}>
                 <span className={activeCls(isCoffeeMode)}>
                   <EmojiFoodBeverageIcon fontSize="small" />
                 </span>
               </Tooltip>
             </IconButton>
             <IconButton size="small" onClick={toggleTrainerMode}>
-              <Tooltip title={TRAINER_MODE}>
+              <Tooltip title={t("trainer_mode")}>
                 <span className={activeCls(isTrainerMode)}>
                   <KeyboardAltOutlinedIcon fontSize="small" />
                 </span>
               </Tooltip>
             </IconButton>
             <IconButton size="small" onClick={toggleWordsCardMode}>
-              <Tooltip title={WORDS_CARD_MODE}>
+              <Tooltip title={t("words_card_mode")}>
                 <span className={activeCls(isWordsCardMode)}>
                   <SchoolIcon fontSize="small" />
                 </span>
@@ -132,12 +122,12 @@ const FooterMenu = ({
           </div>
         </div>
 
-        {/* Group 2: Mode Options (contextual) */}
+        {/* Group 2: Word mode tools (no label) */}
         {isWordGameMode && (
           <div className="nav-group">
             <div className="nav-group-items">
               <IconButton size="small" onClick={toggleUltraZenMode}>
-                <Tooltip title={ULTRA_ZEN_MODE}>
+                <Tooltip title={t("ultra_zen_mode")}>
                   <span className={activeCls(isUltraZenMode)}>
                     <ZoomInMapIcon fontSize="small" />
                   </span>
@@ -147,7 +137,7 @@ const FooterMenu = ({
                 size="small"
                 onClick={() => setLeaderboardOpen(true)}
               >
-                <Tooltip title="Stats">
+                <Tooltip title={t("stats_tooltip")}>
                   <span className="nav-item">
                     <LeaderboardIcon fontSize="small" />
                   </span>
@@ -159,7 +149,7 @@ const FooterMenu = ({
 
         {/* Group 3: Settings */}
         <div className="nav-group">
-          <span className="nav-group-label">settings</span>
+          <span className="nav-group-label">{t("nav_settings")}</span>
           <div className="nav-group-items">
             <Select
               classNamePrefix="Select"
@@ -173,14 +163,14 @@ const FooterMenu = ({
               menuPlacement="top"
             />
             <IconButton size="small" onClick={toggleFocusedMode}>
-              <Tooltip title={FOCUS_MODE}>
+              <Tooltip title={t("focus_mode")}>
                 <span className={activeCls(isFocusedMode)}>
                   <SelfImprovementIcon fontSize="small" />
                 </span>
               </Tooltip>
             </IconButton>
             <IconButton size="small" onClick={toggleSoundMode}>
-              <Tooltip title={SOUND_MODE_TOOLTIP}>
+              <Tooltip title={t("sound_mode_tooltip")}>
                 <span className={activeCls(soundMode)}>
                   {soundMode ? (
                     <VolumeUpIcon fontSize="small" />
@@ -202,9 +192,19 @@ const FooterMenu = ({
               />
             )}
             <IconButton size="small" onClick={toggleMusicMode}>
-              <Tooltip title={MUSIC_MODE}>
+              <Tooltip title={t("music_mode")}>
                 <span className={activeCls(isMusicMode)}>
                   <MusicNoteIcon fontSize="small" />
+                </span>
+              </Tooltip>
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => setLocale(locale === "en" ? "zh" : "en")}
+            >
+              <Tooltip title={t("locale_toggle")}>
+                <span className="nav-item">
+                  <TranslateIcon fontSize="small" />
                 </span>
               </Tooltip>
             </IconButton>
@@ -221,15 +221,15 @@ const FooterMenu = ({
                   <span
                     style={{ whiteSpace: "pre-line", fontSize: "12px" }}
                   >
-                    {GITHUB_TOOLTIP_TITLE}
+                    {t("github_tooltip")}
                     <Link margin="inherit" href="https://muyangguo.xyz">
-                      {AUTHOR}
+                      {t("author")}
                     </Link>
                     <Link
                       margin="inherit"
                       href="https://github.com/gamer-ai/eletype-frontend/"
                     >
-                      {GITHUB_REPO_LINK}
+                      {t("github_repo")}
                     </Link>
                   </span>
                 }

@@ -11,16 +11,11 @@ import {
   DEFAULT_SENTENCES_COUNT,
   TEN_SENTENCES_COUNT,
   FIFTEEN_SENTENCES_COUNT,
-  RESTART_BUTTON_TOOLTIP_TITLE,
-  REDO_BUTTON_TOOLTIP_TITLE,
-} from "../../../constants/Constants";
-import useLocalPersistState from "../../../hooks/useLocalPersistState";
-import {
   ENGLISH_MODE,
   CHINESE_MODE,
-  ENGLISH_SENTENCE_MODE_TOOLTIP_TITLE,
-  CHINESE_SENTENCE_MODE_TOOLTIP_TITLE,
 } from "../../../constants/Constants";
+import useLocalPersistState from "../../../hooks/useLocalPersistState";
+import { useLocale } from "../../../context/LocaleContext";
 import { Tooltip } from "@mui/material";
 import { Dialog } from "@mui/material";
 import { DialogTitle } from "@mui/material";
@@ -35,6 +30,7 @@ const SentenceBox = ({
   soundMode,
   soundType,
 }) => {
+  const { t } = useLocale();
   const [play] = useSound(SOUND_MAP[soundType], { volume: 0.5 });
 
   // local persist timer
@@ -327,7 +323,7 @@ const SentenceBox = ({
                   reset(sentencesCountConstant, language, true);
                 }}
               >
-                <Tooltip title={REDO_BUTTON_TOOLTIP_TITLE}>
+                <Tooltip title={t("redo_tooltip")}>
                   <UndoIcon />
                 </Tooltip>
               </IconButton>
@@ -339,7 +335,7 @@ const SentenceBox = ({
                   reset(sentencesCountConstant, language, false);
                 }}
               >
-                <Tooltip title={RESTART_BUTTON_TOOLTIP_TITLE}>
+                <Tooltip title={t("restart_tooltip")}>
                   <RestartAltIcon />
                 </Tooltip>
               </IconButton>
@@ -393,7 +389,7 @@ const SentenceBox = ({
                       reset(sentencesCountConstant, ENGLISH_MODE, false);
                     }}
                   >
-                    <Tooltip title={ENGLISH_SENTENCE_MODE_TOOLTIP_TITLE}>
+                    <Tooltip title={t("english_sentence_mode_tooltip")}>
                       <span
                         className={getLanguageButtonClassName(ENGLISH_MODE)}
                       >
@@ -406,7 +402,7 @@ const SentenceBox = ({
                       reset(sentencesCountConstant, CHINESE_MODE, false);
                     }}
                   >
-                    <Tooltip title={CHINESE_SENTENCE_MODE_TOOLTIP_TITLE}>
+                    <Tooltip title={t("chinese_sentence_mode_tooltip")}>
                       <span
                         className={getLanguageButtonClassName(CHINESE_MODE)}
                       >

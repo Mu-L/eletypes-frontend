@@ -26,22 +26,10 @@ import {
   HARD_DIFFICULTY,
   NUMBER_ADDON,
   SYMBOL_ADDON,
-  DEFAULT_DIFFICULTY_TOOLTIP_TITLE,
-  HARD_DIFFICULTY_TOOLTIP_TITLE,
-  NUMBER_ADDON_TOOLTIP_TITLE,
-  SYMBOL_ADDON_TOOLTIP_TITLE,
   ENGLISH_MODE,
   CHINESE_MODE,
-  ENGLISH_MODE_TOOLTIP_TITLE,
-  CHINESE_MODE_TOOLTIP_TITLE,
-  DEFAULT_DIFFICULTY_TOOLTIP_TITLE_CHINESE,
-  HARD_DIFFICULTY_TOOLTIP_TITLE_CHINESE,
-  RESTART_BUTTON_TOOLTIP_TITLE,
-  REDO_BUTTON_TOOLTIP_TITLE,
   PACING_CARET,
   PACING_PULSE,
-  PACING_CARET_TOOLTIP,
-  PACING_PULSE_TOOLTIP,
   NUMBER_ADDON_KEY,
   SYMBOL_ADDON_KEY,
 } from "../../../constants/Constants";
@@ -49,6 +37,7 @@ import { SOUND_MAP } from "../sound/sound";
 import SocialLinksModal from "../../common/SocialLinksModal";
 import EnglishModeWords from "../../common/EnglishModeWords";
 import ChineseModeWords from "../../common/ChineseModeWords";
+import { useLocale } from "../../../context/LocaleContext";
 
 const TypeBox = ({
   textInputRef,
@@ -59,6 +48,7 @@ const TypeBox = ({
   handleInputFocus,
   theme,
 }) => {
+  const { t } = useLocale();
   const [play] = useSound(SOUND_MAP[soundType], { volume: 0.5 });
   const [incorrectCharsCount, setIncorrectCharsCount] = useState(0);
 
@@ -808,7 +798,7 @@ const TypeBox = ({
                 );
               }}
             >
-              <Tooltip title={REDO_BUTTON_TOOLTIP_TITLE}>
+              <Tooltip title={t("redo_tooltip")}>
                 <UndoIcon />
               </Tooltip>
             </IconButton>
@@ -827,7 +817,7 @@ const TypeBox = ({
                 );
               }}
             >
-              <Tooltip title={RESTART_BUTTON_TOOLTIP_TITLE}>
+              <Tooltip title={t("restart_tooltip")}>
                 <RestartAltIcon />
               </Tooltip>
             </IconButton>
@@ -917,8 +907,8 @@ const TypeBox = ({
                 <Tooltip
                   title={
                     language === ENGLISH_MODE
-                      ? DEFAULT_DIFFICULTY_TOOLTIP_TITLE
-                      : DEFAULT_DIFFICULTY_TOOLTIP_TITLE_CHINESE
+                      ? t("default_difficulty_tooltip")
+                      : t("default_difficulty_tooltip_chinese")
                   }
                 >
                   <span
@@ -943,8 +933,8 @@ const TypeBox = ({
                 <Tooltip
                   title={
                     language === ENGLISH_MODE
-                      ? HARD_DIFFICULTY_TOOLTIP_TITLE
-                      : HARD_DIFFICULTY_TOOLTIP_TITLE_CHINESE
+                      ? t("hard_difficulty_tooltip")
+                      : t("hard_difficulty_tooltip_chinese")
                   }
                 >
                   <span
@@ -970,7 +960,7 @@ const TypeBox = ({
                   );
                 }}
               >
-                <Tooltip title={NUMBER_ADDON_TOOLTIP_TITLE}>
+                <Tooltip title={t("number_addon_tooltip")}>
                   <span className={getAddOnButtonClassName(numberAddOn)}>
                     {NUMBER_ADDON}
                   </span>
@@ -988,7 +978,7 @@ const TypeBox = ({
                   );
                 }}
               >
-                <Tooltip title={SYMBOL_ADDON_TOOLTIP_TITLE}>
+                <Tooltip title={t("symbol_addon_tooltip")}>
                   <span className={getAddOnButtonClassName(symbolAddOn)}>
                     {SYMBOL_ADDON}
                   </span>
@@ -1010,7 +1000,7 @@ const TypeBox = ({
                   );
                 }}
               >
-                <Tooltip title={ENGLISH_MODE_TOOLTIP_TITLE}>
+                <Tooltip title={t("english_mode_tooltip")}>
                   <span className={getLanguageButtonClassName(ENGLISH_MODE)}>
                     eng
                   </span>
@@ -1028,7 +1018,7 @@ const TypeBox = ({
                   );
                 }}
               >
-                <Tooltip title={CHINESE_MODE_TOOLTIP_TITLE}>
+                <Tooltip title={t("chinese_mode_tooltip")}>
                   <span className={getLanguageButtonClassName(CHINESE_MODE)}>
                     chn
                   </span>
@@ -1043,7 +1033,7 @@ const TypeBox = ({
                   setPacingStyle(PACING_PULSE);
                 }}
               >
-                <Tooltip title={PACING_PULSE_TOOLTIP}>
+                <Tooltip title={t("pacing_pulse_tooltip")}>
                   <span className={getPacingStyleButtonClassName(PACING_PULSE)}>
                     {PACING_PULSE}
                   </span>
@@ -1054,7 +1044,7 @@ const TypeBox = ({
                   setPacingStyle(PACING_CARET);
                 }}
               >
-                <Tooltip title={PACING_CARET_TOOLTIP}>
+                <Tooltip title={t("pacing_caret_tooltip")}>
                   <span className={getPacingStyleButtonClassName(PACING_CARET)}>
                     {PACING_CARET}
                   </span>
@@ -1184,20 +1174,20 @@ const TypeBox = ({
         >
           <DialogTitle>
             <div>
-              <span className="key-note"> press </span>
+              <span className="key-note"> {t("press")} </span>
               <span className="key-type">Space</span>{" "}
-              <span className="key-note">to redo</span>
+              <span className="key-note">{t("to_redo")}</span>
             </div>
             <div>
-              <span className="key-note"> press </span>
+              <span className="key-note"> {t("press")} </span>
               <span className="key-type">Tab</span>{" "}
               <span className="key-note">/</span>{" "}
               <span className="key-type">Enter</span>{" "}
-              <span className="key-note">to restart</span>
+              <span className="key-note">{t("to_restart")}</span>
             </div>
-            <span className="key-note"> press </span>
-            <span className="key-type">any key </span>{" "}
-            <span className="key-note">to exit</span>
+            <span className="key-note"> {t("press")} </span>
+            <span className="key-type">{t("any_key")} </span>{" "}
+            <span className="key-note">{t("to_exit")}</span>
           </DialogTitle>
         </Dialog>
       </div>
