@@ -4,7 +4,7 @@ import {
   fetchPlayerRank,
   submitScore,
 } from "../../../services/leaderboard";
-import { getUserName, setUserName } from "../../../services/userIdentity";
+import { getUserName, setUserName, getUserTag } from "../../../services/userIdentity";
 import { supabase } from "../../../services/supabase";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
 import { useLocale } from "../../../context/LocaleContext";
@@ -120,7 +120,7 @@ const Leaderboard = ({
   });
 
   return (
-    <div style={{ marginTop: "24px" }}>
+    <div style={{ marginTop: "0" }}>
       {/* Tabs + mode label */}
       <div
         style={{
@@ -285,7 +285,12 @@ const Leaderboard = ({
                           ? t("rank_3")
                           : t("rank_n", idx + 1)}
                       </td>
-                      <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
+                      <td style={{ padding: "5px 8px" }}>
+                        {entry.user_name}
+                        <span style={{ color: theme.textTypeBox, fontSize: "11px", marginLeft: "4px" }}>
+                          {getUserTag(entry.user_id)}
+                        </span>
+                      </td>
                       <td style={{ textAlign: "right", padding: "5px 8px" }}>
                         {entry.wpm}
                       </td>

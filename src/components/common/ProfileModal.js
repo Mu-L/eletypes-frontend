@@ -8,7 +8,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
-import { getUserName, setUserName } from "../../services/userIdentity";
+import { getUserName, setUserName, getUserTag } from "../../services/userIdentity";
 import ScoreHistoryPanel from "../features/Leaderboard/ScoreHistoryPanel";
 import { useLocale } from "../../context/LocaleContext";
 import { BANNER_KEYS } from "./Logo";
@@ -359,6 +359,9 @@ const ProfileModal = ({
                       }}
                     >
                       {name || t("click_to_set_name")}
+                      <span style={{ color: theme.textTypeBox, fontSize: "13px", marginLeft: "6px" }}>
+                        {getUserTag()}
+                      </span>
                     </span>
                     <MuiIconButton
                       onClick={() => setIsEditing(true)}

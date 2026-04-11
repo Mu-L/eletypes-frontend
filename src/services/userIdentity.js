@@ -21,3 +21,8 @@ export const getUserName = () => {
 export const setUserName = (name) => {
   localStorage.setItem(USER_NAME_KEY, name);
 };
+
+export const getUserTag = (userId) => {
+  const id = userId || getUserId();
+  return "#" + id.slice(-4);
+};

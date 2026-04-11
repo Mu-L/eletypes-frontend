@@ -97,7 +97,7 @@ export const fetchLeaderboard = async ({
 
   const { data, error } = await supabase
     .from("scores")
-    .select("user_name, wpm, accuracy, created_at")
+    .select("user_name, user_id, wpm, accuracy, created_at")
     .eq("language", language)
     .eq("difficulty", difficulty)
     .eq("duration", duration)

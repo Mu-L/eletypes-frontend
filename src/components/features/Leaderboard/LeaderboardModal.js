@@ -3,6 +3,7 @@ import { Dialog, DialogContent, IconButton as MuiIconButton } from "@mui/materia
 import CloseIcon from "@mui/icons-material/Close";
 import { fetchLeaderboard } from "../../../services/leaderboard";
 import { supabase } from "../../../services/supabase";
+import { getUserTag } from "../../../services/userIdentity";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
 import { useLocale } from "../../../context/LocaleContext";
 import {
@@ -242,7 +243,12 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
                             ? t("rank_3")
                             : t("rank_n", idx + 1)}
                         </td>
-                        <td style={{ padding: "5px 8px" }}>{entry.user_name}</td>
+                        <td style={{ padding: "5px 8px" }}>
+                          {entry.user_name}
+                          <span style={{ color: theme.textTypeBox, fontSize: "11px", marginLeft: "4px" }}>
+                            {getUserTag(entry.user_id)}
+                          </span>
+                        </td>
                         <td style={{ textAlign: "right", padding: "5px 8px" }}>{entry.wpm}</td>
                         <td style={{ textAlign: "right", padding: "5px 8px" }}>
                           {Math.round(entry.accuracy)}%
