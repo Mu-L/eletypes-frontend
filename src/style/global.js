@@ -437,16 +437,17 @@ animation: blinkingCursor 2s infinite;;
 .type-box {
 display: block;
 max-width: 1000px;
-height: 140px;
+/* 3 rows: each row = 28px font * 1.4 line-height + 8px margin + 2px border = ~49.2px */
+height: calc((28px * 1.4 + 8px + 2px) * 3);
 overflow: hidden;
 margin-left: auto;
 margin-right: auto;
 position: relative;
 top: 10%;
-@media only screen 
-and (min-device-width: 375px) 
-and (max-device-width: 812px) 
-and (-webkit-min-device-pixel-ratio: 3) { 
+@media only screen
+and (min-device-width: 375px)
+and (max-device-width: 812px)
+and (-webkit-min-device-pixel-ratio: 3) {
 top:200px;
 width: 60%;
 }
@@ -454,16 +455,17 @@ width: 60%;
 .type-box-chinese {
 display: block;
 max-width: 1000px;
-height: 240px;
+/* 3 rows: each row = pinyin(20px * 1.4 + 8px) + word(28px * 1.4 + 10px margin-bottom) + 2px border ≈ 87px */
+height: calc((20px * 1.4 + 8px + 28px * 1.4 + 10px + 2px) * 3);
 overflow: hidden;
 margin-left: auto;
 margin-right: auto;
-position: relative
+position: relative;
 top: 10%;
-@media only screen 
-and (min-device-width: 375px) 
-and (max-device-width: 812px) 
-and (-webkit-min-device-pixel-ratio: 3) { 
+@media only screen
+and (min-device-width: 375px)
+and (max-device-width: 812px)
+and (-webkit-min-device-pixel-ratio: 3) {
 top:200px;
 width: 60%;
 }
@@ -471,14 +473,15 @@ width: 60%;
 .words{
 color: ${({ theme }) => theme.textTypeBox};
 font-size: 28px;
+line-height: 1.4;
 display: flex;
 flex-wrap: wrap;
 width: 100%;
-align-content: center;
+align-content: flex-start;
 user-select: none;
 }
 .word{
-margin: 5px 5px;
+margin: 4px 5px;
 display: flex;
 padding-right: 2px;
 border-bottom: 1px solid transparent;
