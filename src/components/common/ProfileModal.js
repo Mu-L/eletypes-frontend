@@ -11,6 +11,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import { getUserName, setUserName } from "../../services/userIdentity";
 import ScoreHistoryPanel from "../features/Leaderboard/ScoreHistoryPanel";
 import { useLocale } from "../../context/LocaleContext";
+import { BANNER_KEYS } from "./Logo";
 import {
   DEFAULT_COUNT_DOWN,
   DEFAULT_DIFFICULTY,
@@ -30,17 +31,71 @@ const LANGUAGES = [
   { value: CHINESE_MODE, label: "chn" },
 ];
 
-const BANNER_KEYS = [
-  {
-    id: "leaderboard",
-    textKey: "banner_leaderboard",
-  },
-  {
-    id: "roblox",
-    textKey: "banner_roblox",
-    link: "https://www.roblox.com/games/89217440428554/Type",
-  },
-];
+const renderNewsHighlighted = (text, highlights, theme) => {
+  const parts = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    let earliest = null;
+    let earliestIdx = remaining.length;
+    let matchedHighlight = null;
+
+    for (const h of highlights) {
+      // Match both {placeholder} and plain "placeholder" in full text
+      const patterns = [`{${h.placeholder}}`, `"${h.placeholder}"`];
+      for (const pattern of patterns) {
+        const idx = remaining.indexOf(pattern);
+        if (idx !== -1 && idx < earliestIdx) {
+          earliest = pattern;
+          earliestIdx = idx;
+          matchedHighlight = h;
+        }
+      }
+      // Also match the plain placeholder word
+      const plainIdx = remaining.indexOf(h.placeholder);
+      if (plainIdx !== -1 && plainIdx < earliestIdx) {
+        earliest = h.placeholder;
+        earliestIdx = plainIdx;
+        matchedHighlight = h;
+      }
+    }
+
+    if (!earliest) {
+      parts.push(<span key={key++}>{remaining}</span>);
+      break;
+    }
+
+    if (earliestIdx > 0) {
+      parts.push(<span key={key++}>{remaining.slice(0, earliestIdx)}</span>);
+    }
+
+    const label = matchedHighlight.placeholder;
+    if (matchedHighlight.link) {
+      parts.push(
+        <a
+          key={key++}
+          href={matchedHighlight.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: theme.stats, textDecoration: "underline", fontWeight: 600 }}
+        >
+          {label}
+        </a>
+      );
+    } else {
+      parts.push(
+        <span key={key++} style={{ color: theme.stats, fontWeight: 600 }}>
+          {label}
+        </span>
+      );
+    }
+
+    remaining = remaining.slice(earliestIdx + earliest.length);
+  }
+
+  return parts;
+};
 
 const TAB_PROFILE = "profile";
 const TAB_HISTORY = "history";
@@ -60,9 +115,19 @@ const ProfileModal = ({
   toggleMusicMode,
   isUltraZenMode,
   toggleUltraZenMode,
+  initialTab,
+  onNewsViewed,
+  unviewedNewsCount,
 }) => {
   const { locale, setLocale, t } = useLocale();
   const [activeTab, setActiveTab] = useState(TAB_PROFILE);
+
+  // Sync tab when modal opens
+  React.useEffect(() => {
+    if (open && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
   const [name, setName] = useState(() => getUserName());
   const [isEditing, setIsEditing] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
@@ -199,9 +264,35 @@ const ProfileModal = ({
           </button>
           <button
             style={tabStyle(activeTab === TAB_NEWS)}
-            onClick={() => setActiveTab(TAB_NEWS)}
+            onClick={() => {
+              setActiveTab(TAB_NEWS);
+              if (onNewsViewed) onNewsViewed();
+            }}
           >
             {t("news")}
+            {unviewedNewsCount > 0 && activeTab !== TAB_NEWS && (
+              <span
+                style={{
+                  fontSize: "10px",
+                  background: "transparent",
+                  color: theme.stats,
+                  border: `1px solid ${theme.stats}`,
+                  borderRadius: "50%",
+                  minWidth: "16px",
+                  height: "16px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 700,
+                  marginLeft: "4px",
+                  verticalAlign: "middle",
+                  position: "relative",
+                  top: "-1px",
+                }}
+              >
+                {unviewedNewsCount}
+              </span>
+            )}
           </button>
         </div>
         <MuiIconButton onClick={onClose} style={{ color: theme.textTypeBox }}>
@@ -491,34 +582,26 @@ const ProfileModal = ({
                   gap: "12px",
                 }}
               >
-                {BANNER_KEYS.map((banner) => (
-                  <div
-                    key={banner.id}
-                    style={{
-                      padding: "12px 16px",
-                      border: `1px solid ${theme.textTypeBox}30`,
-                      borderRadius: "6px",
-                      fontSize: "14px",
-                      color: theme.text,
-                    }}
-                  >
-                    {banner.link ? (
-                      <a
-                        href={banner.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          color: theme.stats,
-                          textDecoration: "underline",
-                        }}
-                      >
-                        {t(banner.textKey)}
-                      </a>
-                    ) : (
-                      t(banner.textKey)
-                    )}
-                  </div>
-                ))}
+                {BANNER_KEYS.map((banner) => {
+                  const text = t(banner.fullTextKey);
+                  return (
+                    <div
+                      key={banner.id}
+                      style={{
+                        padding: "12px 16px",
+                        border: `1px solid ${theme.textTypeBox}30`,
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        color: theme.textTypeBox,
+                      }}
+                    >
+                      <span style={{ color: theme.stats, fontFamily: "monospace", marginRight: "8px" }}>
+                        &gt;
+                      </span>
+                      {renderNewsHighlighted(text, banner.highlights, theme)}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -85,55 +85,76 @@ width: 100%;
 z-index: 999;
 gap: 0;
 }
-.global-banner {
-width: 100%;
+.header-banner {
+font-size: 12px;
+color: ${({ theme }) => theme.textTypeBox};
 display: flex;
 align-items: center;
-justify-content: center;
-gap: 12px;
-padding: 6px 16px;
-background: ${({ theme }) => theme.textTypeBox}18;
-border-bottom: 1px solid ${({ theme }) => theme.textTypeBox}30;
-border-radius: 4px;
-margin-bottom: 8px;
+gap: 0;
+overflow: hidden;
+white-space: nowrap;
+text-overflow: ellipsis;
+opacity: 0.6;
 }
-.global-banner-text {
-font-size: 13px;
+.header-banner-prompt {
 color: ${({ theme }) => theme.stats};
-letter-spacing: 0.2px;
+margin-right: 6px;
+font-family: monospace;
+opacity: 0.8;
 }
-.global-banner-close {
+.header-banner-link {
+color: ${({ theme }) => theme.textTypeBox};
+text-decoration: none;
+}
+.header-banner-link:hover {
+color: ${({ theme }) => theme.stats};
+}
+.header-banner-sep {
+color: ${({ theme }) => theme.textTypeBox};
+opacity: 0.6;
+margin: 0 6px;
+}
+.header-banner-close {
 background: none;
 border: none;
-color: ${({ theme }) => theme.textTypeBox};
+color: ${({ theme }) => theme.stats};
 cursor: pointer;
-padding: 2px;
-display: flex;
+padding: 0 2px;
+display: inline-flex;
 align-items: center;
-opacity: 0.6;
+opacity: 0.8;
 transition: opacity 0.2s;
+margin-left: 8px;
+flex-shrink: 0;
 }
-.global-banner-close:hover {
+.header-banner-close:hover {
 opacity: 1;
 }
 .logo-row {
 display: flex;
-align-items: baseline;
-gap: 16px;
-justify-content: flex-start;
+flex-direction: column;
+align-items: flex-start;
+gap: 4px;
 width: 100%;
 padding-left: 0.5rem;
+padding-right: 72px;
+}
+.logo-top {
+display: flex;
+align-items: baseline;
+gap: 12px;
 }
 .logo-title {
-font-size: 28px;
+font-size: 22px;
 font-weight: 300;
 letter-spacing: 4px;
 color: ${({ theme }) => theme.title};
 opacity: 0.9;
-margin: 4px 0;
+margin: 0;
 display: flex;
 align-items: center;
 gap: 2px;
+flex-shrink: 0;
 }
 .logo-accent {
 font-weight: 400;
@@ -146,15 +167,72 @@ letter-spacing: 1px;
 opacity: 0.6;
 }
 .logo-icon {
-font-size: 24px;
+font-size: 20px;
 margin-left: 4px;
 opacity: 0.7;
 }
 .user-greeting {
 font-size: 13px;
 color: ${({ theme }) => theme.textTypeBox};
-opacity: 0.7;
+opacity: 0.8;
 letter-spacing: 0.5px;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+min-width: 0;
+}
+@media (max-width: 600px) {
+.user-greeting {
+display: none;
+}
+.header-banner {
+max-width: 100%;
+}
+.logo-row {
+padding-right: 56px;
+}
+}
+.profile-btn {
+position: fixed;
+right: 20px;
+top: 20px;
+z-index: 1000;
+background: none;
+border: none;
+color: ${({ theme }) => theme.text};
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 1px;
+padding: 4px 2px;
+font-family: monospace;
+opacity: 0.8;
+transition: opacity 0.2s;
+}
+.profile-btn:hover {
+opacity: 1;
+}
+.profile-bracket {
+font-size: 18px;
+color: ${({ theme }) => theme.stats};
+font-weight: 300;
+}
+.profile-badge {
+font-size: 10px;
+font-family: monospace;
+background: transparent;
+color: ${({ theme }) => theme.stats};
+border: 1px solid ${({ theme }) => theme.stats};
+border-radius: 50%;
+min-width: 16px;
+height: 16px;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+font-weight: 700;
+margin-left: 2px;
+position: relative;
+top: -6px;
 }
 small {
 display: block;
@@ -199,7 +277,7 @@ font-size: 11px;
 text-transform: uppercase;
 letter-spacing: 1.5px;
 color: ${({ theme }) => theme.stats};
-opacity: 0.7;
+opacity: 0.85;
 text-shadow: none;
 }
 .nav-group-items {
@@ -219,11 +297,11 @@ border: none;
 }
 .nav-item {
 color: ${({ theme }) => theme.text};
-opacity: 0.5;
+opacity: 0.7;
 transition: all 0.2s;
 }
 .nav-item:hover {
-opacity: 0.8;
+opacity: 1;
 }
 .nav-item-active {
 color: ${({ theme }) => theme.stats};
@@ -232,13 +310,13 @@ transition: all 0.2s;
 }
 .nav-mode {
 color: ${({ theme }) => theme.text};
-opacity: 0.45;
+opacity: 0.65;
 font-size: 15px;
 font-weight: 500;
 transition: all 0.2s;
 }
 .nav-mode:hover {
-opacity: 0.75;
+opacity: 1;
 }
 .nav-mode-active {
 color: ${({ theme }) => theme.stats};

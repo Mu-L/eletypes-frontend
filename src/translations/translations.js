@@ -7,10 +7,12 @@ export const translations = {
 
     // Logo / Banner
     greeting_suffix: "enjoy typing elegantly",
-    banner_leaderboard:
+    banner_leaderboard: "Leaderboard is live — just type and {submit} your score!",
+    banner_leaderboard_full:
       "Leaderboard is live — no sign-up needed, just type and submit your scores!",
-    banner_roblox:
-      'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes',
+    banner_roblox: 'Eletypes is on Roblox — play {Type!} with battle modes',
+    banner_roblox_full:
+      'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes.',
 
     // Footer tooltips
     focus_mode: "Focus mode",
@@ -114,7 +116,7 @@ export const translations = {
     name_updated: "Name updated!",
     my_history: "My History",
     news: "News",
-    site: "Site",
+    site: "Settings",
     no_news: "No announcements at this time.",
     profile_note:
       "No sign-up required. Your name is only used for the leaderboard when you submit a score. History is stored locally in your browser.",
@@ -147,9 +149,10 @@ export const translations = {
 
     // Logo / Banner
     greeting_suffix: "享受优雅的打字体验",
-    banner_leaderboard: "排行榜已上线 — 无需注册，打字即可提交成绩！",
-    banner_roblox:
-      'Eletypes 已登陆 Roblox！体验 "Type!" — 排行榜和对战模式',
+    banner_leaderboard: "排行榜已上线 — 打字即可{提交}成绩！",
+    banner_leaderboard_full: "排行榜已上线 — 无需注册，打字即可提交成绩！",
+    banner_roblox: 'Eletypes 登陆 Roblox — 体验{Type!}对战模式',
+    banner_roblox_full: 'Eletypes 已登陆 Roblox！体验 "Type!" — 排行榜和对战模式。',
 
     // Footer tooltips
     focus_mode: "专注模式",
@@ -248,7 +251,7 @@ export const translations = {
     name_updated: "名字已更新！",
     my_history: "我的历史",
     news: "消息",
-    site: "站点",
+    site: "设置",
     no_news: "暂无公告。",
     profile_note:
       "无需注册。名字仅在提交成绩时用于排行榜显示。历史记录保存在本地浏览器中。",

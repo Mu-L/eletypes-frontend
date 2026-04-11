@@ -245,19 +245,28 @@ const FooterMenu = ({
               </Tooltip>
               <Tooltip
                 title={
-                  <span style={{ whiteSpace: "pre-line" }}>
-                    <iframe
-                      title="discord-widget"
-                      src="https://discord.com/widget?id=993567075589181621&theme=dark"
-                      width="100%"
-                      height="300"
-                      allowtransparency="true"
-                      frameBorder="0"
-                      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-                    ></iframe>
-                  </span>
+                  <iframe
+                    title="discord-widget"
+                    src="https://discord.com/widget?id=993567075589181621&theme=dark"
+                    width="300"
+                    height="300"
+                    allowtransparency="true"
+                    frameBorder="0"
+                    sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+                    style={{ display: "block", border: "none" }}
+                  />
                 }
                 placement="top-start"
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      backgroundColor: "transparent",
+                      padding: 0,
+                      maxWidth: "none",
+                      boxShadow: "none",
+                    },
+                  },
+                }}
               >
                 <IconButton size="small" color="inherit">
                   <SvgIcon fontSize="small">
