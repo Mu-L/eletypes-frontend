@@ -22,7 +22,16 @@ export const setUserName = (name) => {
   localStorage.setItem(USER_NAME_KEY, name);
 };
 
-export const getUserTag = (userId) => {
-  const id = userId || getUserId();
-  return "#" + id.slice(-4);
+// Simple hash to generate a short tag without exposing raw identifiers
+const hashToTag = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return (Math.abs(hash) % 0xffff).toString(16).padStart(4, "0");
+};
+
+export const getUserTag = (identifier) => {
+  const id = identifier || getUserId();
+  return "#" + hashToTag(id);
 };

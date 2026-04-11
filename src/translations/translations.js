@@ -7,9 +7,9 @@ export const translations = {
 
     // Logo / Banner
     greeting_suffix: "enjoy typing elegantly",
-    banner_leaderboard: "Leaderboard is live — just type and {submit} your score!",
+    banner_leaderboard: "New: {Leaderboard}, badges, and score history are live!",
     banner_leaderboard_full:
-      "Leaderboard is live — no sign-up needed, just type and submit your scores!",
+      "New features: Leaderboard, badge system, and local score history are now live — no sign-up needed, just type and submit your scores!",
     banner_roblox: 'Eletypes is on Roblox — play {Type!} with battle modes',
     banner_roblox_full:
       'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes.',
@@ -133,6 +133,96 @@ export const translations = {
     // Caps Lock
     caps_locked: "Caps Locked",
 
+    // Ranks
+    rank_membrane: "Membrane",
+    rank_rubber_dome: "Rubber Dome",
+    rank_mechanical: "Mechanical",
+    rank_cherry_mx: "Cherry MX",
+    rank_topre: "Topre",
+    rank_hall_effect: "Hall Effect",
+    rank_custom_build: "Custom Build",
+    rank_max_reached: "Max rank reached!",
+
+    // Badge categories
+    badge_cat_speed: "Speed",
+    badge_cat_accuracy: "Accuracy",
+    badge_cat_consistency: "Consistency",
+    badge_cat_explorer: "Explorer",
+    badge_cat_social: "Social",
+    badges: "Badges",
+    badges_earned: "badges earned",
+    badge_hidden: "???",
+    badge_hidden_desc: "Hidden badge — keep typing to discover!",
+    badge_unlocked: "Badge unlocked!",
+    rank_up: "Rank up!",
+    title_label: "Title",
+
+    // Speed badges
+    badge_first_words: "First Words",
+    badge_first_words_desc: "Complete your first typing session",
+    badge_typist: "Typist",
+    badge_typist_desc: "Reach 30 WPM in any session",
+    badge_velocity: "Velocity",
+    badge_velocity_desc: "Reach 50 WPM in any session",
+    badge_swift: "Swift",
+    badge_swift_desc: "Reach 65 WPM in any session",
+    badge_supersonic: "Supersonic",
+    badge_supersonic_desc: "Reach 80 WPM in any session",
+    badge_light_speed: "Light Speed",
+    badge_light_speed_desc: "Reach 100 WPM in any session",
+    badge_ludicrous_speed: "Ludicrous Speed",
+    badge_ludicrous_speed_desc: "Reach 120 WPM in any session",
+    badge_warp_speed: "Warp Speed",
+    badge_warp_speed_desc: "Reach 150 WPM in any session",
+
+    // Accuracy badges
+    badge_accurate: "Accurate",
+    badge_accurate_desc: "Achieve 90% accuracy in any session",
+    badge_precise: "Precise",
+    badge_precise_desc: "Achieve 95% accuracy in any session",
+    badge_flawless: "Flawless",
+    badge_flawless_desc: "Achieve 100% accuracy in any session",
+    badge_sniper: "Sniper",
+    badge_sniper_desc: "Achieve 95%+ accuracy with 80+ WPM",
+    badge_perfectionist: "Perfectionist",
+    badge_perfectionist_desc: "Achieve 100% accuracy with 60+ WPM",
+
+    // Consistency badges
+    badge_warming_up: "Warming Up",
+    badge_warming_up_desc: "Complete 5 sessions",
+    badge_getting_hooked: "Getting Hooked",
+    badge_getting_hooked_desc: "Complete 10 sessions",
+    badge_regular: "Regular",
+    badge_regular_desc: "Complete 25 sessions",
+    badge_committed: "Committed",
+    badge_committed_desc: "Complete 50 sessions",
+    badge_dedicated: "Dedicated",
+    badge_dedicated_desc: "Complete 100 sessions",
+    badge_legend: "Legend",
+    badge_legend_desc: "Complete 250 sessions",
+
+    // Explorer badges
+    badge_bilingual: "Bilingual",
+    badge_bilingual_desc: "Complete sessions in both English and Chinese",
+    badge_challenger: "Challenger",
+    badge_challenger_desc: "Complete a session in hard mode",
+    badge_endurance: "Endurance",
+    badge_endurance_desc: "Complete a 90-second session",
+    badge_sprinter: "Sprinter",
+    badge_sprinter_desc: "Complete a 15-second session",
+    badge_speed_demon: "Speed Demon",
+    badge_speed_demon_desc: "Complete a 15s session with 60+ WPM",
+    badge_number_cruncher: "Number Cruncher",
+    badge_number_cruncher_desc: "Complete a session with +number mode",
+    badge_symbol_master: "Symbol Master",
+    badge_symbol_master_desc: "Complete a session with +symbol mode",
+
+    // Social badges
+    badge_named: "Named",
+    badge_named_desc: "Set a display name and complete a session",
+    badge_competitor: "Competitor",
+    badge_competitor_desc: "Submit a score to the leaderboard",
+
     // Support
     support_tooltip:
       "Help me keep the site live with your support : D \n Appreciate with love!",
@@ -149,8 +239,8 @@ export const translations = {
 
     // Logo / Banner
     greeting_suffix: "享受优雅的打字体验",
-    banner_leaderboard: "排行榜已上线 — 打字即可{提交}成绩！",
-    banner_leaderboard_full: "排行榜已上线 — 无需注册，打字即可提交成绩！",
+    banner_leaderboard: "新功能：{排行榜}、徽章系统、历史记录已上线！",
+    banner_leaderboard_full: "新功能上线：排行榜、徽章系统、本地历史记录 — 无需注册，打字即可提交成绩！",
     banner_roblox: 'Eletypes 登陆 Roblox — 体验{Type!}对战模式',
     banner_roblox_full: 'Eletypes 已登陆 Roblox！体验 "Type!" — 排行榜和对战模式。',
 
@@ -267,6 +357,96 @@ export const translations = {
 
     // Caps Lock
     caps_locked: "大写锁定已开启",
+
+    // Ranks
+    rank_membrane: "薄膜键盘侠",
+    rank_rubber_dome: "橡胶碗客",
+    rank_mechanical: "机械轴手",
+    rank_cherry_mx: "樱桃轴师",
+    rank_topre: "静电容匠",
+    rank_hall_effect: "磁轴宗师",
+    rank_custom_build: "客制化之神",
+    rank_max_reached: "已达最高等级！",
+
+    // Badge categories
+    badge_cat_speed: "速度",
+    badge_cat_accuracy: "准确度",
+    badge_cat_consistency: "坚持",
+    badge_cat_explorer: "探索",
+    badge_cat_social: "社交",
+    badges: "徽章",
+    badges_earned: "个徽章已获得",
+    badge_hidden: "???",
+    badge_hidden_desc: "隐藏徽章 — 继续打字来发现！",
+    badge_unlocked: "徽章解锁！",
+    rank_up: "等级提升！",
+    title_label: "称号",
+
+    // Speed badges
+    badge_first_words: "初试身手",
+    badge_first_words_desc: "完成第一次打字测试",
+    badge_typist: "打字员",
+    badge_typist_desc: "在任意测试中达到 30 WPM",
+    badge_velocity: "加速",
+    badge_velocity_desc: "在任意测试中达到 50 WPM",
+    badge_swift: "迅捷",
+    badge_swift_desc: "在任意测试中达到 65 WPM",
+    badge_supersonic: "超音速",
+    badge_supersonic_desc: "在任意测试中达到 80 WPM",
+    badge_light_speed: "光速",
+    badge_light_speed_desc: "在任意测试中达到 100 WPM",
+    badge_ludicrous_speed: "疯狂速度",
+    badge_ludicrous_speed_desc: "在任意测试中达到 120 WPM",
+    badge_warp_speed: "曲速",
+    badge_warp_speed_desc: "在任意测试中达到 150 WPM",
+
+    // Accuracy badges
+    badge_accurate: "准确",
+    badge_accurate_desc: "在任意测试中达到 90% 准确率",
+    badge_precise: "精准",
+    badge_precise_desc: "在任意测试中达到 95% 准确率",
+    badge_flawless: "完美",
+    badge_flawless_desc: "在任意测试中达到 100% 准确率",
+    badge_sniper: "狙击手",
+    badge_sniper_desc: "以 80+ WPM 达到 95%+ 准确率",
+    badge_perfectionist: "完美主义者",
+    badge_perfectionist_desc: "以 60+ WPM 达到 100% 准确率",
+
+    // Consistency badges
+    badge_warming_up: "热身中",
+    badge_warming_up_desc: "完成 5 次测试",
+    badge_getting_hooked: "渐入佳境",
+    badge_getting_hooked_desc: "完成 10 次测试",
+    badge_regular: "常客",
+    badge_regular_desc: "完成 25 次测试",
+    badge_committed: "坚持不懈",
+    badge_committed_desc: "完成 50 次测试",
+    badge_dedicated: "忠实粉丝",
+    badge_dedicated_desc: "完成 100 次测试",
+    badge_legend: "传奇",
+    badge_legend_desc: "完成 250 次测试",
+
+    // Explorer badges
+    badge_bilingual: "双语达人",
+    badge_bilingual_desc: "分别完成英文和中文模式的测试",
+    badge_challenger: "挑战者",
+    badge_challenger_desc: "完成一次困难模式测试",
+    badge_endurance: "耐力",
+    badge_endurance_desc: "完成一次 90 秒测试",
+    badge_sprinter: "冲刺者",
+    badge_sprinter_desc: "完成一次 15 秒测试",
+    badge_speed_demon: "速度恶魔",
+    badge_speed_demon_desc: "在 15 秒测试中达到 60+ WPM",
+    badge_number_cruncher: "数字达人",
+    badge_number_cruncher_desc: "完成一次 +数字 模式测试",
+    badge_symbol_master: "符号大师",
+    badge_symbol_master_desc: "完成一次 +符号 模式测试",
+
+    // Social badges
+    badge_named: "有名有姓",
+    badge_named_desc: "设置显示名并完成一次测试",
+    badge_competitor: "竞争者",
+    badge_competitor_desc: "向排行榜提交一次成绩",
 
     // Support
     support_tooltip: "支持我继续运营这个网站 : D \n 感谢您的支持！",

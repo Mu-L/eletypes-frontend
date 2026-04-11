@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useMemo } from "react";
 import {
   Line,
   YAxis,
@@ -11,7 +11,10 @@ import { useLocale } from "../../../context/LocaleContext";
 
 const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbolAddon, theme }) => {
   const { t } = useLocale();
-  const scores = getScores({ language, difficulty, duration, numberAddon, symbolAddon });
+  const scores = useMemo(
+    () => getScores({ language, difficulty, duration, numberAddon, symbolAddon }),
+    [language, difficulty, duration, numberAddon, symbolAddon]
+  );
 
   if (scores.length === 0) {
     return (
@@ -123,4 +126,4 @@ const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbol
   );
 };
 
-export default ScoreHistoryPanel;
+export default memo(ScoreHistoryPanel);

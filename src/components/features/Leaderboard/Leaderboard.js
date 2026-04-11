@@ -8,6 +8,7 @@ import { getUserName, setUserName, getUserTag } from "../../../services/userIden
 import { supabase } from "../../../services/supabase";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
 import { useLocale } from "../../../context/LocaleContext";
+import { markSubmitted } from "../../../services/badges";
 
 const TAB_LEADERBOARD = "leaderboard";
 const TAB_HISTORY = "history";
@@ -61,6 +62,7 @@ const Leaderboard = ({
       ...modeParams,
     });
     setSubmitted(true);
+    markSubmitted();
     if (response?.result === "new") {
       setSubmitMessage(t("score_submitted"));
     } else if (response?.result === "improved") {
@@ -205,20 +207,13 @@ const Leaderboard = ({
                 </span>
               )}
               <button
+                className="submit-score-btn"
                 onClick={handleSubmit}
                 style={{
-                  background: "transparent",
-                  border: `1px solid ${theme.stats}`,
-                  borderRadius: "4px",
+                  borderColor: theme.stats,
                   color: theme.stats,
-                  padding: "6px 16px",
-                  cursor: "pointer",
-                  fontSize: "14px",
                   fontFamily: theme.fontFamily,
-                  transition: "opacity 0.2s",
                 }}
-                onMouseEnter={(e) => (e.target.style.opacity = "0.7")}
-                onMouseLeave={(e) => (e.target.style.opacity = "1")}
               >
                 {t("submit_score")}
               </button>

@@ -3,7 +3,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { Tooltip } from "@mui/material";
-import { getUserName } from "../../services/userIdentity";
+import { getUserName, getUserTag } from "../../services/userIdentity";
+import { getRank, getBestWpm } from "../../services/badges";
 import { useLocale } from "../../context/LocaleContext";
 import ProfileModal from "./ProfileModal";
 
@@ -15,7 +16,7 @@ export const BANNER_KEYS = [
     id: "leaderboard",
     bannerTextKey: "banner_leaderboard",
     fullTextKey: "banner_leaderboard_full",
-    highlights: [{ placeholder: "submit" }, { placeholder: "提交" }],
+    highlights: [{ placeholder: "Leaderboard" }, { placeholder: "排行榜" }],
   },
   {
     id: "roblox",
@@ -23,7 +24,10 @@ export const BANNER_KEYS = [
     fullTextKey: "banner_roblox_full",
     link: "https://www.roblox.com/games/89217440428554/Type",
     highlights: [
-      { placeholder: "Type!", link: "https://www.roblox.com/games/89217440428554/Type" },
+      {
+        placeholder: "Type!",
+        link: "https://www.roblox.com/games/89217440428554/Type",
+      },
     ],
   },
 ];
@@ -39,17 +43,14 @@ const isDismissed = () => {
   }
 };
 
-// Render text with {highlighted} portions
 const renderHighlighted = (text, highlights, theme) => {
   const parts = [];
   let remaining = text;
   let key = 0;
-
   while (remaining.length > 0) {
     let earliest = null;
     let earliestIdx = remaining.length;
     let matchedHighlight = null;
-
     for (const h of highlights) {
       const pattern = `{${h.placeholder}}`;
       const idx = remaining.indexOf(pattern);
@@ -59,40 +60,28 @@ const renderHighlighted = (text, highlights, theme) => {
         matchedHighlight = h;
       }
     }
-
     if (!earliest) {
       parts.push(<span key={key++}>{remaining}</span>);
       break;
     }
-
     if (earliestIdx > 0) {
       parts.push(<span key={key++}>{remaining.slice(0, earliestIdx)}</span>);
     }
-
     const label = matchedHighlight.placeholder;
     if (matchedHighlight.link) {
       parts.push(
-        <a
-          key={key++}
-          href={matchedHighlight.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: theme.stats, textDecoration: "underline", fontWeight: 600 }}
-        >
+        <a key={key++} href={matchedHighlight.link} target="_blank" rel="noopener noreferrer"
+          style={{ color: theme.stats, textDecoration: "underline", fontWeight: 600 }}>
           {label}
         </a>
       );
     } else {
       parts.push(
-        <span key={key++} style={{ color: theme.stats, fontWeight: 600 }}>
-          {label}
-        </span>
+        <span key={key++} style={{ color: theme.stats, fontWeight: 600 }}>{label}</span>
       );
     }
-
     remaining = remaining.slice(earliestIdx + earliest.length);
   }
-
   return parts;
 };
 
@@ -110,10 +99,15 @@ const Logo = ({
   const { t } = useLocale();
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState("profile");
+  const [cardVisible, setCardVisible] = useState(true);
   const [userName, setUserNameState] = useState(() => getUserName());
   const [dismissed, setDismissed] = useState(() => isDismissed());
 
+  // Re-read rank/badges on every render so they update after a session
+  const bestWpm = getBestWpm();
+  const rank = getRank(bestWpm);
   const newsCount = dismissed ? 0 : BANNER_KEYS.length;
+
 
   const dismissAll = useCallback(() => {
     setDismissed(true);
@@ -126,9 +120,11 @@ const Logo = ({
   const openProfile = (tab) => {
     setProfileInitialTab(tab || "profile");
     setProfileOpen(true);
-    if (tab === "news") {
-      dismissAll();
-    }
+    if (tab === "news") dismissAll();
+  };
+
+  const toggleCard = () => {
+    setCardVisible(!cardVisible);
   };
 
   return (
@@ -155,12 +151,8 @@ const Logo = ({
                 const text = t(banner.bannerTextKey);
                 return (
                   <span key={banner.id}>
-                    {idx > 0 && (
-                      <span className="header-banner-sep"> · </span>
-                    )}
-                    {theme
-                      ? renderHighlighted(text, banner.highlights, theme)
-                      : text}
+                    {idx > 0 && <span className="header-banner-sep"> · </span>}
+                    {theme ? renderHighlighted(text, banner.highlights, theme) : text}
                   </span>
                 );
               })}
@@ -173,19 +165,53 @@ const Logo = ({
       </div>
       {theme && (
         <>
-          <Tooltip title={t("profile")} placement="left">
-            <button
-              className="profile-btn"
-              onClick={() => openProfile("profile")}
-            >
-              <span className="profile-bracket">[</span>
-              <PersonOutlineIcon style={{ fontSize: "16px" }} />
-              <span className="profile-bracket">]</span>
-              {newsCount > 0 && (
-                <span className="profile-badge">{newsCount}</span>
-              )}
+          {/* Profile button + name card area */}
+          <div className="profile-area">
+            {/* Name card — slides in/out from the right */}
+            <div className={`namecard ${cardVisible ? "namecard-visible" : "namecard-hidden"}`}>
+              <div
+                className="namecard-header"
+                onClick={() => openProfile("profile")}
+              >
+                <span className="namecard-rank">
+                  <span style={{ color: theme.textTypeBox }}>[</span>
+                  <span style={{ color: rank.color, fontWeight: 700 }}>{rank.icon}</span>
+                  <span style={{ color: theme.textTypeBox }}>]</span>
+                </span>
+                <div className="namecard-info">
+                  <span className="namecard-name" style={{ color: theme.text }}>
+                    {userName || t("click_to_set_name")}
+                    <span className="namecard-tag" style={{ color: theme.textTypeBox }}>
+                      {getUserTag()}
+                    </span>
+                  </span>
+                  <span className="namecard-title" style={{ color: rank.color }}>
+                    {t(rank.nameKey)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Slide toggle */}
+            <button className="namecard-slide-btn" onClick={toggleCard}>
+              <span style={{ color: theme.stats }}>
+                {cardVisible ? "›" : "‹"}
+              </span>
             </button>
-          </Tooltip>
+
+            {/* Profile button */}
+            <Tooltip title={t("profile")} placement="left">
+              <button className="profile-btn" onClick={() => openProfile(newsCount > 0 ? "news" : "site")}>
+                <span className="profile-bracket">[</span>
+                <PersonOutlineIcon style={{ fontSize: "16px" }} />
+                <span className="profile-bracket">]</span>
+                {newsCount > 0 && (
+                  <span className="profile-badge">{newsCount}</span>
+                )}
+              </button>
+            </Tooltip>
+          </div>
+
           <ProfileModal
             open={profileOpen}
             onClose={() => setProfileOpen(false)}

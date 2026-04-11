@@ -13,6 +13,7 @@ import {
 import { red } from "@mui/material/colors";
 import Leaderboard from "../Leaderboard/Leaderboard";
 import { addScore } from "../../../services/scoreHistory";
+import { evaluateBadges } from "../../../services/badges";
 import { useLocale } from "../../../context/LocaleContext";
 
 const Stats = ({
@@ -121,19 +122,28 @@ const Stats = ({
     [language, difficulty, countDownConstant, numberAddon, symbolAddon]
   );
 
-  // Save score to local history when session finishes
+  // Save score to local history and evaluate badges when session finishes
   const [historySaved, setHistorySaved] = useState(false);
+  const [newBadges, setNewBadges] = useState([]);
   useEffect(() => {
-    if (status === "finished" && !historySaved && data.length > 1) {
+    if (status === "finished" && !historySaved) {
       const totalWpm = data.map((e) => e.wpm).reduce((a, b) => a + b, 0);
-      const avgWpm = totalWpm / (data.length - 1);
-      addScore({ wpm: avgWpm, accuracy, ...modeParams });
+      const avgWpm = data.length > 1 ? totalWpm / (data.length - 1) : 0;
+      if (avgWpm > 0) {
+        addScore({ wpm: avgWpm, accuracy, ...modeParams });
+        const earned = evaluateBadges({ wpm: avgWpm, accuracy, ...modeParams });
+        if (earned.length > 0) {
+          setNewBadges(earned);
+        }
+      }
       setHistorySaved(true);
     }
     if (status === "started") {
       setHistorySaved(false);
+      setNewBadges([]);
     }
-  }, [status, historySaved, data, accuracy, modeParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
 
   const getFormattedLanguageLanguageName = (value) => {
     switch (value) {
@@ -247,7 +257,9 @@ const Stats = ({
     );
   };
 
-  const Chart = () => (
+  const chartData = useMemo(() => data.filter((d) => d.time !== 0), [data]);
+
+  const Chart = useMemo(() => (
     <ResponsiveContainer
       width="100%"
       minHeight={200}
@@ -257,7 +269,7 @@ const Stats = ({
       <ComposedChart
         width="100%"
         height="100%"
-        data={data.filter((d) => d.time !== 0)}
+        data={chartData}
         margin={{
           top: 12,
           right: 12,
@@ -296,7 +308,7 @@ const Stats = ({
         <Bar dataKey="error" barSize={12} fill={`${red[400]}`} />
       </ComposedChart>
     </ResponsiveContainer>
-  );
+  ), [chartData, theme.text, theme.textTypeBox]);
 
   return (
     <>
@@ -315,7 +327,7 @@ const Stats = ({
                 {renderWpm()}
                 {renderAccuracy()}
               </div>
-              {Chart()}
+              {Chart}
             </section>
             <section className="stats-footer">
               {renderLanguage()}
@@ -324,6 +336,20 @@ const Stats = ({
               {renderTime()}
             </section>
             <section>{renderResetButton()}</section>
+            {newBadges.length > 0 && (
+              <div className="badge-notification">
+                <span className="badge-notification-label">
+                  {t("badge_unlocked")}
+                </span>
+                <div className="badge-notification-list">
+                  {newBadges.map((b) => (
+                    <span key={b.id} className="badge-notification-item">
+                      {b.icon} {t(b.nameKey)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <Leaderboard
               wpm={
                 data.length > 1

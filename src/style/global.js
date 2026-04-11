@@ -192,11 +192,98 @@ max-width: 100%;
 padding-right: 56px;
 }
 }
-.profile-btn {
+/* Profile area */
+.profile-area {
 position: fixed;
-right: 20px;
-top: 20px;
+right: 16px;
+top: 16px;
 z-index: 1000;
+display: flex;
+align-items: center;
+gap: 4px;
+}
+
+/* Name card */
+.namecard {
+font-family: monospace;
+overflow: hidden;
+max-width: 220px;
+transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.3s ease;
+}
+.namecard-visible {
+max-width: 220px;
+opacity: 1;
+}
+.namecard-hidden {
+max-width: 0;
+opacity: 0;
+pointer-events: none;
+}
+.namecard-slide-btn {
+background: none;
+border: none;
+color: ${({ theme }) => theme.stats};
+cursor: pointer;
+font-size: 20px;
+font-family: monospace;
+padding: 0 2px;
+opacity: 0.6;
+transition: opacity 0.2s;
+display: flex;
+align-items: center;
+flex-shrink: 0;
+line-height: 1;
+}
+.namecard-slide-btn:hover {
+opacity: 1;
+}
+.namecard-header {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 4px 10px;
+cursor: pointer;
+border: 1px solid ${({ theme }) => theme.textTypeBox}30;
+border-radius: 6px;
+background: ${({ theme }) => theme.background};
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+transition: border-color 0.2s;
+white-space: nowrap;
+}
+.namecard-header:hover {
+border-color: ${({ theme }) => theme.stats}60;
+}
+.namecard-rank {
+font-size: 14px;
+font-family: monospace;
+flex-shrink: 0;
+letter-spacing: 1px;
+}
+.namecard-info {
+display: flex;
+flex-direction: column;
+min-width: 0;
+overflow: hidden;
+}
+.namecard-name {
+font-size: 13px;
+font-weight: 500;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.namecard-tag {
+font-size: 11px;
+margin-left: 4px;
+opacity: 0.6;
+}
+.namecard-title {
+font-size: 11px;
+opacity: 0.8;
+}
+.profile-btn {
 background: none;
 border: none;
 color: ${({ theme }) => theme.text};
@@ -208,6 +295,7 @@ padding: 4px 2px;
 font-family: monospace;
 opacity: 0.8;
 transition: opacity 0.2s;
+flex-shrink: 0;
 }
 .profile-btn:hover {
 opacity: 1;
@@ -234,6 +322,7 @@ margin-left: 2px;
 position: relative;
 top: -6px;
 }
+
 small {
 display: block;
 }
@@ -794,6 +883,194 @@ and (-webkit-min-device-pixel-ratio: 3) {
 top:200px;
 width: 60%;
 }
+}
+
+/* Profile sections */
+.profile-section {
+margin-bottom: 16px;
+padding-bottom: 12px;
+border-bottom: 1px solid ${({ theme }) => theme.textTypeBox}15;
+}
+.profile-section:last-child {
+border-bottom: none;
+margin-bottom: 0;
+}
+.profile-section-label {
+font-size: 11px;
+text-transform: uppercase;
+letter-spacing: 1.5px;
+color: ${({ theme }) => theme.textTypeBox};
+opacity: 0.6;
+margin: 0 0 8px 0;
+font-weight: 400;
+}
+
+/* Submit score button */
+.submit-score-btn {
+background: transparent;
+border: 1px solid;
+border-radius: 4px;
+padding: 6px 16px;
+cursor: pointer;
+font-size: 14px;
+animation: submitPulse 2s ease-in-out infinite;
+transition: transform 0.2s, box-shadow 0.2s;
+}
+.submit-score-btn:hover {
+transform: scale(1.05);
+animation: none;
+}
+@keyframes submitPulse {
+0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+20% { transform: scale(1.03) rotate(-1deg); }
+40% { transform: scale(1) rotate(1deg); }
+60% { transform: scale(1.03) rotate(-0.5deg); }
+80% { transform: scale(1) rotate(0.5deg); }
+}
+
+/* Badge & Rank styles */
+.rank-card {
+display: flex;
+align-items: center;
+gap: 16px;
+padding: 16px;
+border: 1px solid ${({ theme }) => theme.textTypeBox}30;
+border-radius: 8px;
+margin-bottom: 20px;
+}
+.rank-keycap {
+font-size: 28px;
+font-family: monospace;
+flex-shrink: 0;
+letter-spacing: 1px;
+}
+.rank-keycap-bracket {
+font-weight: 300;
+}
+.rank-info {
+flex: 1;
+}
+.rank-name {
+font-size: 18px;
+font-weight: 600;
+color: ${({ theme }) => theme.stats};
+margin-bottom: 2px;
+}
+.rank-wpm {
+font-size: 13px;
+color: ${({ theme }) => theme.textTypeBox};
+margin-bottom: 8px;
+}
+.rank-progress-container {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.rank-progress-bar {
+flex: 1;
+height: 6px;
+background: ${({ theme }) => theme.textTypeBox}30;
+border-radius: 3px;
+overflow: hidden;
+}
+.rank-progress-fill {
+height: 100%;
+background: ${({ theme }) => theme.stats};
+border-radius: 3px;
+transition: width 0.3s;
+}
+.rank-next {
+font-size: 12px;
+color: ${({ theme }) => theme.textTypeBox};
+white-space: nowrap;
+}
+.rank-max {
+font-size: 13px;
+color: ${({ theme }) => theme.stats};
+}
+.badge-category-title {
+font-size: 13px;
+color: ${({ theme }) => theme.textTypeBox};
+text-transform: uppercase;
+letter-spacing: 1px;
+margin: 0 0 8px 0;
+}
+.badge-grid {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+}
+.badge-item {
+display: flex;
+align-items: center;
+gap: 6px;
+padding: 6px 10px;
+border-radius: 6px;
+border: 1px solid ${({ theme }) => theme.textTypeBox}30;
+font-size: 13px;
+transition: all 0.2s;
+position: relative;
+}
+.badge-item[data-tooltip]:hover::after {
+content: attr(data-tooltip);
+position: absolute;
+bottom: calc(100% + 6px);
+left: 50%;
+transform: translateX(-50%);
+background: ${({ theme }) => theme.background};
+color: ${({ theme }) => theme.text};
+border: 1px solid ${({ theme }) => theme.textTypeBox};
+padding: 4px 8px;
+border-radius: 4px;
+font-size: 11px;
+white-space: nowrap;
+z-index: 10;
+pointer-events: none;
+}
+.badge-earned {
+color: ${({ theme }) => theme.text};
+border-color: ${({ theme }) => theme.stats}60;
+}
+.badge-locked {
+opacity: 0.35;
+color: ${({ theme }) => theme.textTypeBox};
+}
+.badge-icon {
+font-size: 16px;
+}
+.badge-name {
+font-size: 12px;
+}
+
+/* Badge notification */
+.badge-notification {
+display: flex;
+align-items: center;
+gap: 12px;
+padding: 10px 16px;
+border: 1px solid ${({ theme }) => theme.stats}50;
+border-radius: 8px;
+background: ${({ theme }) => theme.stats}10;
+animation: badgeFadeIn 0.5s ease-out;
+}
+.badge-notification-label {
+font-size: 13px;
+color: ${({ theme }) => theme.stats};
+font-weight: 600;
+white-space: nowrap;
+}
+.badge-notification-list {
+display: flex;
+gap: 12px;
+flex-wrap: wrap;
+}
+.badge-notification-item {
+font-size: 13px;
+color: ${({ theme }) => theme.text};
+}
+@keyframes badgeFadeIn {
+from { opacity: 0; transform: translateY(-8px); }
+to { opacity: 1; transform: translateY(0); }
 }
 
 .keyboard {

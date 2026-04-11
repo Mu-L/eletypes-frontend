@@ -10,6 +10,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import { getUserName, setUserName, getUserTag } from "../../services/userIdentity";
 import ScoreHistoryPanel from "../features/Leaderboard/ScoreHistoryPanel";
+import BadgeDisplay from "../features/Badges/BadgeDisplay";
 import { useLocale } from "../../context/LocaleContext";
 import { BANNER_KEYS } from "./Logo";
 import {
@@ -219,15 +220,12 @@ const ProfileModal = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      slotProps={{
-        backdrop: {
-          sx: { backgroundColor: "rgba(0, 0, 0, 0.7)" },
-        },
+      BackdropProps={{
+        sx: { backgroundColor: "rgba(0, 0, 0, 0.7)" },
       }}
       PaperProps={{
         style: {
           background: theme.background,
-          backdropFilter: "blur(20px)",
           color: theme.text,
           borderRadius: "8px",
           border: `1px solid ${theme.textTypeBox}33`,
@@ -303,23 +301,12 @@ const ProfileModal = ({
         {/* Profile tab */}
         {activeTab === TAB_PROFILE && (
           <div>
-            <div style={{ marginBottom: "16px" }}>
-              <p
-                style={{
-                  color: theme.textTypeBox,
-                  fontSize: "13px",
-                  marginBottom: "8px",
-                }}
-              >
+            {/* Section: Name */}
+            <div className="profile-section">
+              <h4 className="profile-section-label" style={{ color: theme.textTypeBox }}>
                 {t("edit_name")}
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
+              </h4>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 {isEditing ? (
                   <>
                     <input
@@ -342,61 +329,36 @@ const ProfileModal = ({
                         flex: 1,
                       }}
                     />
-                    <MuiIconButton
-                      onClick={handleSave}
-                      style={{ color: theme.stats }}
-                    >
+                    <MuiIconButton onClick={handleSave} style={{ color: theme.stats }}>
                       <CheckIcon fontSize="small" />
                     </MuiIconButton>
                   </>
                 ) : (
                   <>
-                    <span
-                      style={{
-                        fontSize: "18px",
-                        color: name ? theme.text : theme.textTypeBox,
-                        flex: 1,
-                      }}
-                    >
+                    <span style={{ fontSize: "18px", color: name ? theme.text : theme.textTypeBox, flex: 1 }}>
                       {name || t("click_to_set_name")}
                       <span style={{ color: theme.textTypeBox, fontSize: "13px", marginLeft: "6px" }}>
                         {getUserTag()}
                       </span>
                     </span>
-                    <MuiIconButton
-                      onClick={() => setIsEditing(true)}
-                      style={{ color: theme.textTypeBox }}
-                    >
+                    <MuiIconButton onClick={() => setIsEditing(true)} style={{ color: theme.textTypeBox }}>
                       <EditIcon fontSize="small" />
                     </MuiIconButton>
                   </>
                 )}
               </div>
               {savedMessage && (
-                <p
-                  style={{
-                    color: theme.stats,
-                    fontSize: "13px",
-                    marginTop: "6px",
-                  }}
-                >
+                <p style={{ color: theme.stats, fontSize: "13px", marginTop: "6px" }}>
                   {savedMessage}
                 </p>
               )}
+              <p style={{ color: theme.textTypeBox, fontSize: "11px", opacity: 0.6, marginTop: "6px", marginBottom: 0 }}>
+                {t("profile_note")}
+              </p>
             </div>
-            <p
-              style={{
-                color: theme.textTypeBox,
-                fontSize: "12px",
-                lineHeight: "1.6",
-                opacity: 0.7,
-                marginTop: "8px",
-                borderTop: `1px solid ${theme.textTypeBox}20`,
-                paddingTop: "12px",
-              }}
-            >
-              {t("profile_note")}
-            </p>
+
+            {/* Section: Title + Badges (from BadgeDisplay) */}
+            <BadgeDisplay theme={theme} />
           </div>
         )}
 

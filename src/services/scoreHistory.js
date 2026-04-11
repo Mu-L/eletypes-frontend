@@ -32,3 +32,23 @@ export const getScores = ({ language, difficulty, duration, numberAddon, symbolA
   const key = getModeKey({ language, difficulty, duration, numberAddon, symbolAddon });
   return all[key] || [];
 };
+
+export const getAllScores = () => {
+  const all = getAll();
+  return Object.values(all).flat();
+};
+
+export const getTotalSessionCount = () => {
+  return getAllScores().length;
+};
+
+export const getLanguagesPlayed = () => {
+  const all = getAll();
+  const languages = new Set();
+  for (const key of Object.keys(all)) {
+    if (all[key].length > 0) {
+      languages.add(key.split("|")[0]);
+    }
+  }
+  return languages;
+};
