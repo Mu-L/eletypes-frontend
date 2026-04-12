@@ -19,9 +19,9 @@ import {
   DEFAULT_SOUND_TYPE_KEY,
 } from "./components/features/sound/sound";
 import DynamicBackground from "./components/common/DynamicBackground";
+import TypeBox from "./components/features/TypeBox/TypeBox";
+import SentenceBox from "./components/features/SentenceBox/SentenceBox";
 
-const TypeBox = lazy(() => import("./components/features/TypeBox/TypeBox"));
-const SentenceBox = lazy(() => import("./components/features/SentenceBox/SentenceBox"));
 const FreeTypingBox = lazy(() => import("./components/features/FreeTypingBox"));
 const DefaultKeyboard = lazy(() => import("./components/features/Keyboard/DefaultKeyboard"));
 const WordsCard = lazy(() => import("./components/features/WordsCard/WordsCard"));
@@ -205,29 +205,29 @@ function App() {
             isUltraZenMode={isUltraZenMode}
             toggleUltraZenMode={toggleUltraZenMode}
           ></Logo>
+          {isWordGameMode && (
+            <TypeBox
+              isUltraZenMode={isUltraZenMode}
+              textInputRef={textInputRef}
+              isFocusedMode={isFocusedMode}
+              soundMode={soundMode}
+              theme={theme}
+              soundType={soundType}
+              key="type-box"
+              handleInputFocus={() => focusTextInput()}
+            ></TypeBox>
+          )}
+          {isSentenceGameMode && (
+            <SentenceBox
+              sentenceInputRef={sentenceInputRef}
+              isFocusedMode={isFocusedMode}
+              soundMode={soundMode}
+              soundType={soundType}
+              key="sentence-box"
+              handleInputFocus={() => focusSentenceInput()}
+            ></SentenceBox>
+          )}
           <Suspense fallback={null}>
-            {isWordGameMode && (
-              <TypeBox
-                isUltraZenMode={isUltraZenMode}
-                textInputRef={textInputRef}
-                isFocusedMode={isFocusedMode}
-                soundMode={soundMode}
-                theme={theme}
-                soundType={soundType}
-                key="type-box"
-                handleInputFocus={() => focusTextInput()}
-              ></TypeBox>
-            )}
-            {isSentenceGameMode && (
-              <SentenceBox
-                sentenceInputRef={sentenceInputRef}
-                isFocusedMode={isFocusedMode}
-                soundMode={soundMode}
-                soundType={soundType}
-                key="sentence-box"
-                handleInputFocus={() => focusSentenceInput()}
-              ></SentenceBox>
-            )}
             {isCoffeeMode && !isTrainerMode && !isWordsCardMode && (
               <FreeTypingBox
                 textAreaRef={textAreaRef}
