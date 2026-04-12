@@ -36,7 +36,7 @@ export const submitScore = async ({
   // Check if user already has a record for this mode combination
   const { data: existing } = await supabase
     .from("scores")
-    .select("id, effective_wpm")
+    .select("id, wpm, effective_wpm")
     .eq("fingerprint", fingerprint)
     .eq("language", language)
     .eq("difficulty", difficulty)
@@ -49,7 +49,7 @@ export const submitScore = async ({
     if (effectiveWpm <= existing.effective_wpm) {
       return {
         result: "no_improvement",
-        previousBest: Math.round(existing.effective_wpm),
+        previousBest: existing.wpm,
       };
     }
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export const submitScore = async ({
     }
     return {
       result: "improved",
-      previousBest: Math.round(existing.effective_wpm),
+      previousBest: existing.wpm,
     };
   }
 
@@ -108,7 +108,7 @@ export const fetchLeaderboard = async ({
 
   const { data, error } = await supabase
     .from("scores")
-    .select("user_name, user_id, wpm, accuracy, effective_wpm, created_at")
+    .select("user_name, user_id, wpm, accuracy, created_at")
     .eq("language", language)
     .eq("difficulty", difficulty)
     .eq("duration", duration)
