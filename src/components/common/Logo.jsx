@@ -1,10 +1,10 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import { Tooltip } from "@mui/material";
 import { getUserName, getUserTag } from "../../services/userIdentity";
-import { getRank, getBestWpm } from "../../services/badges";
+import { getRank, getBestEffectiveWpm } from "../../services/badges";
 import { useLocale } from "../../context/LocaleContext";
 import ProfileModal from "./ProfileModal";
 
@@ -16,7 +16,7 @@ export const BANNER_KEYS = [
     id: "leaderboard",
     bannerTextKey: "banner_leaderboard",
     fullTextKey: "banner_leaderboard_full",
-    highlights: [{ placeholder: "Leaderboard" }, { placeholder: "排行榜" }],
+    highlights: [{ placeholder: "Leaderboard" }, { placeholder: "排行榜" }, { placeholder: "stats" }, { placeholder: "数据分析" }],
   },
   {
     id: "roblox",
@@ -103,9 +103,16 @@ const Logo = ({
   const [userName, setUserNameState] = useState(() => getUserName());
   const [dismissed, setDismissed] = useState(() => isDismissed());
 
-  // Re-read rank/badges on every render so they update after a session
-  const bestWpm = getBestWpm();
-  const rank = getRank(bestWpm);
+  // Re-read rank when scores change (triggered by Stats.jsx after session)
+  const [rankVersion, setRankVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setRankVersion((v) => v + 1);
+    window.addEventListener("eletypes-score-updated", handler);
+    return () => window.removeEventListener("eletypes-score-updated", handler);
+  }, []);
+  void rankVersion;
+  const bestEffective = getBestEffectiveWpm();
+  const rank = getRank(bestEffective);
   const newsCount = dismissed ? 0 : BANNER_KEYS.length;
 
 

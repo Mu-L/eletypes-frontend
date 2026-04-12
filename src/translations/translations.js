@@ -3,13 +3,13 @@ export const translations = {
     // Nav group labels
     nav_mode: "mode",
     nav_settings: "settings",
-    stats_tooltip: "Stats",
+    stats_tooltip: "Leaderboard / History",
 
     // Logo / Banner
     greeting_suffix: "enjoy typing elegantly",
-    banner_leaderboard: "New: {Leaderboard}, badges, and score history are live!",
+    banner_leaderboard: "New: {Leaderboard}, stats, badges, and score history are live!",
     banner_leaderboard_full:
-      "New features: Leaderboard, badge system, and local score history are now live — no sign-up needed, just type and submit your scores!",
+      "New features: Leaderboard, stats dashboard, badge system, and local score history are now live — no sign-up needed, just type and submit your scores!",
     banner_roblox: 'Eletypes is on Roblox — play {Type!} with battle modes',
     banner_roblox_full:
       'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes.',
@@ -177,6 +177,19 @@ export const translations = {
     badge_warp_speed: "Warp Speed",
     badge_warp_speed_desc: "Reach 150 WPM in any session",
 
+    // Effective Speed badges
+    badge_cat_effective_speed: "Effective Speed",
+    badge_eff_solid: "Solid",
+    badge_eff_solid_desc: "Reach 40 effective WPM (WPM × Accuracy)",
+    badge_eff_sharp: "Sharp",
+    badge_eff_sharp_desc: "Reach 60 effective WPM (WPM × Accuracy)",
+    badge_eff_elite: "Elite",
+    badge_eff_elite_desc: "Reach 80 effective WPM (WPM × Accuracy)",
+    badge_eff_master: "Master",
+    badge_eff_master_desc: "Reach 100 effective WPM (WPM × Accuracy)",
+    badge_eff_transcendent: "Transcendent",
+    badge_eff_transcendent_desc: "Reach 130 effective WPM (WPM × Accuracy)",
+
     // Accuracy badges
     badge_accurate: "Accurate",
     badge_accurate_desc: "Achieve 90% accuracy in any session",
@@ -225,6 +238,42 @@ export const translations = {
     badge_competitor: "Competitor",
     badge_competitor_desc: "Submit a score to the leaderboard",
 
+    // Stats dashboard
+    stats_tab: "Stats",
+    stats_overview: "Overview",
+    stats_best_effective: "Best Effective WPM",
+    stats_avg_effective: "Avg Effective WPM",
+    stats_effective_header: "Effective",
+    stats_effective_tooltip: "Effective WPM = WPM × Accuracy",
+    stats_avg_acc: "Avg ACC",
+    stats_sessions: "Sessions",
+    stats_streak: "Streak",
+    stats_day: "day",
+    stats_days: "days",
+    stats_active_days: "Active Days",
+    stats_today: "Today",
+    stats_total: "total",
+    stats_modes: "Modes",
+    stats_played: "played",
+    stats_activity: "Activity",
+    stats_wpm_trend: "WPM Trend (all sessions)",
+    stats_modes_breakdown: "Mode Breakdown",
+    stats_mode: "Mode",
+    stats_best_short: "Best",
+    stats_avg_short: "Avg",
+    stats_next_rank: "Next",
+    stats_outlier_label: "Outlier",
+    stats_outlier_tooltip: "Outlier — low accuracy or far from your average",
+    stats_remove: "Remove this entry",
+    stats_clear_all: "Clear All History",
+    stats_clear_confirm: "Are you sure? This will remove all your typing history across all modes.",
+    heatmap_less: "Less",
+    heatmap_more: "More",
+    stats_consistency: "WPM Consistency",
+    stats_consistency_tooltip: "How consistent your effective WPM is across sessions. Higher = less variance. If too low, check the WPM Trend chart for outliers — you can remove them from session history.",
+    stats_accuracy_consistency: "ACC Consistency",
+    stats_accuracy_tooltip: "How consistent your accuracy is across sessions. Higher = less variance. If too low, check session history for low-accuracy outliers and remove them.",
+
     // Support
     support_tooltip:
       "Help me keep the site live with your support : D \n Appreciate with love!",
@@ -237,12 +286,12 @@ export const translations = {
     // Nav group labels
     nav_mode: "模式",
     nav_settings: "设置",
-    stats_tooltip: "统计",
+    stats_tooltip: "排行榜 / 历史",
 
     // Logo / Banner
     greeting_suffix: "享受优雅的打字体验",
-    banner_leaderboard: "新功能：{排行榜}、徽章系统、历史记录已上线！",
-    banner_leaderboard_full: "新功能上线：排行榜、徽章系统、本地历史记录 — 无需注册，打字即可提交成绩！",
+    banner_leaderboard: "新功能：{排行榜}、数据分析、徽章系统、历史记录已上线！",
+    banner_leaderboard_full: "新功能上线：排行榜、数据分析、徽章系统、本地历史记录 — 无需注册，打字即可提交成绩！",
     banner_roblox: 'Eletypes 登陆 Roblox — 体验{Type!}对战模式',
     banner_roblox_full: 'Eletypes 已登陆 Roblox！体验 "Type!" — 排行榜和对战模式。',
 
@@ -373,7 +422,7 @@ export const translations = {
     rank_max_reached: "已达最高等级！",
 
     // Badge categories
-    badge_cat_speed: "速度",
+    badge_cat_speed: "裸奔速度",
     badge_cat_accuracy: "准确度",
     badge_cat_consistency: "坚持",
     badge_cat_explorer: "探索",
@@ -403,6 +452,19 @@ export const translations = {
     badge_ludicrous_speed_desc: "在任意测试中达到 120 WPM",
     badge_warp_speed: "曲速",
     badge_warp_speed_desc: "在任意测试中达到 150 WPM",
+
+    // Effective Speed badges
+    badge_cat_effective_speed: "有效速度",
+    badge_eff_solid: "稳固",
+    badge_eff_solid_desc: "达到 40 有效 WPM（WPM × 准确率）",
+    badge_eff_sharp: "锋利",
+    badge_eff_sharp_desc: "达到 60 有效 WPM（WPM × 准确率）",
+    badge_eff_elite: "精英",
+    badge_eff_elite_desc: "达到 80 有效 WPM（WPM × 准确率）",
+    badge_eff_master: "大师",
+    badge_eff_master_desc: "达到 100 有效 WPM（WPM × 准确率）",
+    badge_eff_transcendent: "超越",
+    badge_eff_transcendent_desc: "达到 130 有效 WPM（WPM × 准确率）",
 
     // Accuracy badges
     badge_accurate: "准确",
@@ -451,6 +513,42 @@ export const translations = {
     badge_named_desc: "设置显示名并完成一次测试",
     badge_competitor: "竞争者",
     badge_competitor_desc: "向排行榜提交一次成绩",
+
+    // Stats dashboard
+    stats_tab: "统计",
+    stats_overview: "概览",
+    stats_best_effective: "最高有效 WPM",
+    stats_avg_effective: "平均有效 WPM",
+    stats_effective_header: "有效",
+    stats_effective_tooltip: "有效 WPM = WPM × 准确率",
+    stats_avg_acc: "平均准确率",
+    stats_sessions: "测试次数",
+    stats_streak: "连续天数",
+    stats_day: "天",
+    stats_days: "天",
+    stats_active_days: "活跃天数",
+    stats_today: "今日",
+    stats_total: "总计",
+    stats_modes: "模式数",
+    stats_played: "已玩",
+    stats_activity: "活动记录",
+    stats_wpm_trend: "WPM 趋势（所有测试）",
+    stats_modes_breakdown: "模式细分",
+    stats_mode: "模式",
+    stats_best_short: "最佳",
+    stats_avg_short: "平均",
+    stats_next_rank: "下一等级",
+    stats_outlier_label: "异常值",
+    stats_outlier_tooltip: "异常值 — 准确率过低或偏离平均值较大",
+    stats_remove: "删除此记录",
+    stats_clear_all: "清除所有历史",
+    stats_clear_confirm: "确定吗？这将删除所有模式的打字历史记录。",
+    heatmap_less: "少",
+    heatmap_more: "多",
+    stats_consistency: "WPM 稳定性",
+    stats_consistency_tooltip: "你的有效 WPM 在各次测试中的稳定程度。越高 = 越稳定。如果过低，请查看 WPM 趋势图中的异常值，可在历史记录中删除。",
+    stats_accuracy_consistency: "准确率稳定性",
+    stats_accuracy_tooltip: "你的准确率在各次测试中的稳定程度。越高 = 越稳定。如果过低，请查看历史记录中准确率较低的异常值并删除。",
 
     // Support
     support_tooltip: "支持我继续运营这个网站 : D \n 感谢您的支持！",

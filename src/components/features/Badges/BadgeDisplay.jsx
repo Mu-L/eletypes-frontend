@@ -6,11 +6,12 @@ import {
   getRank,
   getNextRank,
   getRankProgress,
-  getBestWpm,
+  getBestEffectiveWpm,
 } from "../../../services/badges";
 
 const CATEGORIES = [
   { key: "speed", nameKey: "badge_cat_speed" },
+  { key: "effective_speed", nameKey: "badge_cat_effective_speed" },
   { key: "accuracy", nameKey: "badge_cat_accuracy" },
   { key: "consistency", nameKey: "badge_cat_consistency" },
   { key: "explorer", nameKey: "badge_cat_explorer" },
@@ -19,10 +20,10 @@ const CATEGORIES = [
 
 const BadgeDisplay = ({ theme }) => {
   const { t } = useLocale();
-  const bestWpm = useMemo(() => getBestWpm(), []);
-  const rank = useMemo(() => getRank(bestWpm), [bestWpm]);
-  const nextRank = useMemo(() => getNextRank(bestWpm), [bestWpm]);
-  const progress = useMemo(() => getRankProgress(bestWpm), [bestWpm]);
+  const bestEffective = getBestEffectiveWpm();
+  const rank = getRank(bestEffective);
+  const nextRank = getNextRank(bestEffective);
+  const progress = getRankProgress(bestEffective);
   const earnedIds = useMemo(() => getEarnedBadges().map((b) => b.id), []);
   const allBadges = useMemo(() => getAllBadgeDefs(), []);
 
@@ -40,7 +41,7 @@ const BadgeDisplay = ({ theme }) => {
         <div className="rank-info">
           <div className="rank-name" style={{ color: rank.color }}>{t(rank.nameKey)}</div>
           <div className="rank-wpm">
-            {t("best")}: {bestWpm} WPM
+            {t("best")}: {bestEffective} {t("stats_effective_header")} WPM
           </div>
           {nextRank && (
             <div className="rank-progress-container">

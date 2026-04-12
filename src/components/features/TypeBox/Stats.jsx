@@ -135,6 +135,7 @@ const Stats = ({
         if (earned.length > 0) {
           setNewBadges(earned);
         }
+        window.dispatchEvent(new Event("eletypes-score-updated"));
       }
       setHistorySaved(true);
     }

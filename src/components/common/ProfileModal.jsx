@@ -9,28 +9,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import { getUserName, setUserName, getUserTag } from "../../services/userIdentity";
-import ScoreHistoryPanel from "../features/Leaderboard/ScoreHistoryPanel";
 import BadgeDisplay from "../features/Badges/BadgeDisplay";
+import StatsPanel from "../features/Stats/StatsPanel";
+import LeaderboardPanel from "../features/Leaderboard/LeaderboardPanel";
 import { useLocale } from "../../context/LocaleContext";
 import { BANNER_KEYS } from "./Logo";
-import {
-  DEFAULT_COUNT_DOWN,
-  DEFAULT_DIFFICULTY,
-  ENGLISH_MODE,
-  COUNT_DOWN_90,
-  COUNT_DOWN_60,
-  COUNT_DOWN_30,
-  COUNT_DOWN_15,
-  HARD_DIFFICULTY,
-  CHINESE_MODE,
-} from "../../constants/Constants";
-
-const DURATIONS = [COUNT_DOWN_15, COUNT_DOWN_30, COUNT_DOWN_60, COUNT_DOWN_90];
-const DIFFICULTIES = [DEFAULT_DIFFICULTY, HARD_DIFFICULTY];
-const LANGUAGES = [
-  { value: ENGLISH_MODE, label: "eng" },
-  { value: CHINESE_MODE, label: "chn" },
-];
 
 const renderNewsHighlighted = (text, highlights, theme) => {
   const parts = [];
@@ -99,7 +82,8 @@ const renderNewsHighlighted = (text, highlights, theme) => {
 };
 
 const TAB_PROFILE = "profile";
-const TAB_HISTORY = "history";
+const TAB_STATS = "stats";
+const TAB_LEADERBOARD = "leaderboard";
 const TAB_NEWS = "news";
 const TAB_SITE = "site";
 
@@ -123,37 +107,17 @@ const ProfileModal = ({
   const { locale, setLocale, t } = useLocale();
   const [activeTab, setActiveTab] = useState(TAB_PROFILE);
 
-  // Sync tab when modal opens
+  // Force fresh data when modal opens
+  const [refreshKey, setRefreshKey] = useState(0);
   React.useEffect(() => {
-    if (open && initialTab) {
-      setActiveTab(initialTab);
+    if (open) {
+      setRefreshKey((k) => k + 1);
+      if (initialTab) setActiveTab(initialTab);
     }
   }, [open, initialTab]);
   const [name, setName] = useState(() => getUserName());
   const [isEditing, setIsEditing] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
-
-  // History filters
-  const [language, setLanguage] = useState(() => {
-    const stored = localStorage.getItem("language");
-    return stored ? JSON.parse(stored) : ENGLISH_MODE;
-  });
-  const [difficulty, setDifficulty] = useState(() => {
-    const stored = localStorage.getItem("difficulty");
-    return stored ? JSON.parse(stored) : DEFAULT_DIFFICULTY;
-  });
-  const [duration, setDuration] = useState(() => {
-    const stored = localStorage.getItem("timer-constant");
-    return stored ? JSON.parse(stored) : DEFAULT_COUNT_DOWN;
-  });
-  const [numberAddon, setNumberAddon] = useState(() => {
-    const stored = localStorage.getItem("number");
-    return stored ? JSON.parse(stored) : false;
-  });
-  const [symbolAddon, setSymbolAddon] = useState(() => {
-    const stored = localStorage.getItem("symbol");
-    return stored ? JSON.parse(stored) : false;
-  });
 
   const handleSave = () => {
     const trimmed = name.trim();
@@ -189,18 +153,6 @@ const ProfileModal = ({
     transition: "all 0.2s",
   });
 
-  const pillStyle = (active) => ({
-    background: "transparent",
-    border: `1px solid ${active ? theme.stats : theme.textTypeBox}44`,
-    borderRadius: "4px",
-    color: active ? theme.stats : theme.textTypeBox,
-    padding: "4px 10px",
-    cursor: "pointer",
-    fontSize: "13px",
-    fontFamily: theme.fontFamily,
-    transition: "all 0.2s",
-  });
-
   const toggleRowStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -218,7 +170,7 @@ const ProfileModal = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       BackdropProps={{
         sx: { backgroundColor: "rgba(0, 0, 0, 0.7)" },
@@ -249,10 +201,16 @@ const ProfileModal = ({
             {t("profile")}
           </button>
           <button
-            style={tabStyle(activeTab === TAB_HISTORY)}
-            onClick={() => setActiveTab(TAB_HISTORY)}
+            style={tabStyle(activeTab === TAB_STATS)}
+            onClick={() => setActiveTab(TAB_STATS)}
           >
-            {t("my_history")}
+            {t("stats_tab")}
+          </button>
+          <button
+            style={tabStyle(activeTab === TAB_LEADERBOARD)}
+            onClick={() => setActiveTab(TAB_LEADERBOARD)}
+          >
+            {t("leaderboard")}
           </button>
           <button
             style={tabStyle(activeTab === TAB_SITE)}
@@ -362,75 +320,14 @@ const ProfileModal = ({
           </div>
         )}
 
-        {/* History tab */}
-        {activeTab === TAB_HISTORY && (
-          <div>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "6px",
-                marginBottom: "12px",
-              }}
-            >
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang.value}
-                  style={pillStyle(language === lang.value)}
-                  onClick={() => setLanguage(lang.value)}
-                >
-                  {lang.label}
-                </button>
-              ))}
-              <span style={{ color: theme.textTypeBox, alignSelf: "center" }}>
-                |
-              </span>
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d}
-                  style={pillStyle(difficulty === d)}
-                  onClick={() => setDifficulty(d)}
-                >
-                  {d}
-                </button>
-              ))}
-              <span style={{ color: theme.textTypeBox, alignSelf: "center" }}>
-                |
-              </span>
-              {DURATIONS.map((d) => (
-                <button
-                  key={d}
-                  style={pillStyle(duration === d)}
-                  onClick={() => setDuration(d)}
-                >
-                  {d}s
-                </button>
-              ))}
-              <span style={{ color: theme.textTypeBox, alignSelf: "center" }}>
-                |
-              </span>
-              <button
-                style={pillStyle(numberAddon)}
-                onClick={() => setNumberAddon(!numberAddon)}
-              >
-                +num
-              </button>
-              <button
-                style={pillStyle(symbolAddon)}
-                onClick={() => setSymbolAddon(!symbolAddon)}
-              >
-                +sym
-              </button>
-            </div>
-            <ScoreHistoryPanel
-              language={language}
-              difficulty={difficulty}
-              duration={duration}
-              numberAddon={numberAddon}
-              symbolAddon={symbolAddon}
-              theme={theme}
-            />
-          </div>
+        {/* Stats tab */}
+        {activeTab === TAB_STATS && (
+          <StatsPanel key={refreshKey} theme={theme} />
+        )}
+
+        {/* Leaderboard tab */}
+        {activeTab === TAB_LEADERBOARD && (
+          <LeaderboardPanel key={refreshKey} theme={theme} />
         )}
 
         {/* Site tab */}

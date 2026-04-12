@@ -104,7 +104,7 @@ const LeaderboardModal = ({ open, onClose, theme }) => {
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       fullWidth
       BackdropProps={{
         sx: { backgroundColor: "rgba(0, 0, 0, 0.7)" },

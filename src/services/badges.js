@@ -3,6 +3,7 @@ import { getUserName } from "./userIdentity";
 
 const BADGES_KEY = "eletypes-badges";
 const BEST_WPM_KEY = "eletypes-best-wpm";
+const BEST_EFFECTIVE_KEY = "eletypes-best-effective-wpm";
 const SUBMITTED_KEY = "eletypes-has-submitted";
 
 // --- Rank tiers ---
@@ -51,6 +52,12 @@ const BADGE_DEFS = [
   { id: "light_speed", nameKey: "badge_light_speed", descKey: "badge_light_speed_desc", icon: "💫", category: "speed" },
   { id: "ludicrous_speed", nameKey: "badge_ludicrous_speed", descKey: "badge_ludicrous_speed_desc", icon: "⚡", category: "speed", hidden: true },
   { id: "warp_speed", nameKey: "badge_warp_speed", descKey: "badge_warp_speed_desc", icon: "🌀", category: "speed", hidden: true },
+  // Effective Speed — WPM × Accuracy
+  { id: "eff_solid", nameKey: "badge_eff_solid", descKey: "badge_eff_solid_desc", icon: "🎯", category: "effective_speed" },
+  { id: "eff_sharp", nameKey: "badge_eff_sharp", descKey: "badge_eff_sharp_desc", icon: "⚔️", category: "effective_speed" },
+  { id: "eff_elite", nameKey: "badge_eff_elite", descKey: "badge_eff_elite_desc", icon: "🏅", category: "effective_speed" },
+  { id: "eff_master", nameKey: "badge_eff_master", descKey: "badge_eff_master_desc", icon: "💎", category: "effective_speed", hidden: true },
+  { id: "eff_transcendent", nameKey: "badge_eff_transcendent", descKey: "badge_eff_transcendent_desc", icon: "🌟", category: "effective_speed", hidden: true },
   // Accuracy — more tiers
   { id: "accurate", nameKey: "badge_accurate", descKey: "badge_accurate_desc", icon: "✅", category: "accuracy" },
   { id: "precise", nameKey: "badge_precise", descKey: "badge_precise_desc", icon: "🎯", category: "accuracy" },
@@ -100,6 +107,28 @@ const saveBestWpm = (wpm) => {
   localStorage.setItem(BEST_WPM_KEY, String(wpm));
 };
 
+export const getBestEffectiveWpm = () => {
+  const stored = parseFloat(localStorage.getItem(BEST_EFFECTIVE_KEY) || "0");
+  if (stored > 0) return stored;
+  // Fallback: deduce from history for existing users
+  const allScores = getAllScores();
+  if (allScores.length === 0) return 0;
+  const best = Math.max(
+    ...allScores.map((s) =>
+      s.effectiveWpm != null
+        ? s.effectiveWpm
+        : Math.round(s.wpm * (s.accuracy / 100) * 100) / 100
+    )
+  );
+  // Persist so we only compute once
+  saveBestEffectiveWpm(best);
+  return best;
+};
+
+const saveBestEffectiveWpm = (wpm) => {
+  localStorage.setItem(BEST_EFFECTIVE_KEY, String(wpm));
+};
+
 export const markSubmitted = () => {
   localStorage.setItem(SUBMITTED_KEY, "true");
 };
@@ -115,10 +144,10 @@ export const getEarnedBadges = () => {
 
 // --- Evaluation ---
 const checkBadge = (id, session, cache) => {
-  const { allScores, totalSessions, bestWpm } = cache;
+  const { allScores, totalSessions, bestWpm, bestEffectiveWpm } = cache;
 
   switch (id) {
-    // Speed
+    // Speed — based on raw WPM
     case "first_words":
       return totalSessions >= 1;
     case "typist":
@@ -135,6 +164,17 @@ const checkBadge = (id, session, cache) => {
       return bestWpm >= 120;
     case "warp_speed":
       return bestWpm >= 150;
+    // Effective Speed — based on effective WPM (WPM × Accuracy)
+    case "eff_solid":
+      return bestEffectiveWpm >= 40;
+    case "eff_sharp":
+      return bestEffectiveWpm >= 60;
+    case "eff_elite":
+      return bestEffectiveWpm >= 80;
+    case "eff_master":
+      return bestEffectiveWpm >= 100;
+    case "eff_transcendent":
+      return bestEffectiveWpm >= 130;
     // Accuracy
     case "accurate":
       return allScores.some((s) => s.accuracy >= 90);
@@ -184,10 +224,21 @@ const checkBadge = (id, session, cache) => {
   }
 };
 
+const getEffectiveWpm = (wpm, accuracy) =>
+  Math.round(wpm * (accuracy / 100) * 100) / 100;
+
 export const evaluateBadges = (session) => {
-  // Update best WPM
+  // Update best WPM (raw — used for ranks)
   if (session && session.wpm > getBestWpm()) {
     saveBestWpm(Math.round(session.wpm));
+  }
+
+  // Update best effective WPM (used for speed badges)
+  if (session) {
+    const sessionEffective = getEffectiveWpm(session.wpm, session.accuracy);
+    if (sessionEffective > getBestEffectiveWpm()) {
+      saveBestEffectiveWpm(sessionEffective);
+    }
   }
 
   const earned = getEarnedIds();
@@ -198,6 +249,7 @@ export const evaluateBadges = (session) => {
     allScores: getAllScores(),
     totalSessions: getTotalSessionCount(),
     bestWpm: getBestWpm(),
+    bestEffectiveWpm: getBestEffectiveWpm(),
   };
 
   for (const badge of BADGE_DEFS) {
