@@ -129,6 +129,8 @@ export const translations = {
     // Audio
     auto_play_on: "Auto-play: ON",
     auto_play_off: "Auto-play: OFF",
+    shuffle_on: "Shuffle: ON",
+    shuffle_off: "Shuffle: OFF",
 
     // Caps Lock
     caps_locked: "Caps Locked",
@@ -354,6 +356,8 @@ export const translations = {
     // Audio
     auto_play_on: "自动播放：开",
     auto_play_off: "自动播放：关",
+    shuffle_on: "乱序",
+    shuffle_off: "顺序",
 
     // Caps Lock
     caps_locked: "大写锁定已开启",

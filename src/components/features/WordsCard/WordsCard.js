@@ -19,6 +19,7 @@ import { SOUND_MAP } from "../sound/sound";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
 
 const WordsCard = ({ soundType, soundMode }) => {
   // set up game loop status state
@@ -38,6 +39,11 @@ const WordsCard = ({ soundType, soundMode }) => {
   const [autoPlayAudio, setAutoPlayAudio] = useLocalPersistState(
     true,
     "wordscard-auto-audio"
+  );
+
+  const [shuffleMode, setShuffleMode] = useLocalPersistState(
+    false,
+    "wordscard-shuffle"
   );
 
   // tab-enter restart dialog
@@ -107,8 +113,18 @@ const WordsCard = ({ soundType, soundMode }) => {
     "currChapter"
   );
 
+  const shuffleArray = (arr) => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const [wordsDict, setWordsDict] = useState(() => {
-    return wordsCardVocabGenerator(vocabSource, currChapter);
+    const words = wordsCardVocabGenerator(vocabSource, currChapter);
+    return shuffleMode ? shuffleArray(words) : words;
   });
 
   const hiddenInputRef = useRef();
@@ -269,10 +285,10 @@ const WordsCard = ({ soundType, soundMode }) => {
 
   useEffect(() => {
     const newChapterWords = wordsCardVocabGenerator(vocabSource, currChapter);
-    setWordsDict(newChapterWords);
+    setWordsDict(shuffleMode ? shuffleArray(newChapterWords) : newChapterWords);
     setCurrInput("");
     hiddenInputRef.current.value = "";
-  }, [currChapter, vocabSource]);
+  }, [currChapter, vocabSource, shuffleMode]);
 
   useEffect(() => {
     if (alphabetSet.size === 0) {
@@ -429,6 +445,13 @@ const WordsCard = ({ soundType, soundMode }) => {
     );
   }
 
+  const toggleShuffle = () => {
+    setShuffleMode(!shuffleMode);
+    setIndex(0);
+    setCurrInput("");
+    hiddenInputRef.current.value = "";
+  };
+
   const setSelective = () => {
     setHideWord(false);      
     setSelectiveWord(() => word(alphabetSet));
@@ -492,6 +515,16 @@ const WordsCard = ({ soundType, soundMode }) => {
                 ) : (
                   <PlayCircleOutlineIcon />
                 )}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={shuffleMode ? t("shuffle_on") : t("shuffle_off")}>
+              <IconButton
+                aria-label="toggle-shuffle"
+                color="secondary"
+                size="medium"
+                onClick={toggleShuffle}
+              >
+                <ShuffleIcon style={{ opacity: shuffleMode ? 1 : 0.4 }} />
               </IconButton>
             </Tooltip>
           </>
