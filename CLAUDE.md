@@ -2,15 +2,35 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Workflow
+
+- Work autonomously to fulfill requested features.
+- Create, modify, and delete files as necessary.
+- Run tests (`npm test`, `pytest`, etc.) to verify changes.
+- **DO NOT** ask for permission for file edits or running bash commands.
+- **ONLY** ask for input when you are ready to create a `git commit` or if a test fails persistently.
+
+### Commit Behavior
+
+- After implementing a cohesive piece of logic, pause.
+- Propose a `git commit` message.
+- Wait for user approval before executing `git commit`.
+
+### Code Review
+
+- Before committing, run linters/tests.
+- If errors occur, attempt to fix them autonomously.
+- If stuck, present the code for review.
+
 ## Project Overview
 
-Eletypes is a typing test web application built with React 18 and Create React App. It offers multiple typing modes (word, sentence, free-type, keyboard trainer, vocabulary cards) with an extensive theming system.
+Eletypes is a typing test web application built with React 18 and Vite. It offers multiple typing modes (word, sentence, free-type, keyboard trainer, vocabulary cards) with an extensive theming system.
 
 ## Commands
 
-- **Dev server:** `npm start` (localhost:3000)
-- **Build:** `npm run build`
-- **Test:** `npm test` (Jest via react-scripts; no test files currently exist)
+- **Dev server:** `npm run dev` or `npm start` (localhost:3000, Vite)
+- **Build:** `npm run build` (Vite, outputs to `build/`)
+- **Preview:** `npm run preview` (serve production build locally)
 - **Deploy:** Firebase Hosting (`npm run deploy` runs build + firebase deploy)
 
 ## Architecture

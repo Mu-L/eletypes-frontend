@@ -209,8 +209,8 @@ Builds the app for production to the `build` folder.\
 
 | Variable | Description |
 |---|---|
-| `REACT_APP_SUPABASE_URL` | Supabase project URL |
-| `REACT_APP_SUPABASE_ANON_KEY` | Supabase anon/public API key |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Supabase anon/public API key |
 
 For Netlify deploys, set these in **Site configuration > Environment variables**.
 

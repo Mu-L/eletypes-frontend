@@ -21,7 +21,7 @@ import SupportMe from "../features/SupportMe";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import EmojiFoodBeverageIcon from "@mui/icons-material/EmojiFoodBeverage";
-import { ReactComponent as DiscordIcon } from "../../assets/Icons/discord.svg";
+import DiscordIcon from "../../assets/Icons/DiscordIcon";
 import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
 import SchoolIcon from "@mui/icons-material/School";
