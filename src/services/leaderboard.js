@@ -5,6 +5,9 @@ import { getUserId } from "./userIdentity";
 const SUBMIT_COOLDOWN_MS = 5000;
 let lastSubmitTime = 0;
 
+const computeEffectiveWpm = (wpm, accuracy) =>
+  Math.round(wpm * (accuracy / 100) * 100) / 100;
+
 export const submitScore = async ({
   wpm,
   accuracy,
@@ -28,11 +31,12 @@ export const submitScore = async ({
   const userId = getUserId();
   const roundedWpm = Math.round(wpm);
   const roundedAccuracy = Math.round(accuracy * 100) / 100;
+  const effectiveWpm = computeEffectiveWpm(roundedWpm, roundedAccuracy);
 
   // Check if user already has a record for this mode combination
   const { data: existing } = await supabase
     .from("scores")
-    .select("id, wpm")
+    .select("id, effective_wpm")
     .eq("fingerprint", fingerprint)
     .eq("language", language)
     .eq("difficulty", difficulty)
@@ -42,9 +46,11 @@ export const submitScore = async ({
     .single();
 
   if (existing) {
-    // Only update if new score is better
-    if (roundedWpm <= existing.wpm) {
-      return { result: "no_improvement", previousBest: existing.wpm };
+    if (effectiveWpm <= existing.effective_wpm) {
+      return {
+        result: "no_improvement",
+        previousBest: Math.round(existing.effective_wpm),
+      };
     }
     const { data, error } = await supabase
       .from("scores")
@@ -53,6 +59,7 @@ export const submitScore = async ({
         user_id: userId,
         wpm: roundedWpm,
         accuracy: roundedAccuracy,
+        effective_wpm: effectiveWpm,
         created_at: new Date().toISOString(),
       })
       .eq("id", existing.id)
@@ -62,7 +69,10 @@ export const submitScore = async ({
       console.error("Score update error:", error);
       return null;
     }
-    return { result: "improved", previousBest: existing.wpm };
+    return {
+      result: "improved",
+      previousBest: Math.round(existing.effective_wpm),
+    };
   }
 
   // First submission for this mode
@@ -72,6 +82,7 @@ export const submitScore = async ({
     fingerprint,
     wpm: roundedWpm,
     accuracy: roundedAccuracy,
+    effective_wpm: effectiveWpm,
     language,
     difficulty,
     duration,
@@ -97,14 +108,13 @@ export const fetchLeaderboard = async ({
 
   const { data, error } = await supabase
     .from("scores")
-    .select("user_name, user_id, wpm, accuracy, created_at")
+    .select("user_name, user_id, wpm, accuracy, effective_wpm, created_at")
     .eq("language", language)
     .eq("difficulty", difficulty)
     .eq("duration", duration)
     .eq("number_addon", numberAddon)
     .eq("symbol_addon", symbolAddon)
-    .order("wpm", { ascending: false })
-    .order("accuracy", { ascending: false })
+    .order("effective_wpm", { ascending: false })
     .limit(50);
 
   if (error) {
@@ -125,11 +135,9 @@ export const fetchPlayerRank = async ({
 }) => {
   if (!supabase) return null;
 
-  const roundedWpm = Math.round(wpm);
-  const roundedAccuracy = Math.round(accuracy * 100) / 100;
+  const myEffective = computeEffectiveWpm(Math.round(wpm), Math.round(accuracy * 100) / 100);
 
-  // Count players with strictly higher WPM
-  const { count: higherWpm, error: err1 } = await supabase
+  const { count, error } = await supabase
     .from("scores")
     .select("id", { count: "exact", head: true })
     .eq("language", language)
@@ -137,23 +145,11 @@ export const fetchPlayerRank = async ({
     .eq("duration", duration)
     .eq("number_addon", numberAddon)
     .eq("symbol_addon", symbolAddon)
-    .gt("wpm", roundedWpm);
+    .gt("effective_wpm", myEffective);
 
-  // Count players with same WPM but higher accuracy
-  const { count: sameWpmHigherAcc, error: err2 } = await supabase
-    .from("scores")
-    .select("id", { count: "exact", head: true })
-    .eq("language", language)
-    .eq("difficulty", difficulty)
-    .eq("duration", duration)
-    .eq("number_addon", numberAddon)
-    .eq("symbol_addon", symbolAddon)
-    .eq("wpm", roundedWpm)
-    .gt("accuracy", roundedAccuracy);
-
-  if (err1 || err2) {
-    console.error("Rank fetch error:", err1 || err2);
+  if (error) {
+    console.error("Rank fetch error:", error);
     return null;
   }
-  return higherWpm + sameWpmHigherAcc + 1;
+  return count + 1;
 };
