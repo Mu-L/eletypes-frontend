@@ -1,22 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { ThemeProvider } from "styled-components";
 import { defaultTheme, themesOptions } from "./style/theme";
 import { GlobalStyles } from "./style/global";
 import { LocaleProvider } from "./context/LocaleContext";
-import TypeBox from "./components/features/TypeBox/TypeBox";
-import SentenceBox from "./components/features/SentenceBox/SentenceBox";
 import Logo from "./components/common/Logo";
 import MusicPlayerSnackbar from "./components/features/MusicPlayer/MusicPlayerSnackbar";
 import FooterMenu from "./components/common/FooterMenu";
-import FreeTypingBox from "./components/features/FreeTypingBox";
 import {
   GAME_MODE,
   GAME_MODE_DEFAULT,
   GAME_MODE_SENTENCE,
 } from "./constants/Constants";
 import useLocalPersistState from "./hooks/useLocalPersistState";
-import DefaultKeyboard from "./components/features/Keyboard/DefaultKeyboard";
-import WordsCard from "./components/features/WordsCard/WordsCard";
 import {
   SOUND_MODE,
   soundOptions,
@@ -24,6 +19,12 @@ import {
   DEFAULT_SOUND_TYPE_KEY,
 } from "./components/features/sound/sound";
 import DynamicBackground from "./components/common/DynamicBackground";
+
+const TypeBox = lazy(() => import("./components/features/TypeBox/TypeBox"));
+const SentenceBox = lazy(() => import("./components/features/SentenceBox/SentenceBox"));
+const FreeTypingBox = lazy(() => import("./components/features/FreeTypingBox"));
+const DefaultKeyboard = lazy(() => import("./components/features/Keyboard/DefaultKeyboard"));
+const WordsCard = lazy(() => import("./components/features/WordsCard/WordsCard"));
 
 function App() {
   // localStorage persist theme setting
@@ -204,44 +205,46 @@ function App() {
             isUltraZenMode={isUltraZenMode}
             toggleUltraZenMode={toggleUltraZenMode}
           ></Logo>
-          {isWordGameMode && (
-            <TypeBox
-              isUltraZenMode={isUltraZenMode}
-              textInputRef={textInputRef}
-              isFocusedMode={isFocusedMode}
-              soundMode={soundMode}
-              theme={theme}
-              soundType={soundType}
-              key="type-box"
-              handleInputFocus={() => focusTextInput()}
-            ></TypeBox>
-          )}
-          {isSentenceGameMode && (
-            <SentenceBox
-              sentenceInputRef={sentenceInputRef}
-              isFocusedMode={isFocusedMode}
-              soundMode={soundMode}
-              soundType={soundType}
-              key="sentence-box"
-              handleInputFocus={() => focusSentenceInput()}
-            ></SentenceBox>
-          )}
-          {isCoffeeMode && !isTrainerMode && !isWordsCardMode && (
-            <FreeTypingBox
-              textAreaRef={textAreaRef}
-              soundMode={soundMode}
-              soundType={soundType}
-            />
-          )}
-          {isTrainerMode && !isCoffeeMode && !isWordsCardMode && (
-            <DefaultKeyboard
-              soundMode={soundMode}
-              soundType={soundType}
-            ></DefaultKeyboard>
-          )}
-          {isWordsCardMode && !isCoffeeMode && !isTrainerMode && (
-            <WordsCard soundMode={soundMode} soundType={soundType}></WordsCard>
-          )}
+          <Suspense fallback={null}>
+            {isWordGameMode && (
+              <TypeBox
+                isUltraZenMode={isUltraZenMode}
+                textInputRef={textInputRef}
+                isFocusedMode={isFocusedMode}
+                soundMode={soundMode}
+                theme={theme}
+                soundType={soundType}
+                key="type-box"
+                handleInputFocus={() => focusTextInput()}
+              ></TypeBox>
+            )}
+            {isSentenceGameMode && (
+              <SentenceBox
+                sentenceInputRef={sentenceInputRef}
+                isFocusedMode={isFocusedMode}
+                soundMode={soundMode}
+                soundType={soundType}
+                key="sentence-box"
+                handleInputFocus={() => focusSentenceInput()}
+              ></SentenceBox>
+            )}
+            {isCoffeeMode && !isTrainerMode && !isWordsCardMode && (
+              <FreeTypingBox
+                textAreaRef={textAreaRef}
+                soundMode={soundMode}
+                soundType={soundType}
+              />
+            )}
+            {isTrainerMode && !isCoffeeMode && !isWordsCardMode && (
+              <DefaultKeyboard
+                soundMode={soundMode}
+                soundType={soundType}
+              ></DefaultKeyboard>
+            )}
+            {isWordsCardMode && !isCoffeeMode && !isTrainerMode && (
+              <WordsCard soundMode={soundMode} soundType={soundType}></WordsCard>
+            )}
+          </Suspense>
           <div className="bottomBar">
             <FooterMenu
               isWordGameMode={isWordGameMode}

@@ -8,13 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Create, modify, and delete files as necessary.
 - Run tests (`npm test`, `pytest`, etc.) to verify changes.
 - **DO NOT** ask for permission for file edits or running bash commands.
-- **ONLY** ask for input when you are ready to create a `git commit` or if a test fails persistently.
+- **ONLY** ask for input when you are ready to `git add` / `git commit` or if a test fails persistently.
 
 ### Commit Behavior
 
 - After implementing a cohesive piece of logic, pause.
-- Propose a `git commit` message.
-- Wait for user approval before executing `git commit`.
+- Propose a `git commit` message and list the files to be staged.
+- Wait for user approval before executing `git add` and `git commit`.
 
 ### Code Review
 
