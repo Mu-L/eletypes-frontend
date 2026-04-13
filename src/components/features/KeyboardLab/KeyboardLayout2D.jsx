@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from "react";
-import { computeBounds } from "./schema/derive";
+import { computeBounds, extractKeys } from "./schema/derive";
 
 const KIND_COLORS = {
   alpha:  { bg: "#2a2a2e", border: "#3a3a3e" },
@@ -35,7 +35,7 @@ const KeyboardLayout2D = ({
   theme,
 }) => {
   const [selectedKeyId, setSelectedKeyId] = useState(null);
-  const keys = layout?.keys || [];
+  const keys = extractKeys(layout);
   const bounds = useMemo(() => computeBounds(keys), [keys]);
 
   const textColor = theme?.text || "#e0e0e0";

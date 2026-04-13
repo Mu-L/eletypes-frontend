@@ -1,77 +1,87 @@
 /**
- * Runtime derivation functions — the bridge between stored presets and renderers.
- *
- * All functions are pure: layout data in, derived data out.
- * No module-level singletons. Memoization happens at the React layer (useMemo).
+ * Runtime derivation functions.
+ * Pure functions: preset data in → derived data out.
+ * Memoization happens at the React layer (useMemo), not here.
  */
 
 /**
- * Compute the bounding box of a key layout.
- * @param {Array} keys - BoardLayout.keys array
+ * Compute bounding box from keys array.
+ * @param {Array<KeyDef>} keys
  * @returns {{ width: number, height: number }}
  */
 export const computeBounds = (keys) => {
-  let maxX = 0, maxY = 0;
+  let w = 0, h = 0;
   for (const k of keys) {
-    maxX = Math.max(maxX, k.x + k.w);
-    maxY = Math.max(maxY, k.y + (k.h || 1));
+    w = Math.max(w, k.x + k.w);
+    h = Math.max(h, k.y + (k.h || 1));
   }
-  return { width: maxX, height: maxY };
+  return { width: w, height: h };
 };
 
 /**
- * Build a key name/label → index lookup map.
- * Supports: key.id, key.label, key.code (all as lookup keys).
- * @param {Array} keys - BoardLayout.keys array
+ * Build lookup map: id | keyName | label → key index.
+ * Used by triggerKey() for O(1) resolution.
+ * @param {Array<KeyDef>} keys
  * @returns {Map<string, number>}
  */
 export const buildKeyIndex = (keys) => {
   const map = new Map();
   keys.forEach((key, i) => {
+    // Primary: id
     map.set(key.id, i);
-    if (key.label && key.label !== key.id && !map.has(key.label)) {
-      map.set(key.label, i);
+    // Secondary: keyName (KeyboardEvent.code)
+    if (key.keyName && key.keyName !== key.id && !map.has(key.keyName)) {
+      map.set(key.keyName, i);
     }
-    if (key.code && key.code !== key.id) {
-      map.set(key.code, i);
+    // Tertiary: label shorthand (e.g., "A", "Esc")
+    if (key.label && key.label !== key.id && key.label !== key.keyName && !map.has(key.label)) {
+      map.set(key.label, i);
     }
   });
   return map;
 };
 
 /**
- * Build a KeyboardEvent.code → layout key id map.
- * Used by the integration layer to translate DOM events → triggerKey calls.
- * @param {Array} keys - BoardLayout.keys array
+ * Build KeyboardEvent.code → key id map.
+ * Used by the integration layer to translate DOM events.
+ * @param {Array<KeyDef>} keys
  * @returns {Map<string, string>}
  */
 export const buildCodeMap = (keys) => {
   const map = new Map();
   for (const key of keys) {
-    const code = key.code || key.id;
-    map.set(code, key.id);
+    map.set(key.keyName, key.id);
   }
   return map;
 };
 
-/**
- * Check if a key is an accent key (larger/special, gets distinct color).
- * @param {{ kind: string }} key
- * @returns {boolean}
- */
+/** @param {{ kind: string }} key */
 export const isAccentKey = (key) => key.kind === "accent";
 
 /**
- * Group keys by cluster for editor/highlighting.
- * @param {Array} keys
- * @returns {Map<string, Array>}
+ * Group keys by cluster.
+ * @param {Array<KeyDef>} keys
+ * @returns {Map<string, Array<KeyDef>>}
  */
 export const groupByCluster = (keys) => {
   const groups = new Map();
   for (const key of keys) {
-    const cluster = key.cluster || "unclustered";
-    if (!groups.has(cluster)) groups.set(cluster, []);
-    groups.get(cluster).push(key);
+    const c = key.cluster || "unclustered";
+    if (!groups.has(c)) groups.set(c, []);
+    groups.get(c).push(key);
   }
   return groups;
+};
+
+/**
+ * Extract the keys array from a preset, handling both full preset
+ * and raw keys array for backwards compatibility.
+ * @param {Object|Array} presetOrKeys
+ * @returns {Array<KeyDef>}
+ */
+export const extractKeys = (presetOrKeys) => {
+  if (Array.isArray(presetOrKeys)) return presetOrKeys;
+  if (presetOrKeys?.layout?.keys) return presetOrKeys.layout.keys;
+  if (presetOrKeys?.keys) return presetOrKeys.keys;
+  return [];
 };

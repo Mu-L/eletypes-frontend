@@ -15,7 +15,7 @@ import React, {
 import { useFrame, useThree, extend } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three-stdlib";
-import { computeBounds, buildKeyIndex, isAccentKey } from "./schema/derive";
+import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema/derive";
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 
 extend({ RoundedBoxGeometry });
@@ -44,11 +44,8 @@ const KeyboardModel = forwardRef(({
   const meshRef = useRef();
   const { invalidate } = useThree();
 
-  // ─── Normalize inputs ───
-  const keys = useMemo(
-    () => (Array.isArray(layout) ? layout : layout?.keys || []),
-    [layout]
-  );
+  // ─── Normalize inputs (handles full preset, { keys }, or raw array) ───
+  const keys = useMemo(() => extractKeys(layout), [layout]);
   const shellConfig = shell?.case || DEFAULT_SHELL.case;
   const plateConfig = shell?.plate || DEFAULT_SHELL.plate;
 

@@ -13,7 +13,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import KeyboardLab from "./KeyboardLab";
 import KeyboardLayout2D from "./KeyboardLayout2D";
 import { listPresets, getPreset } from "./presets";
-import { buildCodeMap } from "./schema/derive";
+import { buildCodeMap, extractKeys } from "./schema/derive";
 
 const COLOR_PRESETS = {
   midnight: { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e" },
@@ -34,7 +34,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const [view, setView] = useState("both"); // "2d" | "3d" | "both"
 
   const { layout, shell } = useMemo(() => getPreset(presetId), [presetId]);
-  const codeMap = useMemo(() => buildCodeMap(layout.keys), [layout]);
+  const codeMap = useMemo(() => buildCodeMap(extractKeys(layout)), [layout]);
 
   // Bridge: DOM keyboard events → triggerKey + 2D active state
   useEffect(() => {
