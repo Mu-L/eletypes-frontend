@@ -51,6 +51,8 @@ const FooterMenu = ({
   isWordsCardMode,
   isWordGameMode,
   toggleWordsCardMode,
+  isKeyboardLabMode,
+  toggleKeyboardLabMode,
 }) => {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const { locale, setLocale, t } = useLocale();
@@ -116,6 +118,13 @@ const FooterMenu = ({
               <Tooltip title={t("words_card_mode")}>
                 <span className={activeCls(isWordsCardMode)}>
                   <SchoolIcon fontSize="small" />
+                </span>
+              </Tooltip>
+            </IconButton>
+            <IconButton size="small" onClick={toggleKeyboardLabMode}>
+              <Tooltip title="Keyboard Lab">
+                <span className={activeCls(isKeyboardLabMode)}>
+                  <span style={{ fontSize: "16px" }}>🎹</span>
                 </span>
               </Tooltip>
             </IconButton>

@@ -27,6 +27,7 @@ import { generateSeed } from "./scripts/seedUtils";
 const FreeTypingBox = lazy(() => import("./components/features/FreeTypingBox"));
 const DefaultKeyboard = lazy(() => import("./components/features/Keyboard/DefaultKeyboard"));
 const WordsCard = lazy(() => import("./components/features/WordsCard/WordsCard"));
+const KeyboardLabDemo = lazy(() => import("./components/features/KeyboardLab/KeyboardLabDemo"));
 
 // Parse challenge params once at module level before any React renders
 const initialChallenge = (() => {
@@ -110,16 +111,21 @@ function App() {
     "IsInWordsCardMode"
   );
 
+  // keyboard lab mode
+  const [isKeyboardLabMode, setIsKeyboardLabMode] = useState(false);
+
   const isWordGameMode =
     gameMode === GAME_MODE_DEFAULT &&
     !isCoffeeMode &&
     !isTrainerMode &&
-    !isWordsCardMode;
+    !isWordsCardMode &&
+    !isKeyboardLabMode;
   const isSentenceGameMode =
     gameMode === GAME_MODE_SENTENCE &&
     !isCoffeeMode &&
     !isTrainerMode &&
-    !isWordsCardMode;
+    !isWordsCardMode &&
+    !isKeyboardLabMode;
 
   const handleThemeChange = (e) => {
     window.localStorage.setItem("theme", JSON.stringify(e.value));
@@ -150,18 +156,28 @@ function App() {
     setIsCoffeeMode(!isCoffeeMode);
     setIsTrainerMode(false);
     setIsWordsCardMode(false);
+    setIsKeyboardLabMode(false);
   };
 
   const toggleTrainerMode = () => {
     setIsTrainerMode(!isTrainerMode);
     setIsCoffeeMode(false);
     setIsWordsCardMode(false);
+    setIsKeyboardLabMode(false);
   };
 
   const toggleWordsCardMode = () => {
     setIsTrainerMode(false);
     setIsCoffeeMode(false);
     setIsWordsCardMode(!isWordsCardMode);
+    setIsKeyboardLabMode(false);
+  };
+
+  const toggleKeyboardLabMode = () => {
+    setIsKeyboardLabMode(!isKeyboardLabMode);
+    setIsTrainerMode(false);
+    setIsCoffeeMode(false);
+    setIsWordsCardMode(false);
   };
 
   useEffect(() => {
@@ -268,8 +284,11 @@ function App() {
                 soundType={soundType}
               ></DefaultKeyboard>
             )}
-            {isWordsCardMode && !isCoffeeMode && !isTrainerMode && (
+            {isWordsCardMode && !isCoffeeMode && !isTrainerMode && !isKeyboardLabMode && (
               <WordsCard soundMode={soundMode} soundType={soundType}></WordsCard>
+            )}
+            {isKeyboardLabMode && (
+              <KeyboardLabDemo theme={theme} />
             )}
           </Suspense>
           <div className="bottomBar">
@@ -297,6 +316,8 @@ function App() {
               toggleTrainerMode={toggleTrainerMode}
               isWordsCardMode={isWordsCardMode}
               toggleWordsCardMode={toggleWordsCardMode}
+              isKeyboardLabMode={isKeyboardLabMode}
+              toggleKeyboardLabMode={toggleKeyboardLabMode}
             ></FooterMenu>
           </div>
           <MusicPlayerSnackbar
