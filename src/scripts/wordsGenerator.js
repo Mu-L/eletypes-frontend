@@ -25,26 +25,27 @@ const wordsGenerator = (
   difficulty,
   languageMode,
   numberAddOn,
-  symbolAddOn
+  symbolAddOn,
+  rng
 ) => {
   if (languageMode === ENGLISH_MODE) {
     if (difficulty === DEFAULT_DIFFICULTY) {
       const EnglishWordList = [];
       for (let i = 0; i < DEFAULT_WORDS_COUNT; i++) {
-        const rand = randomIntFromRange(0, 550);
+        const rand = randomIntFromRange(0, 550, rng);
         let wordCandidate = COMMON_WORDS[rand].val;
         if (numberAddOn) {
-          wordCandidate = wordCandidate + generateRandomNumChras(1, 2);
+          wordCandidate = wordCandidate + generateRandomNumChras(1, 2, rng);
         }
         if (symbolAddOn) {
-          wordCandidate = wordCandidate + generateRandomSymbolChras(1, 1);
+          wordCandidate = wordCandidate + generateRandomSymbolChras(1, 1, rng);
         }
         EnglishWordList.push({ key: wordCandidate, val: wordCandidate });
       }
       return EnglishWordList;
     }
 
-    // hard
+    // hard — random-words library doesn't support seeding, generate from its output deterministically
     const randomWordsGenerated = randomWords({
       exactly: wordsCount,
       maxLength: 7,
@@ -53,10 +54,10 @@ const wordsGenerator = (
     for (let i = 0; i < wordsCount; i++) {
       let wordCandidate = randomWordsGenerated[i];
       if (numberAddOn) {
-        wordCandidate = wordCandidate + generateRandomNumChras(1, 2);
+        wordCandidate = wordCandidate + generateRandomNumChras(1, 2, rng);
       }
       if (symbolAddOn) {
-        wordCandidate = wordCandidate + generateRandomSymbolChras(1, 1);
+        wordCandidate = wordCandidate + generateRandomSymbolChras(1, 1, rng);
       }
       words.push({ key: wordCandidate, val: wordCandidate });
     }
@@ -69,23 +70,24 @@ const chineseWordsGenerator = (
   difficulty,
   languageMode,
   numberAddOn,
-  symbolAddOn
+  symbolAddOn,
+  rng
 ) => {
   if (languageMode === CHINESE_MODE) {
     if (difficulty === DEFAULT_DIFFICULTY) {
       const ChineseWordList = [];
       for (let i = 0; i < DEFAULT_WORDS_COUNT; i++) {
-        const rand = randomIntFromRange(0, 5000);
+        const rand = randomIntFromRange(0, 5000, rng);
         if (COMMON_CHINESE_WORDS[rand] && COMMON_CHINESE_WORDS[rand].val) {
           let wordCandidateKey = COMMON_CHINESE_WORDS[rand].key;
           let wordCandidateVal = COMMON_CHINESE_WORDS[rand].val;
           if (numberAddOn) {
-            const generatedNumber = generateRandomNumChras(1, 2);
+            const generatedNumber = generateRandomNumChras(1, 2, rng);
             wordCandidateKey = wordCandidateKey + generatedNumber;
             wordCandidateVal = wordCandidateVal + generatedNumber;
           }
           if (symbolAddOn) {
-            const generatedSymbol = generateRandomSymbolChras(1, 1);
+            const generatedSymbol = generateRandomSymbolChras(1, 1, rng);
             wordCandidateKey = wordCandidateKey + generatedSymbol;
             wordCandidateVal = wordCandidateVal + generatedSymbol;
           }
@@ -102,7 +104,7 @@ const chineseWordsGenerator = (
 
     const ChineseIdiomsList = [];
     for (let i = 0; i < DEFAULT_WORDS_COUNT; i++) {
-      const rand = randomIntFromRange(0, 5000);
+      const rand = randomIntFromRange(0, 5000, rng);
       if (
         COMMON_CHINESE_IDIOMS_WORDS[rand] &&
         COMMON_CHINESE_IDIOMS_WORDS[rand].val
@@ -110,12 +112,12 @@ const chineseWordsGenerator = (
         let wordCandidateKey = COMMON_CHINESE_IDIOMS_WORDS[rand].key;
         let wordCandidateVal = COMMON_CHINESE_IDIOMS_WORDS[rand].val;
         if (numberAddOn) {
-          const generatedNumber = generateRandomNumChras(1, 2);
+          const generatedNumber = generateRandomNumChras(1, 2, rng);
           wordCandidateKey = wordCandidateKey + generatedNumber;
           wordCandidateVal = wordCandidateVal + generatedNumber;
         }
         if (symbolAddOn) {
-          const generatedSymbol = generateRandomSymbolChras(1, 1);
+          const generatedSymbol = generateRandomSymbolChras(1, 1, rng);
           wordCandidateKey = wordCandidateKey + generatedSymbol;
           wordCandidateVal = wordCandidateVal + generatedSymbol;
         }

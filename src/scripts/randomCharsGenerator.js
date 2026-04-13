@@ -1,18 +1,19 @@
-const generateRandomInt = (min = 0, max = 1) => {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+const generateRandomInt = (min = 0, max = 1, rng) => {
+  const rand = rng ? rng() : Math.random();
+  return Math.floor(rand * (max - min + 1)) + min;
 }
 
 const numArray = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 const symbolArray = ["!", "\"", "#", "$", "%", "&", "'", "(", ")", "-", "=", "^", "~", "\\", "|", "@", "`", "[", "{", ";", "+", ":", "*", "]", "}", ",", "<", ".", ">", "/", "?", "_"]
 
-const generateRandomChars = (charArray, min = 1, max = 1) => {
-  const charsLen = generateRandomInt(min, max)
+const generateRandomChars = (charArray, min = 1, max = 1, rng) => {
+  const charsLen = generateRandomInt(min, max, rng)
   return [...Array(charsLen)].reduce(
-    (accum) => accum + charArray[generateRandomInt(0, charArray.length - 1)],
+    (accum) => accum + charArray[generateRandomInt(0, charArray.length - 1, rng)],
     ""
   )
 }
-const generateRandomNumChras = (min, max) => generateRandomChars(numArray, min, max)
-const generateRandomSymbolChras = (min, max) => generateRandomChars(symbolArray, min, max)
+const generateRandomNumChras = (min, max, rng) => generateRandomChars(numArray, min, max, rng)
+const generateRandomSymbolChras = (min, max, rng) => generateRandomChars(symbolArray, min, max, rng)
 
 export { generateRandomNumChras, generateRandomSymbolChras }

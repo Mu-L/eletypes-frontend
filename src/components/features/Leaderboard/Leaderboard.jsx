@@ -9,6 +9,43 @@ import { supabase } from "../../../services/supabase";
 import ScoreHistoryPanel from "./ScoreHistoryPanel";
 import { useLocale } from "../../../context/LocaleContext";
 import { markSubmitted } from "../../../services/badges";
+import ShareButton from "../Share/ShareButton";
+import { createChallengeUrl } from "../../../services/challengeLink";
+
+const ChallengeBtn = ({ language, difficulty, duration, numberAddon, symbolAddon, sessionSeed, theme, t }) => {
+  const [copied, setCopied] = useState(false);
+  const handleChallenge = () => {
+    const { url } = createChallengeUrl({
+      seed: sessionSeed,
+      language,
+      difficulty,
+      timer: duration,
+      numberAddOn: numberAddon,
+      symbolAddOn: symbolAddon,
+    });
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={handleChallenge}
+      style={{
+        background: "transparent",
+        border: `1px solid ${theme.stats}`,
+        borderRadius: "4px",
+        color: theme.stats,
+        padding: "4px 12px",
+        cursor: "pointer",
+        fontSize: "13px",
+        fontFamily: theme.fontFamily,
+      }}
+    >
+      {copied ? t("challenge_copied") : t("challenge_button")}
+    </button>
+  );
+};
 
 const TAB_LEADERBOARD = "leaderboard";
 const TAB_HISTORY = "history";
@@ -22,6 +59,8 @@ const Leaderboard = ({
   numberAddon,
   symbolAddon,
   theme,
+  statsRef,
+  sessionSeed,
 }) => {
   const { t } = useLocale();
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -167,6 +206,7 @@ const Leaderboard = ({
                 gap: "8px",
                 marginBottom: "12px",
                 alignItems: "center",
+                flexWrap: "wrap",
               }}
             >
               {isEditingName ? (
@@ -217,6 +257,34 @@ const Leaderboard = ({
               >
                 {t("submit_score")}
               </button>
+              <ShareButton targetRef={statsRef} theme={theme} />
+              <ChallengeBtn
+                language={language}
+                difficulty={difficulty}
+                duration={duration}
+                numberAddon={numberAddon}
+                symbolAddon={symbolAddon}
+                sessionSeed={sessionSeed}
+                theme={theme}
+                t={t}
+              />
+            </div>
+          )}
+
+          {/* Always show share/challenge, even after submit or without supabase */}
+          {(submitted || !supabase) && (
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+              <ShareButton targetRef={statsRef} theme={theme} />
+              <ChallengeBtn
+                language={language}
+                difficulty={difficulty}
+                duration={duration}
+                numberAddon={numberAddon}
+                symbolAddon={symbolAddon}
+                sessionSeed={sessionSeed}
+                theme={theme}
+                t={t}
+              />
             </div>
           )}
 

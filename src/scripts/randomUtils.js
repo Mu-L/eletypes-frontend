@@ -1,7 +1,8 @@
-const randomIntFromRange = (min, max) => {
+const randomIntFromRange = (min, max, rng) => {
+  const rand = rng ? rng() : Math.random();
   const minNorm = Math.ceil(min);
   const maxNorm = Math.floor(max);
-  const idx = Math.floor(Math.random() * (maxNorm - minNorm + 1) + minNorm);
+  const idx = Math.floor(rand * (maxNorm - minNorm + 1) + minNorm);
   return idx;
 };
 

@@ -1293,4 +1293,87 @@ display: flex;
 align-items: center;
 gap: 8px;
 }
+
+/* Themed scrollbar */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: ${({ theme }) => theme.stats}44;
+  border-radius: 3px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: ${({ theme }) => theme.stats}88;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .canvas {
+    padding: 0.5rem;
+  }
+  .type-box, .type-box-chinese, .type-box-sentence {
+    width: 90%;
+    top: 5%;
+  }
+  .words {
+    font-size: 22px;
+  }
+  .sentence-input-field, .sentence-display-field {
+    font-size: 22px;
+  }
+  .wordcard-word-display-field {
+    font-size: 40px;
+    margin: 20px;
+  }
+  .wordcard-meaning-display-field {
+    font-size: 16px;
+    margin-top: 20px;
+  }
+  .bottomBar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stats-overlay {
+    padding: 8px;
+  }
+  .stats-chart {
+    width: 95%;
+  }
+  .stats-header {
+    grid-template-columns: 1fr;
+  }
+  .primary-stats-title {
+    font-size: 16px;
+  }
+  .primary-stats-value {
+    font-size: 36px;
+  }
+  .profile-area {
+    right: 8px;
+    top: 8px;
+  }
+  .namecard {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .words {
+    font-size: 18px;
+  }
+  .sentence-input-field, .sentence-display-field {
+    font-size: 18px;
+  }
+  .stats-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .primary-stats-value {
+    font-size: 28px;
+  }
+}
 `;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Line,
   YAxis,
@@ -15,6 +15,7 @@ import {
 } from "../../../services/scoreHistory";
 import { useLocale } from "../../../context/LocaleContext";
 import ActivityHeatmap from "./ActivityHeatmap";
+import ShareButton from "../Share/ShareButton";
 import ScoreHistoryPanel from "../Leaderboard/ScoreHistoryPanel";
 import {
   DEFAULT_COUNT_DOWN,
@@ -78,6 +79,7 @@ const StatsPanel = ({ theme }) => {
   const modeBreakdown = getModeBreakdown();
 
   const handleScoreChange = () => setVersion((v) => v + 1);
+  const shareRef = useRef(null);
 
   // History filters
   const [language, setLanguage] = useState(() => {
@@ -192,11 +194,15 @@ const StatsPanel = ({ theme }) => {
 
   return (
     <div>
+      <div ref={shareRef} style={{ background: theme.background, padding: "16px" }}>
       {/* Summary cards */}
       <div className="profile-section">
-        <h4 className="profile-section-label" style={{ color: theme.textTypeBox }}>
-          {t("stats_overview")}
-        </h4>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <h4 className="profile-section-label" style={{ color: theme.textTypeBox, margin: 0 }}>
+            {t("stats_overview")}
+          </h4>
+          <ShareButton targetRef={shareRef} theme={theme} />
+        </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           <StatCard label={t("stats_best_effective")} value={stats.bestEffective} theme={theme} />
           <StatCard label={t("stats_avg_effective")} value={stats.avgEffective} theme={theme} />
@@ -221,6 +227,7 @@ const StatsPanel = ({ theme }) => {
           theme={theme}
         />
       </div>
+      </div>{/* end shareRef */}
 
       {/* WPM trend chart */}
       {wpmTrend.length > 1 && (

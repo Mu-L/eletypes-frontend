@@ -142,7 +142,16 @@ const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbol
           </ComposedChart>
         </ResponsiveContainer>
       )}
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", marginTop: "8px" }}>
+      <div
+        style={{
+          maxHeight: "300px",
+          overflowY: "auto",
+          marginTop: "8px",
+          scrollbarWidth: "thin",
+          scrollbarColor: `${theme.stats}44 transparent`,
+        }}
+      >
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
         <thead>
           <tr style={{ color: theme.textTypeBox, borderBottom: `1px solid ${theme.textTypeBox}` }}>
             <th style={{ textAlign: "left", padding: "6px 8px" }}>{t("rank_header")}</th>
@@ -206,6 +215,7 @@ const ScoreHistoryPanel = ({ language, difficulty, duration, numberAddon, symbol
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };

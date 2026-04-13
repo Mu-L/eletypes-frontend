@@ -267,6 +267,21 @@ export const translations = {
     stats_remove: "Remove this entry",
     stats_clear_all: "Clear All History",
     stats_clear_confirm: "Are you sure? This will remove all your typing history across all modes.",
+    // Share
+    // Challenge
+    challenge_button: "Challenge — Copy Link with Same Words",
+    challenge_copied: "Link Copied!",
+
+    share_button: "Share",
+    share_title: "Share Your Results",
+    share_copy: "Copy Image",
+    share_copied: "Copied!",
+    share_download: "Download",
+    share_share: "Share",
+    share_text: "Check out my typing results on eletypes.com!",
+    share_social_hint: "Image copied to clipboard — paste it after opening the platform",
+    share_opened: "Opened!",
+
     heatmap_less: "Less",
     heatmap_more: "More",
     stats_consistency: "WPM Consistency",
@@ -543,6 +558,21 @@ export const translations = {
     stats_remove: "删除此记录",
     stats_clear_all: "清除所有历史",
     stats_clear_confirm: "确定吗？这将删除所有模式的打字历史记录。",
+    // Share
+    // Challenge
+    challenge_button: "挑战 — 复制相同词序链接",
+    challenge_copied: "链接已复制！",
+
+    share_button: "分享",
+    share_title: "分享你的成绩",
+    share_copy: "复制图片",
+    share_copied: "已复制！",
+    share_download: "下载",
+    share_share: "分享",
+    share_text: "来看看我在 eletypes.com 的打字成绩！",
+    share_social_hint: "图片已复制到剪贴板 — 打开平台后粘贴即可",
+    share_opened: "已打开！",
+
     heatmap_less: "少",
     heatmap_more: "多",
     stats_consistency: "WPM 稳定性",

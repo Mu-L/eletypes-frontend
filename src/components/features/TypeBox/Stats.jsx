@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Tooltip } from "@mui/material";
 import {
   Line,
@@ -15,7 +15,6 @@ import Leaderboard from "../Leaderboard/Leaderboard";
 import { addScore } from "../../../services/scoreHistory";
 import { evaluateBadges } from "../../../services/badges";
 import { useLocale } from "../../../context/LocaleContext";
-
 const Stats = ({
   status,
   wpm,
@@ -31,8 +30,10 @@ const Stats = ({
   difficulty,
   numberAddon,
   symbolAddon,
+  sessionSeed,
 }) => {
   const { t } = useLocale();
+  const statsRef = useRef(null);
   const [roundedRawWpm, setRoundedRawWpm] = useState(0);
   const roundedWpm = Math.round(wpm);
 
@@ -323,19 +324,21 @@ const Stats = ({
       {status === "finished" && (
         <div className="stats-overlay">
           <section className="stats-chart">
-            <section className="stats-header">
-              <div>
-                {renderWpm()}
-                {renderAccuracy()}
-              </div>
-              {Chart}
-            </section>
-            <section className="stats-footer">
-              {renderLanguage()}
-              {renderRawKpm()}
-              {renderCharStats()}
-              {renderTime()}
-            </section>
+            <div ref={statsRef} style={{ background: theme.background, padding: "16px", borderRadius: "8px" }}>
+              <section className="stats-header">
+                <div>
+                  {renderWpm()}
+                  {renderAccuracy()}
+                </div>
+                {Chart}
+              </section>
+              <section className="stats-footer">
+                {renderLanguage()}
+                {renderRawKpm()}
+                {renderCharStats()}
+                {renderTime()}
+              </section>
+            </div>
             <section>{renderResetButton()}</section>
             {newBadges.length > 0 && (
               <div className="badge-notification">
@@ -367,6 +370,8 @@ const Stats = ({
               numberAddon={numberAddon}
               symbolAddon={symbolAddon}
               theme={theme}
+              statsRef={statsRef}
+              sessionSeed={sessionSeed}
             />
           </section>
         </div>

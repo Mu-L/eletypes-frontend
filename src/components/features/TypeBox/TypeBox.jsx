@@ -4,6 +4,7 @@ import {
   wordsGenerator,
   chineseWordsGenerator,
 } from "../../../scripts/wordsGenerator";
+import { createRng } from "../../../scripts/seedUtils";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import UndoIcon from "@mui/icons-material/Undo";
 import IconButton from "../../utils/IconButton";
@@ -47,6 +48,8 @@ const TypeBox = ({
   soundType,
   handleInputFocus,
   theme,
+  sessionSeed,
+  onNewSession,
 }) => {
   const { t } = useLocale();
   const [play] = useSound(SOUND_MAP[soundType], { volume: 0.5 });
@@ -70,7 +73,7 @@ const TypeBox = ({
     "difficulty"
   );
 
-  // local persist difficulty
+  // local persist language
   const [language, setLanguage] = useLocalPersistState(
     ENGLISH_MODE,
     "language"
@@ -130,13 +133,15 @@ const TypeBox = ({
 
   // set up words state
   const [wordsDict, setWordsDict] = useState(() => {
+    const rng = sessionSeed ? createRng(sessionSeed) : undefined;
     if (language === ENGLISH_MODE) {
       return wordsGenerator(
         DEFAULT_WORDS_COUNT,
         difficulty,
         ENGLISH_MODE,
         numberAddOn,
-        symbolAddOn
+        symbolAddOn,
+        rng
       );
     }
     if (language === CHINESE_MODE) {
@@ -144,7 +149,8 @@ const TypeBox = ({
         difficulty,
         CHINESE_MODE,
         numberAddOn,
-        symbolAddOn
+        symbolAddOn,
+        rng
       );
     }
   });
@@ -250,6 +256,8 @@ const TypeBox = ({
   ) => {
     setStatus("waiting");
     if (!isRedo) {
+      // New words = new seed
+      if (onNewSession) onNewSession();
       if (language === CHINESE_MODE) {
         setWordsDict(
           chineseWordsGenerator(
@@ -1149,6 +1157,7 @@ const TypeBox = ({
             difficulty={difficulty}
             numberAddon={numberAddOn}
             symbolAddon={symbolAddOn}
+            sessionSeed={sessionSeed}
           ></Stats>
           {status !== "finished" && renderResetButton()}
         </div>

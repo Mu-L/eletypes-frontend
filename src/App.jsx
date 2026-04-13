@@ -21,12 +21,37 @@ import {
 import DynamicBackground from "./components/common/DynamicBackground";
 import TypeBox from "./components/features/TypeBox/TypeBox";
 import SentenceBox from "./components/features/SentenceBox/SentenceBox";
+import { parseChallengeParams, clearChallengeParams } from "./services/challengeLink";
+import { generateSeed } from "./scripts/seedUtils";
 
 const FreeTypingBox = lazy(() => import("./components/features/FreeTypingBox"));
 const DefaultKeyboard = lazy(() => import("./components/features/Keyboard/DefaultKeyboard"));
 const WordsCard = lazy(() => import("./components/features/WordsCard/WordsCard"));
 
+// Parse challenge params once at module level before any React renders
+const initialChallenge = (() => {
+  const params = parseChallengeParams();
+  if (params) {
+    clearChallengeParams();
+    // Force settings into localStorage so useLocalPersistState picks them up
+    window.localStorage.setItem("timer-constant", JSON.stringify(params.timer));
+    window.localStorage.setItem("difficulty", JSON.stringify(params.difficulty));
+    window.localStorage.setItem("language", JSON.stringify(params.language));
+    window.localStorage.setItem("number", JSON.stringify(params.numberAddOn));
+    window.localStorage.setItem("symbol", JSON.stringify(params.symbolAddOn));
+    // Force word mode
+    window.localStorage.setItem("game-mode", JSON.stringify(GAME_MODE_DEFAULT));
+    window.localStorage.setItem("IsInWordsCardMode", JSON.stringify(false));
+  }
+  return params;
+})();
+
 function App() {
+  // Every session gets a seed — from challenge URL or freshly generated
+  const [sessionSeed, setSessionSeed] = useState(
+    () => initialChallenge?.seed || generateSeed()
+  );
+
   // localStorage persist theme setting
   const [theme, setTheme] = useState(() => {
     const stickyTheme = window.localStorage.getItem("theme");
@@ -215,6 +240,8 @@ function App() {
               soundType={soundType}
               key="type-box"
               handleInputFocus={() => focusTextInput()}
+              sessionSeed={sessionSeed}
+              onNewSession={() => setSessionSeed(generateSeed())}
             ></TypeBox>
           )}
           {isSentenceGameMode && (
