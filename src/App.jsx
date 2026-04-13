@@ -241,7 +241,7 @@ function App() {
               key="type-box"
               handleInputFocus={() => focusTextInput()}
               sessionSeed={sessionSeed}
-              onNewSession={() => setSessionSeed(generateSeed())}
+              setSessionSeed={setSessionSeed}
             ></TypeBox>
           )}
           {isSentenceGameMode && (

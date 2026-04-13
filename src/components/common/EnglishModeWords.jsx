@@ -1,7 +1,9 @@
 import React, { memo, useCallback, useRef } from "react";
+import SmoothCaret from "../features/TypeBox/SmoothCaret";
 
 const EnglishModeWords = ({
   currWordIndex,
+  currCharIndex,
   isUltraZenMode,
   currentWords,
   status,
@@ -10,6 +12,8 @@ const EnglishModeWords = ({
   getCharClassName,
   startIndex,
   getExtraCharsDisplay,
+  pacingStyle,
+  theme,
 }) => {
   const containerRef = useRef(null);
 
@@ -23,9 +27,23 @@ const EnglishModeWords = ({
   return (
     <div
       className="type-box"
-      style={{ visibility: status === "finished" ? "hidden" : "visible" }}
+      style={{
+        visibility: status === "finished" ? "hidden" : "visible",
+        position: "relative",
+      }}
       ref={containerRef}
     >
+      {pacingStyle === "caret" && (
+        <SmoothCaret
+          containerRef={containerRef}
+          wordSpanRefs={wordSpanRefs}
+          currWordIndex={currWordIndex}
+          currCharIndex={currCharIndex}
+          startIndex={startIndex}
+          status={status}
+          theme={theme}
+        />
+      )}
       <div className="words">
         {currentWords.map((word, i) => {
           const globalIndex = startIndex + i;

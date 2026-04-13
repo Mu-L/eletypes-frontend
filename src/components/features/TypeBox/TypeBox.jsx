@@ -4,7 +4,7 @@ import {
   wordsGenerator,
   chineseWordsGenerator,
 } from "../../../scripts/wordsGenerator";
-import { createRng } from "../../../scripts/seedUtils";
+import { createRng, generateSeed } from "../../../scripts/seedUtils";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import UndoIcon from "@mui/icons-material/Undo";
 import IconButton from "../../utils/IconButton";
@@ -49,7 +49,7 @@ const TypeBox = ({
   handleInputFocus,
   theme,
   sessionSeed,
-  onNewSession,
+  setSessionSeed,
 }) => {
   const { t } = useLocale();
   const [play] = useSound(SOUND_MAP[soundType], { volume: 0.5 });
@@ -230,9 +230,27 @@ const TypeBox = ({
     if (wordSpanRefs[currWordIndex]) {
       const scrollElement = wordSpanRefs[currWordIndex].current;
       if (scrollElement) {
-        scrollElement.scrollIntoView({
-          block: "center",
-        });
+        // Find the type-box container (overflow:hidden parent)
+        const typeBox = scrollElement.closest(".type-box") || scrollElement.closest(".type-box-chinese");
+        if (typeBox) {
+          // Calculate the row height from the word element
+          const wordWrapper = language === CHINESE_MODE
+            ? scrollElement.parentElement // div wrapping pinyin + chars
+            : scrollElement;
+          const rowHeight = wordWrapper ? wordWrapper.offsetHeight +
+            parseFloat(getComputedStyle(wordWrapper).marginBottom || 0) : 0;
+
+          if (rowHeight > 0) {
+            // Align scroll to row boundary — show current word on second row
+            const wordTop = wordWrapper.offsetTop;
+            const targetScroll = Math.max(0, wordTop - rowHeight);
+            typeBox.scrollTop = targetScroll;
+          } else {
+            scrollElement.scrollIntoView({ block: "center" });
+          }
+        } else {
+          scrollElement.scrollIntoView({ block: "center" });
+        }
       }
     } else {
       return;
@@ -256,15 +274,17 @@ const TypeBox = ({
   ) => {
     setStatus("waiting");
     if (!isRedo) {
-      // New words = new seed
-      if (onNewSession) onNewSession();
+      const newSeed = generateSeed();
+      setSessionSeed(newSeed);
+      const rng = createRng(newSeed);
       if (language === CHINESE_MODE) {
         setWordsDict(
           chineseWordsGenerator(
             difficulty,
             language,
             newNumberAddOn,
-            newSymbolAddOn
+            newSymbolAddOn,
+            rng
           )
         );
       }
@@ -275,7 +295,8 @@ const TypeBox = ({
             difficulty,
             language,
             newNumberAddOn,
-            newSymbolAddOn
+            newSymbolAddOn,
+            rng
           )
         );
       }
@@ -540,14 +561,7 @@ const TypeBox = ({
     }
   };
 
-  const getExtraCharClassName = (i, idx, extra) => {
-    if (
-      pacingStyle === PACING_CARET &&
-      currWordIndex === i &&
-      idx === extra.length - 1
-    ) {
-      return "caret-extra-char-right-error";
-    }
+  const getExtraCharClassName = () => {
     return "error-char";
   };
 
@@ -695,37 +709,10 @@ const TypeBox = ({
 
   const getCharClassName = (wordIdx, charIdx, char, word) => {
     const keyString = wordIdx + "." + charIdx;
-    if (
-      pacingStyle === PACING_CARET &&
-      wordIdx === currWordIndex &&
-      charIdx === currCharIndex + 1 &&
-      status !== "finished"
-    ) {
-      return "caret-char-left";
-    }
     if (history[keyString] === true) {
-      if (
-        pacingStyle === PACING_CARET &&
-        wordIdx === currWordIndex &&
-        word.length - 1 === currCharIndex &&
-        charIdx === currCharIndex &&
-        status !== "finished"
-      ) {
-        return "caret-char-right-correct";
-      }
       return "correct-char";
     }
     if (history[keyString] === false) {
-      if (
-        pacingStyle === PACING_CARET &&
-        wordIdx === currWordIndex &&
-        word.length - 1 === currCharIndex &&
-        charIdx === currCharIndex &&
-        status !== "finished"
-      ) {
-        return "caret-char-right-error";
-      }
-
       return "error-char";
     }
     if (
@@ -1117,6 +1104,7 @@ const TypeBox = ({
           <EnglishModeWords
             currentWords={currentWords}
             currWordIndex={currWordIndex}
+            currCharIndex={currCharIndex}
             isUltraZenMode={isUltraZenMode}
             startIndex={startIndex}
             status={status}
@@ -1124,12 +1112,15 @@ const TypeBox = ({
             getWordClassName={getWordClassName}
             getCharClassName={getCharClassName}
             getExtraCharsDisplay={getExtraCharsDisplay}
+            pacingStyle={pacingStyle}
+            theme={theme}
           />
         )}
         {language === CHINESE_MODE && (
           <ChineseModeWords
             currentWords={currentWords}
             currWordIndex={currWordIndex}
+            currCharIndex={currCharIndex}
             wordsKey={wordsKey}
             isUltraZenMode={isUltraZenMode}
             status={status}
@@ -1138,6 +1129,8 @@ const TypeBox = ({
             getChineseWordClassName={getChineseWordClassName}
             getCharClassName={getCharClassName}
             getExtraCharsDisplay={getExtraCharsDisplay}
+            pacingStyle={pacingStyle}
+            theme={theme}
           />
         )}
         <div className="stats">

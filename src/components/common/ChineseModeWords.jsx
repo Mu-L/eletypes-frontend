@@ -1,8 +1,10 @@
-import React, { memo, useCallback, useRef } from "react";
+import React, { memo, useCallback, useRef, useMemo } from "react";
+import SmoothCaret from "../features/TypeBox/SmoothCaret";
 
 const ChineseModeWords = ({
   currentWords,
   currWordIndex,
+  currCharIndex,
   isUltraZenMode,
   wordsKey,
   status,
@@ -11,10 +13,17 @@ const ChineseModeWords = ({
   getChineseWordClassName,
   getCharClassName,
   getExtraCharsDisplay,
+  pacingStyle,
+  theme,
 }) => {
   const containerRef = useRef(null);
 
-  // Get word opacity for focus mode
+  // Separate refs for character spans (used by SmoothCaret)
+  const charWordRefs = useMemo(
+    () => currentWords.map(() => React.createRef()),
+    [currentWords]
+  );
+
   const getWordOpacity = useCallback(
     (index) => Math.max(1 - Math.abs(index - currWordIndex) * 0.1, 0.1),
     [currWordIndex]
@@ -23,9 +32,22 @@ const ChineseModeWords = ({
   return (
     <div
       className="type-box-chinese"
-      style={{ visibility: status === "finished" ? "hidden" : "visible" }}
+      style={{
+        visibility: status === "finished" ? "hidden" : "visible",
+        position: "relative",
+      }}
       ref={containerRef}
     >
+      {pacingStyle === "caret" && (
+        <SmoothCaret
+          containerRef={containerRef}
+          wordSpanRefs={charWordRefs}
+          currWordIndex={currWordIndex}
+          currCharIndex={currCharIndex}
+          status={status}
+          theme={theme}
+        />
+      )}
       <div className="words">
         {currentWords.map((word, i) => {
           const opacityValue = isUltraZenMode ? getWordOpacity(i) : 1;
@@ -44,7 +66,7 @@ const ChineseModeWords = ({
               >
                 {wordsKey[i]}
               </span>
-              <span className={getChineseWordClassName(i)}>
+              <span className={getChineseWordClassName(i)} ref={charWordRefs[i]}>
                 {word.split("").map((char, idx) => (
                   <span
                     key={`word${i}_${idx}`}

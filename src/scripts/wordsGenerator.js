@@ -1,4 +1,4 @@
-import randomWords from "random-words";
+import randomWords, { wordList as hardWordList } from "random-words";
 import {
   COMMON_WORDS,
   COMMON_CHINESE_WORDS,
@@ -45,14 +45,12 @@ const wordsGenerator = (
       return EnglishWordList;
     }
 
-    // hard — random-words library doesn't support seeding, generate from its output deterministically
-    const randomWordsGenerated = randomWords({
-      exactly: wordsCount,
-      maxLength: 7,
-    });
+    // hard — select from random-words wordList with seeded RNG for determinism
+    const filteredHardWords = hardWordList.filter((w) => w.length <= 7);
     const words = [];
     for (let i = 0; i < wordsCount; i++) {
-      let wordCandidate = randomWordsGenerated[i];
+      const rand = randomIntFromRange(0, filteredHardWords.length - 1, rng);
+      let wordCandidate = filteredHardWords[rand];
       if (numberAddOn) {
         wordCandidate = wordCandidate + generateRandomNumChras(1, 2, rng);
       }
