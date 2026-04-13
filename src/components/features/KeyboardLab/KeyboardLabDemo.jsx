@@ -1,170 +1,179 @@
 /**
- * KeyboardLabDemo — standalone demo showing the KeyboardLab component API.
+ * KeyboardLabDemo — integration demo for the data-driven keyboard lab.
  *
- * Demonstrates:
- * 1. Color customization via props
- * 2. External triggerKey() calls (decoupled from the 3D layer)
- * 3. DOM keyboard event → triggerKey bridge (optional integration example)
- *
- * This component is the "App.tsx example" from the spec.
+ * Shows:
+ * - Preset selector (generic 75%, Cyberboard 75%)
+ * - 2D layout view (from same JSON as 3D)
+ * - 3D rendering with live typing bridge
+ * - Color customization
+ * - Export/copy JSON
  */
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import KeyboardLab from "./KeyboardLab";
-import { CODE_TO_NAME } from "./keyboardLayout";
+import KeyboardLayout2D from "./KeyboardLayout2D";
+import { listPresets, getPreset } from "./presets";
+import { buildCodeMap } from "./schema/derive";
 
-// Preset color themes
-const PRESETS = {
+const COLOR_PRESETS = {
   midnight: { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e" },
-  ocean: { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a" },
-  sakura: { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b" },
-  forest: { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a" },
-  arctic: { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0" },
+  ocean:    { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a" },
+  sakura:   { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b" },
+  forest:   { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a" },
+  arctic:   { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0" },
 };
 
 const KeyboardLabDemo = ({ theme }) => {
   const keyboardRef = useRef();
-  const [preset, setPreset] = useState("midnight");
-  const [colors, setColors] = useState(PRESETS.midnight);
+  const presets = useMemo(() => listPresets(), []);
+  const [presetId, setPresetId] = useState(presets[0]?.id);
+  const [colorPreset, setColorPreset] = useState("midnight");
+  const [colors, setColors] = useState(COLOR_PRESETS.midnight);
   const [liveTyping, setLiveTyping] = useState(true);
+  const [activeKeys, setActiveKeys] = useState(new Set());
+  const [view, setView] = useState("both"); // "2d" | "3d" | "both"
 
-  // Apply preset
-  const applyPreset = (name) => {
-    setPreset(name);
-    setColors(PRESETS[name]);
-  };
+  const { layout, shell } = useMemo(() => getPreset(presetId), [presetId]);
+  const codeMap = useMemo(() => buildCodeMap(layout.keys), [layout]);
 
-  // Bridge: DOM keyboard events → triggerKey (optional, shows decoupled architecture)
+  // Bridge: DOM keyboard events → triggerKey + 2D active state
   useEffect(() => {
     if (!liveTyping) return;
 
     const handleKeyDown = (e) => {
-      const keyName = CODE_TO_NAME.get(e.code);
+      const keyName = codeMap.get(e.code);
       if (keyName) {
         keyboardRef.current?.triggerKey(keyName);
+        setActiveKeys((prev) => new Set(prev).add(keyName));
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      const keyName = codeMap.get(e.code);
+      if (keyName) {
+        setActiveKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(keyName);
+          return next;
+        });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [liveTyping]);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [liveTyping, codeMap]);
 
-  // Demo: programmatic trigger
   const triggerDemo = useCallback(() => {
-    const demoKeys = ["KeyH", "KeyE", "KeyL", "KeyL", "KeyO"];
-    demoKeys.forEach((key, i) => {
-      setTimeout(() => keyboardRef.current?.triggerKey(key), i * 120);
+    const keys = ["KeyH", "KeyE", "KeyL", "KeyL", "KeyO"];
+    keys.forEach((k, i) => {
+      setTimeout(() => keyboardRef.current?.triggerKey(k), i * 120);
     });
   }, []);
 
+  const applyColorPreset = (name) => {
+    setColorPreset(name);
+    setColors(COLOR_PRESETS[name]);
+  };
+
   const textColor = theme?.text || "#e0e0e0";
-  const bgColor = theme?.background || "#111115";
   const statsColor = theme?.stats || "#6ec6ff";
 
-  const btnStyle = {
+  const btnStyle = (active) => ({
     background: "transparent",
-    border: `1px solid ${statsColor}55`,
+    border: `1px solid ${active ? statsColor : statsColor + "44"}`,
     borderRadius: "4px",
-    color: textColor,
-    padding: "6px 14px",
+    color: active ? statsColor : textColor,
+    padding: "5px 12px",
     cursor: "pointer",
-    fontSize: "13px",
+    fontSize: "12px",
     fontFamily: "inherit",
-  };
-
-  const activeBtnStyle = {
-    ...btnStyle,
-    borderColor: statsColor,
-    color: statsColor,
-  };
+  });
 
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: bgColor }}>
-      {/* Controls bar */}
-      <div
-        style={{
-          display: "flex",
-          gap: "8px",
-          padding: "12px 16px",
-          flexWrap: "wrap",
-          alignItems: "center",
-          borderBottom: `1px solid ${textColor}15`,
-        }}
-      >
-        {/* Preset buttons */}
-        {Object.keys(PRESETS).map((name) => (
-          <button
-            key={name}
-            onClick={() => applyPreset(name)}
-            style={preset === name ? activeBtnStyle : btnStyle}
-          >
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: theme?.background || "#111115" }}>
+      {/* Top bar: preset + view + actions */}
+      <div style={{ display: "flex", gap: "8px", padding: "10px 16px", flexWrap: "wrap", alignItems: "center", borderBottom: `1px solid ${textColor}15` }}>
+        {/* Preset selector */}
+        <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>PRESET</span>
+        {presets.map((p) => (
+          <button key={p.id} onClick={() => setPresetId(p.id)} style={btnStyle(presetId === p.id)}>
+            {p.name}
+          </button>
+        ))}
+
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
+
+        {/* View toggle */}
+        <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>VIEW</span>
+        {["2d", "3d", "both"].map((v) => (
+          <button key={v} onClick={() => setView(v)} style={btnStyle(view === v)}>
+            {v.toUpperCase()}
+          </button>
+        ))}
+
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
+
+        <button onClick={triggerDemo} style={btnStyle(false)}>Demo "HELLO"</button>
+        <button onClick={() => setLiveTyping(!liveTyping)} style={btnStyle(liveTyping)}>
+          Live: {liveTyping ? "ON" : "OFF"}
+        </button>
+      </div>
+
+      {/* Color bar */}
+      <div style={{ display: "flex", gap: "8px", padding: "8px 16px", alignItems: "center", borderBottom: `1px solid ${textColor}15` }}>
+        {Object.keys(COLOR_PRESETS).map((name) => (
+          <button key={name} onClick={() => applyColorPreset(name)} style={btnStyle(colorPreset === name)}>
             {name}
           </button>
         ))}
-
-        <span style={{ color: textColor, opacity: 0.3, margin: "0 4px" }}>|</span>
-
-        {/* Demo trigger */}
-        <button onClick={triggerDemo} style={btnStyle}>
-          Demo "HELLO"
-        </button>
-
-        {/* Live typing toggle */}
-        <button
-          onClick={() => setLiveTyping(!liveTyping)}
-          style={liveTyping ? activeBtnStyle : btnStyle}
-        >
-          {liveTyping ? "Live Typing: ON" : "Live Typing: OFF"}
-        </button>
-
-        {/* Individual key triggers */}
-        <span style={{ color: textColor, opacity: 0.3, margin: "0 4px" }}>|</span>
-        {["Space", "Enter", "Escape", "Backspace"].map((key) => (
-          <button
-            key={key}
-            onClick={() => keyboardRef.current?.triggerKey(key)}
-            style={btnStyle}
-          >
-            {key}
-          </button>
-        ))}
-      </div>
-
-      {/* Color pickers */}
-      <div
-        style={{
-          display: "flex",
-          gap: "16px",
-          padding: "8px 16px",
-          alignItems: "center",
-          borderBottom: `1px solid ${textColor}15`,
-        }}
-      >
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
         {[
           { label: "Keycap", key: "keycapColor" },
           { label: "Accent", key: "accentKeyColor" },
           { label: "Case", key: "caseColor" },
         ].map(({ label, key }) => (
-          <label key={key} style={{ display: "flex", alignItems: "center", gap: "6px", color: textColor, fontSize: "12px" }}>
+          <label key={key} style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
             {label}
             <input
               type="color"
               value={colors[key]}
               onChange={(e) => setColors((c) => ({ ...c, [key]: e.target.value }))}
-              style={{ width: "28px", height: "28px", border: "none", cursor: "pointer", background: "transparent" }}
+              style={{ width: "24px", height: "24px", border: "none", cursor: "pointer", background: "transparent" }}
             />
           </label>
         ))}
       </div>
 
-      {/* 3D Keyboard — takes remaining space */}
-      <div style={{ flex: 1, minHeight: 0 }}>
-        <KeyboardLab
-          ref={keyboardRef}
-          keycapColor={colors.keycapColor}
-          accentKeyColor={colors.accentKeyColor}
-          caseColor={colors.caseColor}
-        />
+      {/* Content area */}
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        {/* 2D view */}
+        {(view === "2d" || view === "both") && (
+          <div style={{ padding: "16px", overflow: "auto" }}>
+            <KeyboardLayout2D
+              layout={layout}
+              activeKeys={activeKeys}
+              theme={theme}
+            />
+          </div>
+        )}
+
+        {/* 3D view */}
+        {(view === "3d" || view === "both") && (
+          <div style={{ flex: 1, minHeight: view === "both" ? "300px" : 0 }}>
+            <KeyboardLab
+              ref={keyboardRef}
+              layout={layout}
+              shell={shell}
+              keycapColor={colors.keycapColor}
+              accentKeyColor={colors.accentKeyColor}
+              caseColor={colors.caseColor}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
