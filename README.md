@@ -4,11 +4,11 @@
 
 ## [www.eletypes.com](https://www.eletypes.com) ![GitHub release (latest by date including pre-releases)](https://img.shields.io/github/v/release/gamer-ai/eletype-frontend?include_prereleases) ![GitHub stars](https://img.shields.io/github/stars/gamer-ai/eletype-frontend?style=social) ![GitHub forks](https://img.shields.io/github/forks/gamer-ai/eletype-frontend?style=social)
 
-An elegant typing test tool.
+An elegant, open-source typing test tool. No sign-up required — all data tracked locally.
 
-> Typing rule and interactions was inspired by the famous [monkeytype.com](www.monkeytype.com);
+> Typing rules and interactions inspired by the famous [monkeytype.com](https://www.monkeytype.com);
 
-> The app was created purely in react, with a Supabase backend for the leaderboard.
+> Built with React 18 + Vite, with a Supabase backend for the leaderboard.
 
 
 ## Feature Requests / Issues / Bug Reports
@@ -52,9 +52,18 @@ To join the community, please go to the website and hit "discord" icon.
     - Submit score after completing a typing session
     - Browse leaderboards via the footer nav icon
     - Anti-cheat via FingerprintJS
-  - Pacing Style (word pulse/ character caret):
+  - Pacing Style (word pulse / smooth caret):
     - Pulse mode: the active word will have an underline pulse, which helps improve the speed typing habit.
-    - Caret mode: a pacing caret, advancing character by character, which aligns normal typing habit.
+    - Caret mode: a smooth animated caret that glides between characters with CSS transitions — Monkeytype-style.
+  - Challenge Links:
+    - Copy a challenge link after completing a test — friends who open the link type the exact same words
+    - Deterministic word generation via seeded RNG
+    - URL encodes seed + language + difficulty + timer + addons
+  - Share Results:
+    - Share button captures your stats as an image (html2canvas)
+    - Share modal with copy to clipboard, download PNG, native share (mobile)
+    - Social media buttons: X, Discord, WhatsApp, Telegram, LinkedIn, Weibo, WeChat
+    - Native share with image attachment for WhatsApp/Telegram on mobile
 
 #### 2. Words Card (for English learners)
 This word card mode has further two types **Vocab Mode** and **Selective Mode**.
@@ -154,12 +163,33 @@ toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a4
 #### 13. Profile Menu
 
   - Accessible via the profile button (top-right corner), always visible including in focus mode
-  - **Profile** — edit your display name (no sign-up required, stored locally)
-  - **My History** — browse local score history per mode combination with filters
-  - **Site** — toggle switches for Focus Mode, Sound, Music, Ultra Zen, and Interface Language
+  - **Profile** — edit display name, view rank + badges (no sign-up required)
+  - **Stats** — personal dashboard with:
+    - Overview: best/avg effective WPM (WPM × Accuracy), average accuracy
+    - Activity heatmap (3 months, GitHub-style)
+    - WPM and accuracy consistency gauges
+    - WPM trend chart with outlier detection (flags low-accuracy sessions)
+    - Mode breakdown table
+    - Session history per mode with filters, per-entry delete, and clear all
+  - **Leaderboard** — browse global leaderboard from any mode (no need to finish a test first)
+  - **Settings** — toggle switches for Focus Mode, Sound, Music, Ultra Zen, and Interface Language
   - **News** — view all announcements including previously dismissed banners
 
-#### 14. Words Card Auto-Play Audio
+#### 14. Badge System
+
+  - 33 badges across 6 categories: Speed, Effective Speed, Accuracy, Consistency, Explorer, Social
+  - Speed badges based on raw WPM, Effective Speed badges based on WPM × Accuracy
+  - Rank system (7 tiers from Membrane to Custom Build) based on best effective WPM
+  - Hidden badges discoverable through gameplay
+  - Badge notifications on unlock
+
+#### 15. Progressive Web App (PWA)
+
+  - Installable on desktop and mobile — works like a native app
+  - Offline support via service worker (type without internet)
+  - Auto-updates when new versions are deployed
+
+#### 16. Words Card Auto-Play Audio
 
   - Auto-play pronunciation audio when navigating words in vocab mode
   - Toggle on/off next to the speaker button, persisted in localStorage
@@ -196,14 +226,19 @@ Regular Mode and Recite Mode
 2. Copy `.env.example` to `.env` and fill in your Supabase project URL and anon key
 3. Run the SQL in `supabase_migration.sql` in your Supabase SQL Editor to create the scores table
 
-### `npm start`
+### `npm run dev`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Runs the app in development mode with Vite.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.\
+Hot Module Replacement (HMR) enabled — changes reflect instantly.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `build` folder using Vite.
+
+### `npm run preview`
+
+Serves the production build locally for testing.
 
 ### Environment Variables
 
