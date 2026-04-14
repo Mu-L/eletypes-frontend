@@ -17,15 +17,15 @@ import { listKeycapPresets, getKeycapPreset } from "./presets/keycaps";
 import { buildCodeMap, extractKeys } from "./schema/derive";
 
 const COLOR_PRESETS = {
-  midnight:    { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e", opacity: 1.0 },
-  ocean:       { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a", opacity: 1.0 },
-  sakura:      { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b", opacity: 1.0 },
-  forest:      { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a", opacity: 1.0 },
-  arctic:      { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0", opacity: 1.0 },
-  translucent: { keycapColor: "#8899aa", accentKeyColor: "#aabbcc", caseColor: "#1a1a1e", opacity: 0.55 },
-  pudding:     { keycapColor: "#f0e8d8", accentKeyColor: "#1a1a1e", caseColor: "#1a1a1e", opacity: 0.75 },
-  jelly:       { keycapColor: "#6a4c93", accentKeyColor: "#c75d9b", caseColor: "#0d0d12", opacity: 0.45 },
-  frosted:     { keycapColor: "#d0dce8", accentKeyColor: "#7eb0d5", caseColor: "#2a2a30", opacity: 0.65 },
+  midnight:    { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e", legendColor: "#cccccc", opacity: 1.0 },
+  ocean:       { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a", legendColor: "#b0d0f0", opacity: 1.0 },
+  sakura:      { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b", legendColor: "#4a2a2a", opacity: 1.0 },
+  forest:      { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a", legendColor: "#c0e8b0", opacity: 1.0 },
+  arctic:      { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0", legendColor: "#2a3a4a", opacity: 1.0 },
+  translucent: { keycapColor: "#8899aa", accentKeyColor: "#aabbcc", caseColor: "#1a1a1e", legendColor: "#ffffff", opacity: 0.55 },
+  pudding:     { keycapColor: "#f0e8d8", accentKeyColor: "#1a1a1e", caseColor: "#1a1a1e", legendColor: "#333333", opacity: 0.75 },
+  jelly:       { keycapColor: "#6a4c93", accentKeyColor: "#c75d9b", caseColor: "#0d0d12", legendColor: "#f0d0ff", opacity: 0.45 },
+  frosted:     { keycapColor: "#d0dce8", accentKeyColor: "#7eb0d5", caseColor: "#2a2a30", legendColor: "#1a2a3a", opacity: 0.65 },
 };
 
 const KeyboardLabDemo = ({ theme }) => {
@@ -169,6 +169,7 @@ const KeyboardLabDemo = ({ theme }) => {
           { label: "Keycap", key: "keycapColor" },
           { label: "Accent", key: "accentKeyColor" },
           { label: "Case", key: "caseColor" },
+          { label: "Legend", key: "legendColor" },
         ].map(({ label, key }) => (
           <label key={key} style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
             {label}
@@ -207,6 +208,7 @@ const KeyboardLabDemo = ({ theme }) => {
               accentKeyColor={colors.accentKeyColor}
               caseColor={colors.caseColor}
               keycapOpacity={opacity}
+              legendColor={colors.legendColor || "#cccccc"}
             />
           </div>
         )}

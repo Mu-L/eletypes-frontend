@@ -9,6 +9,7 @@ import React, { forwardRef, useRef, useImperativeHandle } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import KeyboardModel from "./KeyboardModel";
+import KeycapLabels from "./KeycapLabels";
 import { getPreset } from "./presets";
 
 const DEFAULT_PRESET = getPreset("generic-75-ansi");
@@ -21,6 +22,7 @@ const KeyboardLab = forwardRef(({
   accentKeyColor = "#3d3d42",
   caseColor = "#1a1a1e",
   keycapOpacity = 1.0,
+  legendColor = "#cccccc",
   style,
 }, ref) => {
   const modelRef = useRef();
@@ -55,6 +57,11 @@ const KeyboardLab = forwardRef(({
           accentKeyColor={accentKeyColor}
           caseColor={caseColor}
           keycapOpacity={keycapOpacity}
+        />
+        <KeycapLabels
+          layout={layout}
+          keycapPreset={keycapPreset}
+          legendColor={legendColor}
         />
 
         <OrbitControls
