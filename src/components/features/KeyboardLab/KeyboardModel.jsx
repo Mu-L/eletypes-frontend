@@ -34,9 +34,20 @@ const KEY_BEVEL = 0.06;
 const KEY_SEGMENTS = 2;
 const PLATE_Y = 0.02;
 
+// Row detection from Y position (matches normalization layer)
+const yToRow = (y) => {
+  if (y < 1.0) return 0;
+  if (y < 2.0) return 1;
+  if (y < 3.0) return 2;
+  if (y < 4.0) return 3;
+  if (y < 5.0) return 4;
+  return 5;
+};
+
 const KeyboardModel = forwardRef(({
   layout,          // BoardLayout object (or just the keys array for backwards compat)
   shell,           // Optional ShellProfile
+  keycapPreset,    // Optional KeycapPreset — drives per-row sculpting
   keycapColor,
   accentKeyColor,
   caseColor,
@@ -74,16 +85,28 @@ const KeyboardModel = forwardRef(({
   const _quat = useMemo(() => new THREE.Quaternion(), []);
   const _scale = useMemo(() => new THREE.Vector3(), []);
 
-  // ─── Rest positions ───
+  // ─── Rest positions (with per-row sculpting from keycap profile) ───
   const restPositions = useMemo(() => {
-    return keys.map((key) => ({
-      x: (key.x + key.w / 2) - centerX,
-      y: KEY_HEIGHT / 2 + PLATE_Y,
-      z: (key.y + (key.h || 1) / 2) - centerZ,
-      sx: key.w - KEY_GAP,
-      sz: (key.h || 1) - KEY_GAP,
-    }));
-  }, [keys, centerX, centerZ]);
+    const profile = keycapPreset?.profile;
+    const rows = (!profile?.uniform && profile?.rows) ? profile.rows : null;
+    const baseH = profile?.defaultCap?.height || KEY_HEIGHT;
+
+    return keys.map((key) => {
+      const row = yToRow(key.y);
+      const sculpt = rows?.[row];
+      // Per-row height: base height scaled by sculpt.height factor
+      const capH = sculpt ? baseH * sculpt.height : baseH;
+
+      return {
+        x: (key.x + key.w / 2) - centerX,
+        y: capH / 2 + PLATE_Y,
+        z: (key.y + (key.h || 1) / 2) - centerZ,
+        sx: key.w - KEY_GAP,
+        sy: capH,
+        sz: (key.h || 1) - KEY_GAP,
+      };
+    });
+  }, [keys, centerX, centerZ, keycapPreset]);
 
   const geometry = useMemo(
     () => new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL),
@@ -98,7 +121,7 @@ const KeyboardModel = forwardRef(({
     const rest = restPositions[index];
     if (!rest) return;
     _pos.set(rest.x, rest.y + yOffset, rest.z);
-    _scale.set(rest.sx, KEY_HEIGHT, rest.sz);
+    _scale.set(rest.sx, rest.sy, rest.sz);
     _mat4.compose(_pos, _quat, _scale);
     meshRef.current.setMatrixAt(index, _mat4);
   };
@@ -120,7 +143,7 @@ const KeyboardModel = forwardRef(({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keycapColor, accentKeyColor, keys, keyCount, invalidate]);
+  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, invalidate]);
 
   // ─── Animation loop ───
   useFrame((_, delta) => {

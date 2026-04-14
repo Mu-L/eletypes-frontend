@@ -13,6 +13,7 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import KeyboardLab from "./KeyboardLab";
 import KeyboardLayout2D from "./KeyboardLayout2D";
 import { listPresets, getPreset } from "./presets";
+import { listKeycapPresets, getKeycapPreset } from "./presets/keycaps";
 import { buildCodeMap, extractKeys } from "./schema/derive";
 
 const COLOR_PRESETS = {
@@ -26,7 +27,9 @@ const COLOR_PRESETS = {
 const KeyboardLabDemo = ({ theme }) => {
   const keyboardRef = useRef();
   const presets = useMemo(() => listPresets(), []);
+  const capPresets = useMemo(() => listKeycapPresets(), []);
   const [presetId, setPresetId] = useState(presets[0]?.id);
+  const [capPresetId, setCapPresetId] = useState("cherry-profile");
   const [colorPreset, setColorPreset] = useState("midnight");
   const [colors, setColors] = useState(COLOR_PRESETS.midnight);
   const [liveTyping, setLiveTyping] = useState(true);
@@ -34,6 +37,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const [view, setView] = useState("both"); // "2d" | "3d" | "both"
 
   const { layout, shell } = useMemo(() => getPreset(presetId), [presetId]);
+  const keycapPreset = useMemo(() => getKeycapPreset(capPresetId), [capPresetId]);
   const codeMap = useMemo(() => buildCodeMap(extractKeys(layout)), [layout]);
 
   // Bridge: DOM keyboard events → triggerKey + 2D active state
@@ -107,6 +111,16 @@ const KeyboardLabDemo = ({ theme }) => {
 
         <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
 
+        {/* Keycap profile selector */}
+        <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>PROFILE</span>
+        {capPresets.map((p) => (
+          <button key={p.id} onClick={() => setCapPresetId(p.id)} style={btnStyle(capPresetId === p.id)}>
+            {p.name}
+          </button>
+        ))}
+
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
+
         {/* View toggle */}
         <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>VIEW</span>
         {["2d", "3d", "both"].map((v) => (
@@ -168,6 +182,7 @@ const KeyboardLabDemo = ({ theme }) => {
               ref={keyboardRef}
               layout={layout}
               shell={shell}
+              keycapPreset={keycapPreset}
               keycapColor={colors.keycapColor}
               accentKeyColor={colors.accentKeyColor}
               caseColor={colors.caseColor}

@@ -16,6 +16,7 @@ const DEFAULT_PRESET = getPreset("generic-75-ansi");
 const KeyboardLab = forwardRef(({
   layout = DEFAULT_PRESET.layout,
   shell = DEFAULT_PRESET.shell,
+  keycapPreset,
   keycapColor = "#2a2a2e",
   accentKeyColor = "#3d3d42",
   caseColor = "#1a1a1e",
@@ -48,6 +49,7 @@ const KeyboardLab = forwardRef(({
           ref={modelRef}
           layout={layout}
           shell={shell}
+          keycapPreset={keycapPreset}
           keycapColor={keycapColor}
           accentKeyColor={accentKeyColor}
           caseColor={caseColor}
