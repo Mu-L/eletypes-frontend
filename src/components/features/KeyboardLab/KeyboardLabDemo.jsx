@@ -212,7 +212,7 @@ const KeyboardLabDemo = ({ theme }) => {
           <input
             type="range"
             min="8"
-            max="28"
+            max="40"
             step="1"
             value={legendPreset.style.fontSize}
             onChange={(e) => setLegendOverrides((o) => ({ ...o, fontSize: parseInt(e.target.value) }))}

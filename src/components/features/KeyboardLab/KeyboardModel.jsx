@@ -209,6 +209,8 @@ const KeyboardModel = forwardRef(({
       activeSet.current.add(index);
       invalidate();
     },
+    // Expose animation offsets so labels can follow key press movement
+    getOffsets: () => offsets.current,
   }), [keyIndex, invalidate]);
 
   // ─── Case dimensions from shell profile ───

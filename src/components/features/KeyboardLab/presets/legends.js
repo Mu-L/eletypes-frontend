@@ -10,7 +10,7 @@ export const LEGEND_PRESETS = {
     meta: { name: "GMK" },
     style: {
       fontFamily: "Arial, Helvetica, sans-serif",
-      fontSize: 16,
+      fontSize: 28,
       fontWeight: 700,
       color: "#d0d0d0",
       position: "center",
@@ -24,7 +24,7 @@ export const LEGEND_PRESETS = {
     meta: { name: "Minimal" },
     style: {
       fontFamily: "Helvetica Neue, Arial, sans-serif",
-      fontSize: 12,
+      fontSize: 22,
       fontWeight: 400,
       color: "#888888",
       position: "center",
@@ -38,7 +38,7 @@ export const LEGEND_PRESETS = {
     meta: { name: "Retro" },
     style: {
       fontFamily: "Courier New, Courier, monospace",
-      fontSize: 14,
+      fontSize: 26,
       fontWeight: 700,
       color: "#e0d8c0",
       position: "center",
@@ -52,7 +52,7 @@ export const LEGEND_PRESETS = {
     meta: { name: "Top Print" },
     style: {
       fontFamily: "Helvetica Neue, Arial, sans-serif",
-      fontSize: 11,
+      fontSize: 20,
       fontWeight: 600,
       color: "#aaaaaa",
       position: "top-left",
@@ -66,7 +66,7 @@ export const LEGEND_PRESETS = {
     meta: { name: "Cyber" },
     style: {
       fontFamily: "Tomorrow, Consolas, monospace",
-      fontSize: 13,
+      fontSize: 24,
       fontWeight: 600,
       color: "#00ffaa",
       position: "center",

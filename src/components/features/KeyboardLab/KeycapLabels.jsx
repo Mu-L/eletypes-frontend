@@ -1,9 +1,13 @@
 /**
- * KeycapLabels — renders key legends on keycap surfaces driven by legend preset.
+ * KeycapLabels — renders key legends flat on keycap surfaces.
+ *
+ * Labels follow key press animations by reading the Y offset from
+ * KeyboardModel's exposed offsets array each frame.
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { Html } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { extractKeys, computeBounds } from "./schema/derive";
 
 const PLATE_Y = 0.02;
@@ -25,7 +29,7 @@ const yToRow = (y) => {
   return 5;
 };
 
-const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
+const KeycapLabels = ({ layout, keycapPreset, legendPreset, modelRef }) => {
   const keys = useMemo(() => extractKeys(layout), [layout]);
   const bounds = useMemo(() => computeBounds(keys), [keys]);
   const centerX = bounds.width / 2;
@@ -37,7 +41,7 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
 
   const style = legendPreset?.style || {
     fontFamily: "Arial, sans-serif",
-    fontSize: 14,
+    fontSize: 28,
     fontWeight: 700,
     color: "#cccccc",
     position: "center",
@@ -45,41 +49,66 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
   };
   const keyOverrides = legendPreset?.keyOverrides || {};
 
+  // Refs for each label group — used to update Y position each frame
+  const groupRefs = useRef([]);
+
+  // Pre-compute rest Y positions
+  const restYs = useMemo(() => {
+    return keys.map((key) => {
+      const row = yToRow(key.y);
+      const sculpt = rows?.[row];
+      const capH = sculpt ? baseH * sculpt.height : baseH;
+      return capH + PLATE_Y;
+    });
+  }, [keys, rows, baseH]);
+
+  // Each frame, update label Y positions to follow key press animation
+  useFrame(() => {
+    const offsets = modelRef?.current?.getOffsets?.();
+    if (!offsets) return;
+
+    for (let i = 0; i < keys.length; i++) {
+      const ref = groupRefs.current[i];
+      if (ref && offsets[i] !== 0) {
+        ref.position.y = restYs[i] + offsets[i];
+      } else if (ref) {
+        ref.position.y = restYs[i];
+      }
+    }
+  });
+
   if (style.fontSize === 0 || style.color === "transparent") return null;
 
   const posOffset = POSITION_OFFSETS[style.position] || POSITION_OFFSETS["center"];
 
   return (
     <group>
-      {keys.map((key) => {
+      {keys.map((key, i) => {
         const override = keyOverrides[key.id];
         const displayLabel = override?.label ?? key.label;
         if (!displayLabel) return null;
 
-        const row = yToRow(key.y);
-        const sculpt = rows?.[row];
-        const capH = sculpt ? baseH * sculpt.height : baseH;
-
         const x = (key.x + key.w / 2) - centerX;
-        const y = capH + PLATE_Y + 0.001;
         const z = (key.y + (key.h || 1) / 2) - centerZ;
 
-        // Font size: start from preset, scale down only for long labels on narrow keys
         let fontSize = override?.fontSize || style.fontSize;
-        if (displayLabel.length > 4) fontSize *= 0.7;
-        else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.75;
+        if (displayLabel.length > 4) fontSize *= 0.65;
+        else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.7;
 
         const color = override?.color || style.color;
         const shouldUppercase = style.uppercase && displayLabel.length === 1;
 
         return (
-          <group key={key.id} position={[x, y, z]}>
+          <group
+            key={key.id}
+            ref={(el) => { groupRefs.current[i] = el; }}
+            position={[x, restYs[i], z]}
+          >
+            {/* Rotate flat onto the keycap top surface */}
             <group rotation={[-Math.PI / 2, 0, 0]}>
               <Html
                 transform
                 occlude
-                // distanceFactor controls the scaling of HTML in 3D space.
-                // Lower = larger text relative to the keycap.
                 distanceFactor={3}
                 style={{
                   pointerEvents: "none",

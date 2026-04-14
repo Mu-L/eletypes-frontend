@@ -62,6 +62,7 @@ const KeyboardLab = forwardRef(({
           layout={layout}
           keycapPreset={keycapPreset}
           legendPreset={legendPreset}
+          modelRef={modelRef}
         />
 
         <OrbitControls
