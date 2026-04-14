@@ -52,6 +52,7 @@ const KeyboardModel = forwardRef(({
   keycapColor,
   accentKeyColor,
   caseColor,
+  keycapOpacity = 1.0,
 }, ref) => {
   const meshRef = useRef();
   const { invalidate } = useThree();
@@ -121,7 +122,14 @@ const KeyboardModel = forwardRef(({
     return new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL);
   }, [keycapPreset]);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4 }),
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.4,
+      metalness: 0.05,
+      envMapIntensity: 0.4,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 1.0,
+    }),
     []
   );
 
@@ -133,6 +141,13 @@ const KeyboardModel = forwardRef(({
     _mat4.compose(_pos, _quat, _scale);
     meshRef.current.setMatrixAt(index, _mat4);
   };
+
+  // ─── Update opacity ───
+  useEffect(() => {
+    material.opacity = keycapOpacity;
+    material.needsUpdate = true;
+    invalidate();
+  }, [keycapOpacity, material, invalidate]);
 
   // ─── Build instances ───
   useEffect(() => {

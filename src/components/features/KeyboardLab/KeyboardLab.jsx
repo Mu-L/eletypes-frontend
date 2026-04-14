@@ -20,6 +20,7 @@ const KeyboardLab = forwardRef(({
   keycapColor = "#2a2a2e",
   accentKeyColor = "#3d3d42",
   caseColor = "#1a1a1e",
+  keycapOpacity = 1.0,
   style,
 }, ref) => {
   const modelRef = useRef();
@@ -35,7 +36,7 @@ const KeyboardLab = forwardRef(({
       <Canvas
         frameloop="demand"
         dpr={[1, 1.5]}
-        gl={{ antialias: true, powerPreference: "high-performance", alpha: false }}
+        gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
         camera={{ position: [0, 7, 9], fov: 40, near: 0.1, far: 100 }}
         onCreated={({ gl }) => { gl.setClearColor("#111115"); }}
       >
@@ -53,6 +54,7 @@ const KeyboardLab = forwardRef(({
           keycapColor={keycapColor}
           accentKeyColor={accentKeyColor}
           caseColor={caseColor}
+          keycapOpacity={keycapOpacity}
         />
 
         <OrbitControls

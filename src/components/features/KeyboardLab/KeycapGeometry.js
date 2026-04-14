@@ -1,40 +1,20 @@
 /**
- * Procedural keycap geometry generator.
+ * Procedural keycap geometry.
  *
- * Creates a tapered, sculpted keycap shape with:
- * - Tapered walls (top narrower than bottom)
- * - Per-row top surface angle (tilted toward/away from user)
- * - Dish scooped into the top surface (cylindrical or spherical)
- * - Rounded edges
- *
- * This replaces the flat RoundedBoxGeometry with a geometry that
- * actually looks like a keycap when scaled by InstancedMesh.
- *
- * Performance: geometry is created once per profile and reused
- * across all instances. The per-row variation is applied via
- * instance matrix scaling and a small vertex shader trick.
- *
- * For the MVP, we create ONE geometry per profile family
- * (not per-row) and use the instance matrix to handle per-row
- * height/scale differences. The dish and taper are baked into
- * the base geometry.
+ * Approach: generate a grid of vertices for top and bottom faces,
+ * then stitch sides between them. All faces use CCW winding
+ * when viewed from outside (Three.js default front-face).
  */
 
 import * as THREE from "three";
 
 /**
- * Create a tapered keycap geometry.
- *
- * The keycap is centered at origin, 1×1×1 base size.
- * InstancedMesh scales it per-key via the matrix.
- *
  * @param {Object} params
- * @param {number} params.topWidth    — Top/bottom width ratio (0.85 = 15% taper)
- * @param {number} params.topDepth    — Top/bottom depth ratio
- * @param {number} params.dishDepth   — How deep the dish scoops (0 = flat)
- * @param {"cylindrical"|"spherical"|"flat"} params.dishType
- * @param {number} params.cornerRadius — Edge rounding
- * @param {number} [params.segments]  — Subdivision level (default 8)
+ * @param {number} [params.topWidth=0.85]
+ * @param {number} [params.topDepth=0.85]
+ * @param {number} [params.dishDepth=0.05]
+ * @param {"cylindrical"|"spherical"|"flat"} [params.dishType="cylindrical"]
+ * @param {number} [params.segments=6]
  * @returns {THREE.BufferGeometry}
  */
 export function createKeycapGeometry({
@@ -42,177 +22,149 @@ export function createKeycapGeometry({
   topDepth = 0.85,
   dishDepth = 0.05,
   dishType = "cylindrical",
-  cornerRadius = 0.06,
-  segments = 8,
+  segments = 6,
 } = {}) {
-  // Build the keycap as a modified box:
-  // Bottom face: full size (1×1)
-  // Top face: tapered (topWidth × topDepth), with dish depression
-  // Sides: connect bottom to top with slight curve
+  const S = segments;
+  const S1 = S + 1;
 
-  const hw = 0.5;  // half width at bottom
-  const hd = 0.5;  // half depth at bottom
-  const h = 0.5;   // half height (total height = 1, scaled by instance)
+  // Half-sizes
+  const bw = 0.5, bd = 0.5, hh = 0.5; // bottom half-width, half-depth, half-height
+  const tw = bw * topWidth, td = bd * topDepth;
 
-  const tw = hw * topWidth; // half width at top
-  const td = hd * topDepth; // half depth at top
-
-  const seg = segments;
-  const positions = [];
-  const normals = [];
-  const indices = [];
-
-  // ─── Helper: add a quad as two triangles ───
-  const addQuad = (a, b, c, d) => {
-    const base = positions.length / 3;
-    positions.push(...a, ...b, ...c, ...d);
-
-    // Compute face normal
-    const v1 = [b[0]-a[0], b[1]-a[1], b[2]-a[2]];
-    const v2 = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
-    const n = [
-      v1[1]*v2[2] - v1[2]*v2[1],
-      v1[2]*v2[0] - v1[0]*v2[2],
-      v1[0]*v2[1] - v1[1]*v2[0],
-    ];
-    const len = Math.sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]) || 1;
-    n[0] /= len; n[1] /= len; n[2] /= len;
-    normals.push(...n, ...n, ...n, ...n);
-
-    indices.push(base, base+1, base+2, base, base+2, base+3);
+  // Dish offset
+  const dish = (u01, v01) => {
+    if (dishDepth <= 0 || dishType === "flat") return 0;
+    const nx = (u01 - 0.5) * 2;
+    const nz = (v01 - 0.5) * 2;
+    if (dishType === "cylindrical") {
+      return -dishDepth * Math.max(0, 1 - nx * nx);
+    }
+    return -dishDepth * Math.max(0, 1 - nx * nx - nz * nz);
   };
 
-  // ─── Top face with dish ───
-  // Generate a grid of points on the top face, then depress them for the dish
-  const topGrid = [];
-  for (let iz = 0; iz <= seg; iz++) {
-    const row = [];
-    for (let ix = 0; ix <= seg; ix++) {
-      const u = ix / seg; // 0-1
-      const v = iz / seg; // 0-1
+  // Lerp helper
+  const lerp = (a, b, t) => a + (b - a) * t;
 
-      const x = -tw + u * tw * 2;
-      const z = -td + v * td * 2;
+  // We'll build positions array, then index it
+  const pos = [];
+  const idx = [];
 
-      // Dish depression
-      let yDish = 0;
-      if (dishDepth > 0) {
-        if (dishType === "cylindrical") {
-          // Scoop along X axis (like typing direction)
-          const nx = (u - 0.5) * 2; // -1 to 1
-          yDish = -dishDepth * (1 - nx * nx);
-        } else if (dishType === "spherical") {
-          // Bowl scoop
-          const nx = (u - 0.5) * 2;
-          const nz = (v - 0.5) * 2;
-          yDish = -dishDepth * (1 - (nx * nx + nz * nz));
-          yDish = Math.min(0, yDish); // Clamp to not go above surface
-        }
-        // "flat" = no dish
+  // ════════════════════════════════════════════
+  // TOP FACE: (S+1)*(S+1) grid at y = +hh + dish
+  // ════════════════════════════════════════════
+  const topBase = 0;
+  for (let iz = 0; iz < S1; iz++) {
+    const v = iz / S;
+    for (let ix = 0; ix < S1; ix++) {
+      const u = ix / S;
+      pos.push(
+        lerp(-tw, tw, u),
+        hh + dish(u, v),
+        lerp(-td, td, v)
+      );
+    }
+  }
+  // Index top face: viewed from above (+Y), CCW
+  for (let iz = 0; iz < S; iz++) {
+    for (let ix = 0; ix < S; ix++) {
+      const a = topBase + iz * S1 + ix;
+      const b = a + 1;
+      const d = a + S1;
+      const c = d + 1;
+      // Two triangles, CCW when viewed from +Y
+      idx.push(a, d, b);
+      idx.push(b, d, c);
+    }
+  }
+
+  // ════════════════════════════════════════════
+  // BOTTOM FACE: 4 vertices at y = -hh
+  // ════════════════════════════════════════════
+  const btmBase = pos.length / 3;
+  // Corners: 0=front-left, 1=front-right, 2=back-right, 3=back-left
+  pos.push(-bw, -hh, -bd); // 0
+  pos.push( bw, -hh, -bd); // 1
+  pos.push( bw, -hh,  bd); // 2
+  pos.push(-bw, -hh,  bd); // 3
+  // CCW when viewed from -Y (below)
+  idx.push(btmBase, btmBase + 1, btmBase + 2);
+  idx.push(btmBase, btmBase + 2, btmBase + 3);
+
+  // ════════════════════════════════════════════
+  // SIDE FACES: connect bottom edges to top edges
+  // Each side: S quads, each quad has 4 unique verts (for sharp edges)
+  // ════════════════════════════════════════════
+
+  const addSideStrip = (bottomEdge, topEdge, flipWinding) => {
+    // bottomEdge, topEdge: arrays of [x,y,z] with S+1 points each
+    for (let i = 0; i < S; i++) {
+      const base = pos.length / 3;
+      const bl = bottomEdge[i], br = bottomEdge[i + 1];
+      const tl = topEdge[i], tr = topEdge[i + 1];
+      pos.push(...bl, ...br, ...tr, ...tl);
+      if (flipWinding) {
+        idx.push(base, base + 3, base + 2);
+        idx.push(base, base + 2, base + 1);
+      } else {
+        idx.push(base, base + 1, base + 2);
+        idx.push(base, base + 2, base + 3);
       }
-
-      row.push([x, h + yDish, z]);
     }
-    topGrid.push(row);
+  };
+
+  // Build edge arrays
+  const frontBottom = [], frontTop = [];
+  const backBottom = [], backTop = [];
+  const leftBottom = [], leftTop = [];
+  const rightBottom = [], rightTop = [];
+
+  for (let i = 0; i < S1; i++) {
+    const u = i / S;
+    // Front edge (z = -depth)
+    frontBottom.push([ lerp(-bw, bw, u), -hh, -bd ]);
+    frontTop.push([ lerp(-tw, tw, u), hh + dish(u, 0), -td ]);
+    // Back edge (z = +depth)
+    backBottom.push([ lerp(-bw, bw, u), -hh, bd ]);
+    backTop.push([ lerp(-tw, tw, u), hh + dish(u, 1), td ]);
+    // Left edge (x = -width)
+    leftBottom.push([ -bw, -hh, lerp(-bd, bd, u) ]);
+    leftTop.push([ -tw, hh + dish(0, u), lerp(-td, td, u) ]);
+    // Right edge (x = +width)
+    rightBottom.push([ bw, -hh, lerp(-bd, bd, u) ]);
+    rightTop.push([ tw, hh + dish(1, u), lerp(-td, td, u) ]);
   }
 
-  // Top face triangles
-  for (let iz = 0; iz < seg; iz++) {
-    for (let ix = 0; ix < seg; ix++) {
-      const a = topGrid[iz][ix];
-      const b = topGrid[iz][ix + 1];
-      const c = topGrid[iz + 1][ix + 1];
-      const d = topGrid[iz + 1][ix];
-      addQuad(a, b, c, d);
-    }
-  }
+  // Front: outward normal is -Z. Looking from -Z, bottom goes left-to-right.
+  // For CCW when viewed from -Z: bottom-right, bottom-left, top-left, top-right
+  addSideStrip(frontBottom, frontTop, true);
 
-  // ─── Bottom face (flat) ───
-  addQuad(
-    [-hw, -h, -hd],
-    [hw, -h, -hd],
-    [hw, -h, hd],
-    [-hw, -h, hd]
-  );
+  // Back: outward normal is +Z. Looking from +Z, bottom goes right-to-left.
+  addSideStrip(backBottom, backTop, false);
 
-  // ─── Side faces (connect bottom edges to top edges) ───
-  // Front side (z = -depth)
-  for (let ix = 0; ix < seg; ix++) {
-    const u0 = ix / seg;
-    const u1 = (ix + 1) / seg;
-    const bx0 = -hw + u0 * hw * 2;
-    const bx1 = -hw + u1 * hw * 2;
-    addQuad(
-      [bx0, -h, -hd],
-      [bx1, -h, -hd],
-      topGrid[0][ix + 1],
-      topGrid[0][ix]
-    );
-  }
+  // Left: outward normal is -X.
+  addSideStrip(leftBottom, leftTop, false);
 
-  // Back side (z = +depth)
-  for (let ix = 0; ix < seg; ix++) {
-    const u0 = ix / seg;
-    const u1 = (ix + 1) / seg;
-    const bx0 = -hw + u0 * hw * 2;
-    const bx1 = -hw + u1 * hw * 2;
-    addQuad(
-      topGrid[seg][ix],
-      topGrid[seg][ix + 1],
-      [bx1, -h, hd],
-      [bx0, -h, hd]
-    );
-  }
+  // Right: outward normal is +X.
+  addSideStrip(rightBottom, rightTop, true);
 
-  // Left side (x = -width)
-  for (let iz = 0; iz < seg; iz++) {
-    const v0 = iz / seg;
-    const v1 = (iz + 1) / seg;
-    const bz0 = -hd + v0 * hd * 2;
-    const bz1 = -hd + v1 * hd * 2;
-    addQuad(
-      topGrid[iz][0],
-      [-hw, -h, bz0],
-      [-hw, -h, bz1],
-      topGrid[iz + 1][0]
-    );
-  }
-
-  // Right side (x = +width)
-  for (let iz = 0; iz < seg; iz++) {
-    const v0 = iz / seg;
-    const v1 = (iz + 1) / seg;
-    const bz0 = -hd + v0 * hd * 2;
-    const bz1 = -hd + v1 * hd * 2;
-    addQuad(
-      [hw, -h, bz0],
-      topGrid[iz][seg],
-      topGrid[iz + 1][seg],
-      [hw, -h, bz1]
-    );
-  }
-
-  // ─── Build geometry ───
+  // ════════════════════════════════════════════
+  // Build geometry
+  // ════════════════════════════════════════════
   const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals(); // Smooth normals for better lighting
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
 
   return geo;
 }
 
-/**
- * Create keycap geometry from a CapGeometry spec.
- * Maps schema types to geometry params.
- */
+/** Create keycap geometry from a CapGeometry spec. */
 export function createKeycapFromSpec(capSpec) {
   return createKeycapGeometry({
     topWidth: capSpec.topWidth || 0.85,
     topDepth: capSpec.topDepth || 0.85,
     dishDepth: capSpec.dishDepth || 0.05,
     dishType: capSpec.dishType || "cylindrical",
-    cornerRadius: capSpec.cornerRadius || 0.06,
-    segments: 8,
+    segments: 6,
   });
 }

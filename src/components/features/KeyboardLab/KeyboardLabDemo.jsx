@@ -17,11 +17,15 @@ import { listKeycapPresets, getKeycapPreset } from "./presets/keycaps";
 import { buildCodeMap, extractKeys } from "./schema/derive";
 
 const COLOR_PRESETS = {
-  midnight: { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e" },
-  ocean:    { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a" },
-  sakura:   { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b" },
-  forest:   { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a" },
-  arctic:   { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0" },
+  midnight:    { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e", opacity: 1.0 },
+  ocean:       { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a", opacity: 1.0 },
+  sakura:      { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b", opacity: 1.0 },
+  forest:      { keycapColor: "#2d4a2d", accentKeyColor: "#5a8a3c", caseColor: "#1a2e1a", opacity: 1.0 },
+  arctic:      { keycapColor: "#e8edf2", accentKeyColor: "#94b3d4", caseColor: "#c0c8d0", opacity: 1.0 },
+  translucent: { keycapColor: "#8899aa", accentKeyColor: "#aabbcc", caseColor: "#1a1a1e", opacity: 0.55 },
+  pudding:     { keycapColor: "#f0e8d8", accentKeyColor: "#1a1a1e", caseColor: "#1a1a1e", opacity: 0.75 },
+  jelly:       { keycapColor: "#6a4c93", accentKeyColor: "#c75d9b", caseColor: "#0d0d12", opacity: 0.45 },
+  frosted:     { keycapColor: "#d0dce8", accentKeyColor: "#7eb0d5", caseColor: "#2a2a30", opacity: 0.65 },
 };
 
 const KeyboardLabDemo = ({ theme }) => {
@@ -32,6 +36,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const [capPresetId, setCapPresetId] = useState("cherry-profile");
   const [colorPreset, setColorPreset] = useState("midnight");
   const [colors, setColors] = useState(COLOR_PRESETS.midnight);
+  const [opacity, setOpacity] = useState(1.0);
   const [liveTyping, setLiveTyping] = useState(true);
   const [activeKeys, setActiveKeys] = useState(new Set());
   const [view, setView] = useState("both"); // "2d" | "3d" | "both"
@@ -81,6 +86,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const applyColorPreset = (name) => {
     setColorPreset(name);
     setColors(COLOR_PRESETS[name]);
+    setOpacity(COLOR_PRESETS[name].opacity ?? 1.0);
   };
 
   const textColor = theme?.text || "#e0e0e0";
@@ -145,6 +151,20 @@ const KeyboardLabDemo = ({ theme }) => {
           </button>
         ))}
         <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
+        <label style={{ display: "flex", alignItems: "center", gap: "6px", color: textColor, fontSize: "11px" }}>
+          Opacity
+          <input
+            type="range"
+            min="0.1"
+            max="1"
+            step="0.05"
+            value={opacity}
+            onChange={(e) => setOpacity(parseFloat(e.target.value))}
+            style={{ width: "60px", accentColor: statsColor }}
+          />
+          <span style={{ minWidth: "28px" }}>{Math.round(opacity * 100)}%</span>
+        </label>
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
         {[
           { label: "Keycap", key: "keycapColor" },
           { label: "Accent", key: "accentKeyColor" },
@@ -186,6 +206,7 @@ const KeyboardLabDemo = ({ theme }) => {
               keycapColor={colors.keycapColor}
               accentKeyColor={colors.accentKeyColor}
               caseColor={colors.caseColor}
+              keycapOpacity={opacity}
             />
           </div>
         )}
