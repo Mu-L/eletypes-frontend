@@ -1,8 +1,5 @@
 /**
  * KeycapLabels — renders key legends on keycap surfaces driven by legend preset.
- *
- * Consumes eletypes-legend/1 schema for font, size, color, position.
- * Per-key overrides supported via legendPreset.keyOverrides[key.id].
  */
 
 import React, { useMemo } from "react";
@@ -11,13 +8,21 @@ import { extractKeys, computeBounds } from "./schema/derive";
 
 const PLATE_Y = 0.02;
 
-// Position offsets for label placement on keycap surface (in % of key size)
 const POSITION_OFFSETS = {
-  "center":        { tx: "0%",    ty: "0%",    align: "center" },
-  "top-left":      { tx: "-30%",  ty: "-25%",  align: "left" },
-  "top-center":    { tx: "0%",    ty: "-25%",  align: "center" },
-  "bottom-left":   { tx: "-30%",  ty: "25%",   align: "left" },
-  "bottom-center": { tx: "0%",    ty: "25%",   align: "center" },
+  "center":        { tx: "0%",   ty: "0%" },
+  "top-left":      { tx: "-25%", ty: "-20%" },
+  "top-center":    { tx: "0%",   ty: "-20%" },
+  "bottom-left":   { tx: "-25%", ty: "20%" },
+  "bottom-center": { tx: "0%",   ty: "20%" },
+};
+
+const yToRow = (y) => {
+  if (y < 1.0) return 0;
+  if (y < 2.0) return 1;
+  if (y < 3.0) return 2;
+  if (y < 4.0) return 3;
+  if (y < 5.0) return 4;
+  return 5;
 };
 
 const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
@@ -31,25 +36,15 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
   const rows = (!profile?.uniform && profile?.rows) ? profile.rows : null;
 
   const style = legendPreset?.style || {
-    fontFamily: "sans-serif",
-    fontSize: 11,
-    fontWeight: 600,
+    fontFamily: "Arial, sans-serif",
+    fontSize: 14,
+    fontWeight: 700,
     color: "#cccccc",
     position: "center",
     uppercase: true,
   };
   const keyOverrides = legendPreset?.keyOverrides || {};
 
-  const yToRow = (y) => {
-    if (y < 1.0) return 0;
-    if (y < 2.0) return 1;
-    if (y < 3.0) return 2;
-    if (y < 4.0) return 3;
-    if (y < 5.0) return 4;
-    return 5;
-  };
-
-  // Skip rendering entirely for blank preset
   if (style.fontSize === 0 || style.color === "transparent") return null;
 
   const posOffset = POSITION_OFFSETS[style.position] || POSITION_OFFSETS["center"];
@@ -69,10 +64,10 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
         const y = capH + PLATE_Y + 0.001;
         const z = (key.y + (key.h || 1) / 2) - centerZ;
 
-        // Per-key font size: base size, scaled down for long labels or narrow keys
+        // Font size: start from preset, scale down only for long labels on narrow keys
         let fontSize = override?.fontSize || style.fontSize;
-        if (displayLabel.length > 3) fontSize = Math.min(fontSize, 8);
-        if (key.w < 1.2 && displayLabel.length > 2) fontSize = Math.min(fontSize, 7);
+        if (displayLabel.length > 4) fontSize *= 0.7;
+        else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.75;
 
         const color = override?.color || style.color;
         const shouldUppercase = style.uppercase && displayLabel.length === 1;
@@ -83,25 +78,32 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
               <Html
                 transform
                 occlude
-                distanceFactor={1.8}
+                // distanceFactor controls the scaling of HTML in 3D space.
+                // Lower = larger text relative to the keycap.
+                distanceFactor={3}
                 style={{
                   pointerEvents: "none",
                   userSelect: "none",
                   color,
                   fontSize: `${fontSize}px`,
                   fontFamily: style.fontFamily,
-                  fontWeight: style.fontWeight || 600,
-                  letterSpacing: style.letterSpacing ? `${style.letterSpacing}em` : undefined,
+                  fontWeight: style.fontWeight || 700,
+                  letterSpacing: style.letterSpacing ? `${style.letterSpacing}em` : "0.03em",
                   textTransform: shouldUppercase ? "uppercase" : "none",
                   whiteSpace: "nowrap",
-                  textAlign: posOffset.align,
+                  textAlign: "center",
                   lineHeight: 1,
                   transform: `translate(${posOffset.tx}, ${posOffset.ty})`,
                 }}
               >
                 {displayLabel}
                 {override?.subLabel && (
-                  <span style={{ display: "block", fontSize: `${Math.max(fontSize - 3, 5)}px`, opacity: 0.6, marginTop: "1px" }}>
+                  <span style={{
+                    display: "block",
+                    fontSize: `${Math.max(fontSize * 0.65, 6)}px`,
+                    opacity: 0.6,
+                    marginTop: "1px",
+                  }}>
                     {override.subLabel}
                   </span>
                 )}

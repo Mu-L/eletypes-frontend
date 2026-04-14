@@ -37,6 +37,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const [presetId, setPresetId] = useState(presets[0]?.id);
   const [capPresetId, setCapPresetId] = useState("cherry-profile");
   const [legendPresetId, setLegendPresetId] = useState("gmk-classic");
+  const [legendOverrides, setLegendOverrides] = useState({});
   const [colorPreset, setColorPreset] = useState("midnight");
   const [colors, setColors] = useState(COLOR_PRESETS.midnight);
   const [opacity, setOpacity] = useState(1.0);
@@ -46,7 +47,11 @@ const KeyboardLabDemo = ({ theme }) => {
 
   const { layout, shell } = useMemo(() => getPreset(presetId), [presetId]);
   const keycapPreset = useMemo(() => getKeycapPreset(capPresetId), [capPresetId]);
-  const legendPreset = useMemo(() => getLegendPreset(legendPresetId), [legendPresetId]);
+  const legendPreset = useMemo(() => {
+    const base = getLegendPreset(legendPresetId);
+    if (Object.keys(legendOverrides).length === 0) return base;
+    return { ...base, style: { ...base.style, ...legendOverrides } };
+  }, [legendPresetId, legendOverrides]);
   const codeMap = useMemo(() => buildCodeMap(extractKeys(layout)), [layout]);
 
   // Bridge: DOM keyboard events → triggerKey + 2D active state
@@ -134,7 +139,7 @@ const KeyboardLabDemo = ({ theme }) => {
         {/* Legend style selector */}
         <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>LEGEND</span>
         {legendPresets.map((p) => (
-          <button key={p.id} onClick={() => setLegendPresetId(p.id)} style={btnStyle(legendPresetId === p.id)}>
+          <button key={p.id} onClick={() => { setLegendPresetId(p.id); setLegendOverrides({}); }} style={btnStyle(legendPresetId === p.id)}>
             {p.name}
           </button>
         ))}
@@ -195,6 +200,80 @@ const KeyboardLabDemo = ({ theme }) => {
             />
           </label>
         ))}
+      </div>
+
+      {/* Legend editing bar */}
+      <div style={{ display: "flex", gap: "10px", padding: "8px 16px", alignItems: "center", borderBottom: `1px solid ${textColor}15`, flexWrap: "wrap" }}>
+        <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>LEGEND</span>
+
+        {/* Font size */}
+        <label style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
+          Size
+          <input
+            type="range"
+            min="8"
+            max="28"
+            step="1"
+            value={legendPreset.style.fontSize}
+            onChange={(e) => setLegendOverrides((o) => ({ ...o, fontSize: parseInt(e.target.value) }))}
+            style={{ width: "60px", accentColor: statsColor }}
+          />
+          <span style={{ minWidth: "20px" }}>{legendPreset.style.fontSize}</span>
+        </label>
+
+        {/* Font weight */}
+        <label style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
+          Weight
+          <select
+            value={legendPreset.style.fontWeight}
+            onChange={(e) => setLegendOverrides((o) => ({ ...o, fontWeight: parseInt(e.target.value) }))}
+            style={{ background: "#1a1a1e", color: textColor, border: `1px solid ${textColor}33`, borderRadius: "3px", padding: "2px 4px", fontSize: "11px" }}
+          >
+            <option value="400">Light</option>
+            <option value="500">Medium</option>
+            <option value="600">Semi</option>
+            <option value="700">Bold</option>
+            <option value="800">Heavy</option>
+          </select>
+        </label>
+
+        {/* Font family */}
+        <label style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
+          Font
+          <select
+            value={legendPreset.style.fontFamily.split(",")[0].trim().replace(/'/g, "")}
+            onChange={(e) => setLegendOverrides((o) => ({ ...o, fontFamily: e.target.value }))}
+            style={{ background: "#1a1a1e", color: textColor, border: `1px solid ${textColor}33`, borderRadius: "3px", padding: "2px 4px", fontSize: "11px" }}
+          >
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Helvetica Neue, sans-serif">Helvetica</option>
+            <option value="Courier New, monospace">Courier</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Tomorrow, monospace">Tomorrow</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+            <option value="Trebuchet MS, sans-serif">Trebuchet</option>
+            <option value="Impact, sans-serif">Impact</option>
+          </select>
+        </label>
+
+        {/* Legend color */}
+        <label style={{ display: "flex", alignItems: "center", gap: "4px", color: textColor, fontSize: "11px" }}>
+          Color
+          <input
+            type="color"
+            value={legendPreset.style.color}
+            onChange={(e) => setLegendOverrides((o) => ({ ...o, color: e.target.value }))}
+            style={{ width: "24px", height: "24px", border: "none", cursor: "pointer", background: "transparent" }}
+          />
+        </label>
+
+        {/* Uppercase toggle */}
+        <button
+          onClick={() => setLegendOverrides((o) => ({ ...o, uppercase: !legendPreset.style.uppercase }))}
+          style={btnStyle(legendPreset.style.uppercase)}
+        >
+          ABC
+        </button>
       </div>
 
       {/* Content area */}

@@ -1,31 +1,32 @@
 /**
  * Built-in legend style presets.
+ * Font sizes tuned for distanceFactor=0.9 in 3D space.
  */
 
 export const LEGEND_PRESETS = {
   "gmk-classic": {
     schema: "eletypes-legend/1",
     id: "gmk-classic",
-    meta: { name: "GMK Classic" },
+    meta: { name: "GMK" },
     style: {
-      fontFamily: "'Arial', 'Helvetica Neue', sans-serif",
-      fontSize: 11,
+      fontFamily: "Arial, Helvetica, sans-serif",
+      fontSize: 16,
       fontWeight: 700,
-      color: "#cccccc",
+      color: "#d0d0d0",
       position: "center",
-      letterSpacing: 0.03,
+      letterSpacing: 0.04,
       uppercase: true,
     },
   },
   "minimalist": {
     schema: "eletypes-legend/1",
     id: "minimalist",
-    meta: { name: "Minimalist" },
+    meta: { name: "Minimal" },
     style: {
-      fontFamily: "'Inter', 'SF Pro', sans-serif",
-      fontSize: 9,
-      fontWeight: 500,
-      color: "#999999",
+      fontFamily: "Helvetica Neue, Arial, sans-serif",
+      fontSize: 12,
+      fontWeight: 400,
+      color: "#888888",
       position: "center",
       letterSpacing: 0.02,
       uppercase: false,
@@ -36,12 +37,12 @@ export const LEGEND_PRESETS = {
     id: "retro",
     meta: { name: "Retro" },
     style: {
-      fontFamily: "'Courier New', monospace",
-      fontSize: 10,
+      fontFamily: "Courier New, Courier, monospace",
+      fontSize: 14,
       fontWeight: 700,
       color: "#e0d8c0",
       position: "center",
-      letterSpacing: 0.05,
+      letterSpacing: 0.06,
       uppercase: true,
     },
   },
@@ -50,13 +51,27 @@ export const LEGEND_PRESETS = {
     id: "top-print",
     meta: { name: "Top Print" },
     style: {
-      fontFamily: "'Helvetica Neue', Arial, sans-serif",
-      fontSize: 8,
+      fontFamily: "Helvetica Neue, Arial, sans-serif",
+      fontSize: 11,
       fontWeight: 600,
-      color: "#bbbbbb",
+      color: "#aaaaaa",
       position: "top-left",
-      letterSpacing: 0.02,
+      letterSpacing: 0.01,
       uppercase: false,
+    },
+  },
+  "cyber": {
+    schema: "eletypes-legend/1",
+    id: "cyber",
+    meta: { name: "Cyber" },
+    style: {
+      fontFamily: "Tomorrow, Consolas, monospace",
+      fontSize: 13,
+      fontWeight: 600,
+      color: "#00ffaa",
+      position: "center",
+      letterSpacing: 0.08,
+      uppercase: true,
     },
   },
   "blank": {
