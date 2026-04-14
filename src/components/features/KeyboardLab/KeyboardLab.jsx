@@ -22,7 +22,7 @@ const KeyboardLab = forwardRef(({
   accentKeyColor = "#3d3d42",
   caseColor = "#1a1a1e",
   keycapOpacity = 1.0,
-  legendColor = "#cccccc",
+  legendPreset,
   style,
 }, ref) => {
   const modelRef = useRef();
@@ -61,7 +61,7 @@ const KeyboardLab = forwardRef(({
         <KeycapLabels
           layout={layout}
           keycapPreset={keycapPreset}
-          legendColor={legendColor}
+          legendPreset={legendPreset}
         />
 
         <OrbitControls

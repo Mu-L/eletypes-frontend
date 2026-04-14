@@ -1,22 +1,26 @@
 /**
- * KeycapLabels — renders key legends as 2D HTML overlays positioned in 3D space.
+ * KeycapLabels — renders key legends on keycap surfaces driven by legend preset.
  *
- * Uses drei's <Html> for each key label, positioned at the top of each keycap.
- * This is simpler than a texture atlas and looks crisp at any zoom level.
- *
- * Performance: <Html> creates DOM elements outside the WebGL canvas.
- * For ~84 keys this is acceptable. If it becomes a bottleneck,
- * migrate to a canvas texture atlas with per-instance UV offsets.
- *
- * Labels are occludable (hidden when behind the keyboard) and
- * pointer-events: none so they don't interfere with OrbitControls.
+ * Consumes eletypes-legend/1 schema for font, size, color, position.
+ * Per-key overrides supported via legendPreset.keyOverrides[key.id].
  */
 
 import React, { useMemo } from "react";
 import { Html } from "@react-three/drei";
 import { extractKeys, computeBounds } from "./schema/derive";
 
-const KeycapLabels = ({ layout, keycapPreset, legendColor = "#cccccc" }) => {
+const PLATE_Y = 0.02;
+
+// Position offsets for label placement on keycap surface (in % of key size)
+const POSITION_OFFSETS = {
+  "center":        { tx: "0%",    ty: "0%",    align: "center" },
+  "top-left":      { tx: "-30%",  ty: "-25%",  align: "left" },
+  "top-center":    { tx: "0%",    ty: "-25%",  align: "center" },
+  "bottom-left":   { tx: "-30%",  ty: "25%",   align: "left" },
+  "bottom-center": { tx: "0%",    ty: "25%",   align: "center" },
+};
+
+const KeycapLabels = ({ layout, keycapPreset, legendPreset }) => {
   const keys = useMemo(() => extractKeys(layout), [layout]);
   const bounds = useMemo(() => computeBounds(keys), [keys]);
   const centerX = bounds.width / 2;
@@ -26,7 +30,16 @@ const KeycapLabels = ({ layout, keycapPreset, legendColor = "#cccccc" }) => {
   const baseH = profile?.defaultCap?.height || 0.38;
   const rows = (!profile?.uniform && profile?.rows) ? profile.rows : null;
 
-  // Row detection
+  const style = legendPreset?.style || {
+    fontFamily: "sans-serif",
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#cccccc",
+    position: "center",
+    uppercase: true,
+  };
+  const keyOverrides = legendPreset?.keyOverrides || {};
+
   const yToRow = (y) => {
     if (y < 1.0) return 0;
     if (y < 2.0) return 1;
@@ -36,45 +49,65 @@ const KeycapLabels = ({ layout, keycapPreset, legendColor = "#cccccc" }) => {
     return 5;
   };
 
+  // Skip rendering entirely for blank preset
+  if (style.fontSize === 0 || style.color === "transparent") return null;
+
+  const posOffset = POSITION_OFFSETS[style.position] || POSITION_OFFSETS["center"];
+
   return (
     <group>
       {keys.map((key) => {
-        if (!key.label) return null; // Skip blank keys (Space)
+        const override = keyOverrides[key.id];
+        const displayLabel = override?.label ?? key.label;
+        if (!displayLabel) return null;
 
         const row = yToRow(key.y);
         const sculpt = rows?.[row];
         const capH = sculpt ? baseH * sculpt.height : baseH;
 
-        // Position: center of key, on top of the keycap
         const x = (key.x + key.w / 2) - centerX;
-        const y = capH + 0.02 + 0.01; // Top of cap + plate + small offset
+        const y = capH + PLATE_Y + 0.001;
         const z = (key.y + (key.h || 1) / 2) - centerZ;
 
-        // Font size based on key width and label length
-        const isSmall = key.w < 1.2 && key.label.length > 2;
-        const fontSize = isSmall ? "7px" : key.label.length > 3 ? "7px" : "9px";
+        // Per-key font size: base size, scaled down for long labels or narrow keys
+        let fontSize = override?.fontSize || style.fontSize;
+        if (displayLabel.length > 3) fontSize = Math.min(fontSize, 8);
+        if (key.w < 1.2 && displayLabel.length > 2) fontSize = Math.min(fontSize, 7);
+
+        const color = override?.color || style.color;
+        const shouldUppercase = style.uppercase && displayLabel.length === 1;
 
         return (
-          <Html
-            key={key.id}
-            position={[x, y, z]}
-            center
-            distanceFactor={8}
-            style={{
-              pointerEvents: "none",
-              userSelect: "none",
-              color: legendColor,
-              fontSize,
-              fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
-              fontWeight: 500,
-              letterSpacing: "0.02em",
-              textTransform: key.label.length === 1 ? "uppercase" : "none",
-              whiteSpace: "nowrap",
-              textShadow: "0 0 2px rgba(0,0,0,0.5)",
-            }}
-          >
-            {key.label}
-          </Html>
+          <group key={key.id} position={[x, y, z]}>
+            <group rotation={[-Math.PI / 2, 0, 0]}>
+              <Html
+                transform
+                occlude
+                distanceFactor={1.8}
+                style={{
+                  pointerEvents: "none",
+                  userSelect: "none",
+                  color,
+                  fontSize: `${fontSize}px`,
+                  fontFamily: style.fontFamily,
+                  fontWeight: style.fontWeight || 600,
+                  letterSpacing: style.letterSpacing ? `${style.letterSpacing}em` : undefined,
+                  textTransform: shouldUppercase ? "uppercase" : "none",
+                  whiteSpace: "nowrap",
+                  textAlign: posOffset.align,
+                  lineHeight: 1,
+                  transform: `translate(${posOffset.tx}, ${posOffset.ty})`,
+                }}
+              >
+                {displayLabel}
+                {override?.subLabel && (
+                  <span style={{ display: "block", fontSize: `${Math.max(fontSize - 3, 5)}px`, opacity: 0.6, marginTop: "1px" }}>
+                    {override.subLabel}
+                  </span>
+                )}
+              </Html>
+            </group>
+          </group>
         );
       })}
     </group>

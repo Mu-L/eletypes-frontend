@@ -14,6 +14,7 @@ import KeyboardLab from "./KeyboardLab";
 import KeyboardLayout2D from "./KeyboardLayout2D";
 import { listPresets, getPreset } from "./presets";
 import { listKeycapPresets, getKeycapPreset } from "./presets/keycaps";
+import { listLegendPresets, getLegendPreset } from "./presets/legends";
 import { buildCodeMap, extractKeys } from "./schema/derive";
 
 const COLOR_PRESETS = {
@@ -32,8 +33,10 @@ const KeyboardLabDemo = ({ theme }) => {
   const keyboardRef = useRef();
   const presets = useMemo(() => listPresets(), []);
   const capPresets = useMemo(() => listKeycapPresets(), []);
+  const legendPresets = useMemo(() => listLegendPresets(), []);
   const [presetId, setPresetId] = useState(presets[0]?.id);
   const [capPresetId, setCapPresetId] = useState("cherry-profile");
+  const [legendPresetId, setLegendPresetId] = useState("gmk-classic");
   const [colorPreset, setColorPreset] = useState("midnight");
   const [colors, setColors] = useState(COLOR_PRESETS.midnight);
   const [opacity, setOpacity] = useState(1.0);
@@ -43,6 +46,7 @@ const KeyboardLabDemo = ({ theme }) => {
 
   const { layout, shell } = useMemo(() => getPreset(presetId), [presetId]);
   const keycapPreset = useMemo(() => getKeycapPreset(capPresetId), [capPresetId]);
+  const legendPreset = useMemo(() => getLegendPreset(legendPresetId), [legendPresetId]);
   const codeMap = useMemo(() => buildCodeMap(extractKeys(layout)), [layout]);
 
   // Bridge: DOM keyboard events → triggerKey + 2D active state
@@ -121,6 +125,16 @@ const KeyboardLabDemo = ({ theme }) => {
         <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>PROFILE</span>
         {capPresets.map((p) => (
           <button key={p.id} onClick={() => setCapPresetId(p.id)} style={btnStyle(capPresetId === p.id)}>
+            {p.name}
+          </button>
+        ))}
+
+        <span style={{ color: textColor, opacity: 0.15, margin: "0 4px" }}>|</span>
+
+        {/* Legend style selector */}
+        <span style={{ fontSize: "11px", color: textColor, opacity: 0.5 }}>LEGEND</span>
+        {legendPresets.map((p) => (
+          <button key={p.id} onClick={() => setLegendPresetId(p.id)} style={btnStyle(legendPresetId === p.id)}>
             {p.name}
           </button>
         ))}
@@ -208,7 +222,7 @@ const KeyboardLabDemo = ({ theme }) => {
               accentKeyColor={colors.accentKeyColor}
               caseColor={colors.caseColor}
               keycapOpacity={opacity}
-              legendColor={colors.legendColor || "#cccccc"}
+              legendPreset={legendPreset}
             />
           </div>
         )}
