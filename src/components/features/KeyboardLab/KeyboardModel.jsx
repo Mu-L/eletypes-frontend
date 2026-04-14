@@ -17,6 +17,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three-stdlib";
 import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema/derive";
 import { DEFAULT_SHELL } from "./schema/shellProfile";
+import { createKeycapFromSpec } from "./KeycapGeometry";
 
 extend({ RoundedBoxGeometry });
 
@@ -108,10 +109,17 @@ const KeyboardModel = forwardRef(({
     });
   }, [keys, centerX, centerZ, keycapPreset]);
 
-  const geometry = useMemo(
-    () => new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL),
-    []
-  );
+  // ─── Keycap geometry: sculpted from profile data ───
+  // Creates tapered shape with dish based on the active profile's defaultCap.
+  // One geometry shared across all instances (per-row variation via matrix scale).
+  const geometry = useMemo(() => {
+    const capSpec = keycapPreset?.profile?.defaultCap;
+    if (capSpec) {
+      return createKeycapFromSpec(capSpec);
+    }
+    // Fallback: basic rounded box if no keycap preset
+    return new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL);
+  }, [keycapPreset]);
   const material = useMemo(
     () => new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4 }),
     []
