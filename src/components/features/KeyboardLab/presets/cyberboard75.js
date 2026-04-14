@@ -1,6 +1,6 @@
 /**
  * Cyberboard-inspired 75% ANSI preset.
- * Same key layout as generic 75%, different shell identity.
+ * Same key layout as generic 75%, different shell identity and visual.
  */
 
 import generic75 from "./generic75";
@@ -14,6 +14,7 @@ export default {
   },
   board: {
     ...generic75.board,
+    id: "cyberboard-75-ansi",
     casePreset: "cyberboard-r3",
   },
   visual: {

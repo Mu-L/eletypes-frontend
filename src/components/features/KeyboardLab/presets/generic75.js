@@ -10,8 +10,11 @@ const RC = 15.5;
 
 export default createPreset({
   name: "Generic 75% ANSI",
-  layoutType: "75%",
+  boardId: "generic-75-ansi",
+  formFactor: "75%",
+  layoutStagger: "row-staggered",
   standard: "ANSI",
+  keyboardType: "mechanical",
   description: "Standard 75% ANSI layout, Keychron Q1 / GMMK Pro style",
   keys: [
     // ══ Row 0: Function row ══
