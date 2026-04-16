@@ -46,7 +46,7 @@ const COLOR_PRESETS = {
   frosted:     { keycapColor: "#d0dce8", accentKeyColor: "#7eb0d5", caseColor: "#2a2a30", opacity: 0.65 },
 };
 
-const JSON_TABS = ["Design", "Layout", "Keycap", "Legend", "Shell"];
+const JSON_TABS = ["Design", "Layout", "Keycap", "Legend", "Shell", "Profile"];
 
 const KeyboardLabDemo = ({ theme }) => {
   const keyboardRef = useRef();
@@ -107,11 +107,15 @@ const KeyboardLabDemo = ({ theme }) => {
 
   // Stable design document — only regenerates when design inputs change
   const currentDesign = useMemo(() => {
-    const d = designFromSelections({ name: designName, layoutRef, keycapRef, legendRef, shellRef, colorOverrides: colors, legendOverrides });
+    const d = designFromSelections({
+      name: designName, layoutRef, keycapRef, legendRef, shellRef,
+      colorOverrides: colors, legendOverrides,
+      caseProfile, mountOffset, mountFit, caseScale, extrudeWidth,
+    });
     d.id = designId;
     delete d.meta.created;
     return d;
-  }, [designId, designName, layoutRef, keycapRef, legendRef, shellRef, colors, legendOverrides]);
+  }, [designId, designName, layoutRef, keycapRef, legendRef, shellRef, colors, legendOverrides, caseProfile, mountOffset, mountFit, caseScale, extrudeWidth]);
 
   // Save / Load
   const handleSave = useCallback(() => {
@@ -120,11 +124,25 @@ const KeyboardLabDemo = ({ theme }) => {
 
   const handleLoad = useCallback((id) => {
     const d = loadDesign(id); if (!d) return;
-    setDesignName(d.meta?.name || "Untitled"); setLayoutRef(d.assets.layout);
-    setKeycapRef(d.assets.keycap || "keycap/cherry-classic@1"); setLegendRef(d.assets.legend || "legend/gmk-center@1");
+    setDesignName(d.meta?.name || "Untitled");
+    setLayoutRef(d.assets.layout);
+    setKeycapRef(d.assets.keycap || "keycap/cherry-classic@1");
+    setLegendRef(d.assets.legend || "legend/gmk-center@1");
     setShellRef(d.assets.shell || "shell/generic-75@1");
-    setColors(d.overrides?.visual || COLOR_PRESETS.midnight); setOpacity(d.overrides?.visual?.opacity ?? 1.0);
-    setLegendOverrides(d.overrides?.legend || {}); setColorPreset("");
+    setColors(d.overrides?.visual || COLOR_PRESETS.midnight);
+    setOpacity(d.overrides?.visual?.opacity ?? 1.0);
+    setLegendOverrides(d.overrides?.legend || {});
+    setColorPreset("");
+    // Restore case profile + mount settings
+    if (d.overrides?.caseProfile) setCaseProfile(d.overrides.caseProfile);
+    if (d.overrides?.mount?.offset) setMountOffset(d.overrides.mount.offset);
+    else setMountOffset({ x: 0, y: 0, z: 0 });
+    if (d.overrides?.mount?.fit != null) setMountFit(d.overrides.mount.fit);
+    else setMountFit(0.85);
+    if (d.overrides?.mount?.caseScale != null) setCaseScale(d.overrides.mount.caseScale);
+    else setCaseScale(1.0);
+    if (d.overrides?.mount?.extrudeWidth != null) setExtrudeWidth(d.overrides.mount.extrudeWidth);
+    else setExtrudeWidth(1.0);
   }, []);
 
   const handleExport = useCallback(() => {
@@ -139,6 +157,11 @@ const KeyboardLabDemo = ({ theme }) => {
       r.onload = (ev) => { try { const d = importDesignJSON(ev.target.result); setDesignName(d.meta?.name || "Imported"); setLayoutRef(d.assets.layout);
         if (d.assets.keycap) setKeycapRef(d.assets.keycap); if (d.assets.legend) setLegendRef(d.assets.legend); if (d.assets.shell) setShellRef(d.assets.shell);
         if (d.overrides?.visual) setColors(d.overrides.visual); if (d.overrides?.legend) setLegendOverrides(d.overrides.legend);
+        if (d.overrides?.caseProfile) setCaseProfile(d.overrides.caseProfile);
+        if (d.overrides?.mount?.offset) setMountOffset(d.overrides.mount.offset);
+        if (d.overrides?.mount?.fit != null) setMountFit(d.overrides.mount.fit);
+        if (d.overrides?.mount?.caseScale != null) setCaseScale(d.overrides.mount.caseScale);
+        if (d.overrides?.mount?.extrudeWidth != null) setExtrudeWidth(d.overrides.mount.extrudeWidth);
       } catch (err) { alert("Import failed: " + err.message); } }; r.readAsText(f); }; input.click();
   }, []);
 
@@ -164,6 +187,7 @@ const KeyboardLabDemo = ({ theme }) => {
       case "Keycap": return resolvedKeycap ? JSON.stringify(resolvedKeycap, null, 2) : "{}";
       case "Legend": return legendPreset ? JSON.stringify(legendPreset, null, 2) : "{}";
       case "Shell": return shell ? JSON.stringify(shell, null, 2) : "{}";
+      case "Profile": return JSON.stringify({ caseProfile, mount: { offset: mountOffset, fit: mountFit, caseScale, extrudeWidth } }, null, 2);
       default: return "{}";
     }
   }, [jsonTab, currentDesign, layout, resolvedKeycap, legendPreset, shell]);
@@ -192,6 +216,14 @@ const KeyboardLabDemo = ({ theme }) => {
         if (parsed.style) setLegendOverrides(parsed.style);
       } else if (jsonTab === "Shell") {
         if (parsed.case) setShell(parsed);
+      } else if (jsonTab === "Profile") {
+        if (parsed.caseProfile) setCaseProfile(parsed.caseProfile);
+        if (parsed.mount) {
+          if (parsed.mount.offset) setMountOffset(parsed.mount.offset);
+          if (parsed.mount.fit != null) setMountFit(parsed.mount.fit);
+          if (parsed.mount.caseScale != null) setCaseScale(parsed.mount.caseScale);
+          if (parsed.mount.extrudeWidth != null) setExtrudeWidth(parsed.mount.extrudeWidth);
+        }
       }
     } catch { /* invalid JSON, ignore until valid */ }
   }, [jsonTab]);

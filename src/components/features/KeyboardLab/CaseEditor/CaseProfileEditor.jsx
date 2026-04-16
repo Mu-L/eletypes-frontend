@@ -68,6 +68,20 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
+  // Sync from parent when initialProfile changes (e.g., loading a saved design)
+  const lastLoadedRef = useRef(null);
+  useEffect(() => {
+    if (!initialProfile?.points) return;
+    // Only update if this is a genuinely new profile (not our own onChange echo)
+    const key = JSON.stringify(initialProfile.points);
+    if (key !== lastLoadedRef.current) {
+      lastLoadedRef.current = key;
+      setPoints(initialProfile.points.map(p => ({ ...p }))); // deep copy with d preserved
+      if (initialProfile.mountEdge) setMountEdge([...initialProfile.mountEdge]);
+      setSelectedPoint(null);
+    }
+  }, [initialProfile]);
+
   const text = theme?.text || "#e0e0e0";
   const accent = theme?.stats || "#6ec6ff";
   const bg = theme?.background || "#111115";
@@ -254,7 +268,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
                 onContextMenu={(e) => handleRightClick(i, e)}
               />
               <text x={sx} y={sy - 10} fontSize="8" fill={text} textAnchor="middle" opacity={0.5}>
-                {pt.x},{pt.y}
+                {pt.x},{pt.y}{pt.d ? ` d${pt.d}` : ""}
               </text>
             </g>
           );

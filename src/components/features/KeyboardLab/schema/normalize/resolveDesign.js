@@ -78,6 +78,11 @@ export function designFromSelections({
   colorOverrides,
   legendOverrides,
   keyOverrides,
+  caseProfile,
+  mountOffset,
+  mountFit,
+  caseScale,
+  extrudeWidth,
 }) {
   const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36);
 
@@ -102,6 +107,15 @@ export function designFromSelections({
   if (colorOverrides && Object.keys(colorOverrides).length > 0) overrides.visual = colorOverrides;
   if (legendOverrides && Object.keys(legendOverrides).length > 0) overrides.legend = legendOverrides;
   if (keyOverrides && Object.keys(keyOverrides).length > 0) overrides.keys = keyOverrides;
+
+  // Case profile + mount settings
+  if (caseProfile?.points) overrides.caseProfile = caseProfile;
+  const mount = {};
+  if (mountOffset && (mountOffset.x || mountOffset.y || mountOffset.z)) mount.offset = mountOffset;
+  if (mountFit != null && mountFit !== 0.85) mount.fit = mountFit;
+  if (caseScale != null && caseScale !== 1.0) mount.caseScale = caseScale;
+  if (extrudeWidth != null && extrudeWidth !== 1.0) mount.extrudeWidth = extrudeWidth;
+  if (Object.keys(mount).length > 0) overrides.mount = mount;
   if (Object.keys(overrides).length > 0) design.overrides = overrides;
 
   return design;
