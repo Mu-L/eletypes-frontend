@@ -19,6 +19,7 @@ import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 import { createKeycapFromSpec } from "./KeycapGeometry";
 import { extrudeCaseProfile, computeMountSurface } from "./CaseEditor/extrudeProfile";
+import { Text } from "@react-three/drei";
 
 extend({ RoundedBoxGeometry });
 
@@ -54,7 +55,12 @@ const KeyboardModel = forwardRef(({
   accentKeyColor,
   caseColor,
   keycapOpacity = 1.0,
+  legendPreset,
   caseProfile,
+  caseScale = 1.0,
+  mountOffset = { x: 0, y: 0, z: 0 },
+  mountFit = 0.85,
+  extrudeWidth = 1.0,
 }, ref) => {
   const meshRef = useRef();
   const { invalidate } = useThree();
@@ -90,9 +96,10 @@ const KeyboardModel = forwardRef(({
   const _scale = useMemo(() => new THREE.Vector3(), []);
 
   // ─── Case dimensions (needed before rest positions for slope calc) ───
-  const caseW = bounds.width + shellConfig.paddingLeft + shellConfig.paddingRight;
-  const caseD = bounds.height + shellConfig.paddingTop + shellConfig.paddingBottom;
-  const caseCenterZ = (shellConfig.paddingTop - shellConfig.paddingBottom) / 2;
+  // Case dimensions — scaled by caseScale for user adjustment
+  const caseW = (bounds.width + shellConfig.paddingLeft + shellConfig.paddingRight) * caseScale;
+  const caseD = (bounds.height + shellConfig.paddingTop + shellConfig.paddingBottom) * caseScale;
+  const caseCenterZ = (shellConfig.paddingTop - shellConfig.paddingBottom) / 2 * caseScale;
 
   // ─── Shared profile scaling (used by BOTH case geo and mount surface) ───
   const profileScale = useMemo(() => {
@@ -108,27 +115,32 @@ const KeyboardModel = forwardRef(({
   // ─── Profile-based case geometry ───
   const profileCaseGeo = useMemo(() => {
     if (!profileScale) return null;
-    return extrudeCaseProfile(profileScale.points, caseW, caseD, profileScale.maxHeight);
-  }, [profileScale, caseW, caseD]);
+    return extrudeCaseProfile(profileScale.points, caseW * extrudeWidth, caseD, profileScale.maxHeight);
+  }, [profileScale, caseW, caseD, extrudeWidth]);
 
   // ─── Mount surface from profile (same scaling as case geometry) ───
   const mountSurface = useMemo(() => {
     if (!profileScale || !profileScale.mountEdge) return null;
     const ms = computeMountSurface(profileScale.points, profileScale.mountEdge, caseD, profileScale.maxHeight);
-    const msRangeZ = ms.endZ - ms.startZ;
+
+    // mountFit: what proportion of the mount edge the key field occupies
+    // 1.0 = keys span the full mount edge
+    // 0.8 = keys occupy 80% of the edge, centered
+    // >1.0 = keys extend beyond the edge (overflow)
+    const margin = (1 - mountFit) / 2; // margin on each side
 
     return {
       ...ms,
       getY: (keyZ) => {
-        if (msRangeZ === 0) return ms.startY;
-        // Keys are centered on key field (0 = center).
-        // Mount surface is centered on case (0 = center, shifted by caseCenterZ).
-        const caseZ = keyZ + caseCenterZ;
-        const t = Math.max(0, Math.min(1, (caseZ - ms.startZ) / msRangeZ));
-        return ms.startY + t * (ms.endY - ms.startY);
+        // Map key Z range (-centerZ..+centerZ) to mount surface t (margin..1-margin)
+        const keyRange = centerZ * 2;
+        const rawT = keyRange !== 0 ? (keyZ + centerZ) / keyRange : 0.5;
+        const t = margin + rawT * mountFit;
+        const clampedT = Math.max(0, Math.min(1, t));
+        return ms.startY + clampedT * (ms.endY - ms.startY) + (mountOffset.y || 0);
       },
     };
-  }, [profileScale, caseD, caseCenterZ]);
+  }, [profileScale, caseD, centerZ, mountFit, mountOffset]);
 
   // ─── Rest positions (keys mount on the case surface) ───
   const restPositions = useMemo(() => {
@@ -143,14 +155,15 @@ const KeyboardModel = forwardRef(({
       const sculpt = rowsData?.[row];
       const capH = sculpt ? baseH * sculpt.height : baseH;
 
-      const x = (key.x + key.w / 2) - centerX;
-      const z = (key.y + (key.h || 1) / 2) - centerZ;
+      const x = (key.x + key.w / 2) - centerX + (mountOffset.x || 0);
+      const z = (key.y + (key.h || 1) / 2) - centerZ + (mountOffset.z || 0);
 
-      // Compute surface Y at this key's Z position
+      // Compute surface Y at this key's Z position (before X/Z offset for slope calc)
+      const zForSlope = (key.y + (key.h || 1) / 2) - centerZ;
       let surfaceY = PLATE_Y;
 
       if (mountSurface) {
-        surfaceY = mountSurface.getY(z) + PLATE_Y;
+        surfaceY = mountSurface.getY(zForSlope) + PLATE_Y;
       } else if (shellConfig.tilt > 0) {
         // Shell tilt-based fallback
         const tiltAngle = shellConfig.tilt * Math.PI / 180;
@@ -178,7 +191,7 @@ const KeyboardModel = forwardRef(({
         tiltX: tiltAngleX,
       };
     });
-  }, [keys, centerX, centerZ, keycapPreset, mountSurface, shellConfig, caseD]);
+  }, [keys, centerX, centerZ, keycapPreset, mountSurface, shellConfig, caseD, mountOffset]);
 
   // ─── Keycap geometry: sculpted from profile data ───
   // Creates tapered shape with dish based on the active profile's defaultCap.
@@ -245,7 +258,7 @@ const KeyboardModel = forwardRef(({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, invalidate]);
+  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, caseScale, mountOffset, mountFit, invalidate]);
 
   // ─── Animation loop ───
   useFrame((_, delta) => {
@@ -290,6 +303,10 @@ const KeyboardModel = forwardRef(({
     },
     // Expose animation offsets so labels can follow key press movement
     getOffsets: () => offsets.current,
+    // Expose rest positions so labels can match key positions (mount surface, offsets, tilt)
+    getRestPositions: () => restPositions,
+    // Direct access for parent to read and pass as prop
+    restPositions,
   }), [keyIndex, invalidate]);
 
 
@@ -402,6 +419,49 @@ const KeyboardModel = forwardRef(({
         key={keyCount}
         frustumCulled={false}
       />
+
+      {/* Key legends — rendered here so they have direct access to restPositions */}
+      {legendPreset?.style?.fontSize > 0 && legendPreset?.style?.color !== "transparent" && (
+        <group>
+          {keys.map((key, i) => {
+            const rest = restPositions[i];
+            if (!rest) return null;
+            const override = legendPreset?.keyOverrides?.[key.id];
+            const displayLabel = override?.label ?? key.label;
+            if (!displayLabel) return null;
+
+            const baseSize = ((legendPreset?.style?.fontSize || 28) / 28) * 0.22;
+            let fontSize = baseSize;
+            if (displayLabel.length > 4) fontSize *= 0.6;
+            else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.7;
+
+            const color = override?.color || legendPreset?.style?.color || "#cccccc";
+            const text = legendPreset?.style?.uppercase && displayLabel.length === 1
+              ? displayLabel.toUpperCase() : displayLabel;
+
+            return (
+              <group
+                key={key.id}
+                position={[rest.x, rest.y + rest.sy / 2 + 0.005, rest.z]}
+                rotation={[rest.tiltX || 0, 0, 0]}
+              >
+                <Text
+                  fontSize={fontSize}
+                  color={color}
+                  anchorX="center"
+                  anchorY="middle"
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  fontWeight={legendPreset?.style?.fontWeight || 700}
+                  maxWidth={key.w * 0.8}
+                  textAlign="center"
+                >
+                  {text}
+                </Text>
+              </group>
+            );
+          })}
+        </group>
+      )}
     </group>
   );
 });

@@ -68,7 +68,12 @@ const KeyboardLabDemo = ({ theme }) => {
   const [saveMsg, setSaveMsg] = useState("");
   const [splitPercent, setSplitPercent] = useState(45);
   const [jsonTab, setJsonTab] = useState("Design");
+  const [editorTab, setEditorTab] = useState("case"); // "case" | "layout"
   const [caseProfile, setCaseProfile] = useState(PROFILE_PRESETS.wedge);
+  const [caseScale, setCaseScale] = useState(1.0);
+  const [mountOffset, setMountOffset] = useState({ x: 0, y: 0, z: 0 });
+  const [mountFit, setMountFit] = useState(0.85);
+  const [extrudeWidth, setExtrudeWidth] = useState(1.0); // multiplier on case width
   const isDragging = useRef(false);
 
   // Resolve assets
@@ -246,7 +251,8 @@ const KeyboardLabDemo = ({ theme }) => {
         <div style={{ minHeight: 0, minWidth: 0 }}>
           <KeyboardLab ref={keyboardRef} layout={layout} shell={shell} keycapPreset={keycapPreset}
             keycapColor={colors.keycapColor} accentKeyColor={colors.accentKeyColor} caseColor={colors.caseColor}
-            keycapOpacity={opacity} legendPreset={legendPreset} caseProfile={caseProfile} />
+            keycapOpacity={opacity} legendPreset={legendPreset} caseProfile={caseProfile} caseScale={caseScale}
+            mountOffset={mountOffset} mountFit={mountFit} extrudeWidth={extrudeWidth} />
         </div>
 
         {/* Drag handle */}
@@ -280,20 +286,74 @@ const KeyboardLabDemo = ({ theme }) => {
             </select>
           </div>
 
-          {/* 2D Layout — scales to fill sidebar width, height proportional */}
-          <div style={sectionTitle}>Layout</div>
-          <div style={{ overflow: "auto", padding: "0 8px 6px" }}>
-            <KeyboardLayout2D layout={layout} activeKeys={activeKeys} theme={theme} scale={scale2D} />
-          </div>
-
-          {/* Case Profile Editor */}
-          <div style={{ padding: "0 8px 4px", borderTop: `1px solid ${text}08` }}>
-            <div style={sectionTitle}>Case Profile</div>
-            <CaseProfileEditor
-              theme={theme}
-              initialProfile={caseProfile}
-              onChange={setCaseProfile}
-            />
+          {/* Tabbed editor: Case Profile / 2D Layout */}
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", gap: "0", borderBottom: `1px solid ${text}08` }}>
+              <button onClick={() => setEditorTab("case")} style={{
+                background: "transparent", border: "none",
+                borderBottom: editorTab === "case" ? `2px solid ${accent}` : "2px solid transparent",
+                color: editorTab === "case" ? accent : `${text}66`,
+                padding: "5px 12px", cursor: "pointer", fontSize: "10px", fontFamily: "inherit",
+              }}>Case Profile</button>
+              <button onClick={() => setEditorTab("layout")} style={{
+                background: "transparent", border: "none",
+                borderBottom: editorTab === "layout" ? `2px solid ${accent}` : "2px solid transparent",
+                color: editorTab === "layout" ? accent : `${text}66`,
+                padding: "5px 12px", cursor: "pointer", fontSize: "10px", fontFamily: "inherit",
+              }}>2D Layout</button>
+            </div>
+            <div style={{ flex: 1, overflow: "auto", padding: "6px 8px" }}>
+              {editorTab === "case" && (
+                <div>
+                  {/* Mount controls: 3-axis position + fit + scale */}
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "6px", flexWrap: "wrap" }}>
+                    {[
+                      { axis: "x", label: "X", min: -3, max: 3, step: 0.1, color: "#ff6666" },
+                      { axis: "y", label: "Y", min: -2, max: 2, step: 0.05, color: "#66ff66" },
+                      { axis: "z", label: "Z", min: -3, max: 3, step: 0.1, color: "#6688ff" },
+                    ].map(({ axis, label, min, max, step, color }) => (
+                      <label key={axis} style={{ ...lbl, gap: "2px" }}>
+                        <span style={{ color, fontWeight: 700, minWidth: "10px" }}>{label}</span>
+                        <input type="range" min={min} max={max} step={step} value={mountOffset[axis]}
+                          onChange={(e) => setMountOffset(prev => ({ ...prev, [axis]: parseFloat(e.target.value) }))}
+                          style={{ width: "45px", accentColor: color }} />
+                        <span style={{ minWidth: "28px", fontSize: "9px" }}>{mountOffset[axis].toFixed(1)}</span>
+                      </label>
+                    ))}
+                    <label style={lbl}>
+                      Fit
+                      <input type="range" min="0.4" max="1.5" step="0.05" value={mountFit}
+                        onChange={(e) => setMountFit(parseFloat(e.target.value))}
+                        style={{ width: "40px", accentColor: accent }} />
+                      <span style={{ minWidth: "24px", fontSize: "9px" }}>{Math.round(mountFit * 100)}%</span>
+                    </label>
+                    <label style={lbl}>
+                      Case
+                      <input type="range" min="0.5" max="2.0" step="0.05" value={caseScale}
+                        onChange={(e) => setCaseScale(parseFloat(e.target.value))}
+                        style={{ width: "40px", accentColor: accent }} />
+                      <span style={{ minWidth: "24px", fontSize: "9px" }}>{Math.round(caseScale * 100)}%</span>
+                    </label>
+                    <label style={lbl}>
+                      Width
+                      <input type="range" min="0.5" max="2.0" step="0.05" value={extrudeWidth}
+                        onChange={(e) => setExtrudeWidth(parseFloat(e.target.value))}
+                        style={{ width: "40px", accentColor: accent }} />
+                      <span style={{ minWidth: "24px", fontSize: "9px" }}>{Math.round(extrudeWidth * 100)}%</span>
+                    </label>
+                    <button onClick={() => { setMountOffset({ x: 0, y: 0, z: 0 }); setMountFit(0.85); setCaseScale(1.0); setExtrudeWidth(1.0); }} style={btn(false)}>Reset</button>
+                  </div>
+                  <CaseProfileEditor
+                    theme={theme}
+                    initialProfile={caseProfile}
+                    onChange={setCaseProfile}
+                  />
+                </div>
+              )}
+              {editorTab === "layout" && (
+                <KeyboardLayout2D layout={layout} activeKeys={activeKeys} theme={theme} scale={scale2D} />
+              )}
+            </div>
           </div>
 
           {/* Controls */}

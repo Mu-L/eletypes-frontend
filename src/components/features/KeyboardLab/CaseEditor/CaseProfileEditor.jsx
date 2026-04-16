@@ -74,8 +74,17 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
 
   // SVG coordinate system: x=0 left (front), x=100 right (back), y=0 bottom, y grows up
   // SVG renders y-flipped (y=0 at top), so we flip in rendering
-  const svgW = 320;
-  const svgH = 180;
+  // SVG fills container width, height proportional
+  const containerRef = useRef(null);
+  const [containerW, setContainerW] = useState(400);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((e) => setContainerW(e[0].contentRect.width));
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
+  const svgW = Math.max(200, containerW - 16);
+  const svgH = Math.round(svgW * 0.55);
   const padX = 30;
   const padY = 20;
   const scaleX = (svgW - padX * 2) / 100;
@@ -188,7 +197,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
   const btn = { background: "transparent", border: `1px solid ${accent}44`, borderRadius: "4px", color: text, padding: "3px 8px", cursor: "pointer", fontSize: "10px" };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
       {/* Preset selector */}
       <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
         <span style={{ fontSize: "9px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px" }}>Profile</span>

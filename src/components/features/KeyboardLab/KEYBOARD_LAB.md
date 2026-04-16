@@ -1,312 +1,200 @@
-# Keyboard Lab — Data-Driven 3D Keyboard Visualization Platform
+# Keyboard Lab — Data-Driven 3D Keyboard Design Platform
 
-## Status: Feature Branch (`feat/keyboard-lab`) — 14 commits
+## Status: Feature Branch (`feat/keyboard-lab`) — 19 commits
 
 ---
 
-## 1. Schemas (4 Independent Layers)
+## 1. Schemas (6 Layers)
 
-### Layout Schema — `eletypes-kbd/1`
+### Persisted Asset Schemas
+| Schema | Version | Purpose |
+|--------|---------|---------|
+| `eletypes-kbd/1` | Stable | Layout: board metadata, key placement, identity |
+| `eletypes-cap/1` | Stable | Keycap: profile families, row sculpting, procedural + mesh caps |
+| `eletypes-legend/1` | Stable | Legend: font, size, weight, color, position, per-key overrides |
+| `eletypes-visual/1` | Stable | Visual: colors, materials, per-key color overrides |
+| `eletypes-shell/1` | Stable | Shell: case geometry, profile points, mount surface |
+| `eletypes-design/1` | Stable | Composition: asset refs + overrides (primary user artifact) |
 
-Defines keyboard structure, key identity, and 2D placement.
-
-```
-schema → meta → board → layout.keys[]
-```
-
-| Section | Purpose | Required fields |
-|---------|---------|-----------------|
-| `meta` | Document metadata | `name` |
-| `board` | Keyboard specs | `id`, `formFactor`, `layoutStagger`, `standard`, `width`, `height` |
-| `layout.keys[]` | Per-key placement | `id`, `keyName`, `label`, `x`, `y`, `w` |
-
-Per-key optional: `h` (default 1), `r` (rotation), `kind` (alpha/mod/accent/fn/nav/arrow), `cluster`, `capRef`.
-
-### Keycap Schema — `eletypes-cap/1`
-
-Defines profile families, row sculpting, cap variants, and future mesh references.
-
-```
-schema → meta → profile (family + row rules + defaultCap) → caps{} (named variants)
-```
-
-| Concept | Fields |
-|---------|--------|
-| Profile family | id, name, uniform (bool), rows (per-row sculpt), defaultCap |
-| Row sculpting | topAngle, height (multiplier), depth (dish depth) |
-| Procedural cap | topWidth, topDepth, dishType, dishDepth, cornerRadius |
-| Mesh-backed cap | format (glb/obj/stl), url, scale, rotationOffset, originOffset |
-
-4 built-in profiles: Cherry (sculpted cylindrical), SA (tall sculpted spherical), DSA (uniform spherical), XDA (uniform wide).
-
-### Legend Schema — `eletypes-legend/1`
-
-Defines how key labels are rendered on keycap surfaces.
-
-```
-schema → meta → style → keyOverrides{}
-```
-
-| Field | Controls |
+### Runtime Layer
+| Model | Purpose |
 |-------|---------|
-| `fontFamily` | CSS font stack |
-| `fontSize` | Base size in px (8–40) |
-| `fontWeight` | 400–800 |
-| `color` | Legend text color |
-| `position` | center, top-left, top-center, bottom-left, bottom-center |
-| `uppercase` | Force single-char labels uppercase |
-| `keyOverrides[id]` | Per-key label, color, fontSize, subLabel |
-
-6 built-in presets: GMK (bold centered), Minimal (light), Retro (monospace), Top Print (top-left), Cyber (neon mono), Blank.
-
-### Visual Schema — `eletypes-visual/1`
-
-Defines colors, material hints, per-key overrides.
-
-```
-schema → meta → colors → case → material → keyOverrides{}
-```
-
-Colors by kind (alpha, accent, mod, fn), legend colors, case colors. Material hints (roughness, metalness, finish) for 3D only. Loosely typed — renderers may ignore.
-
-### Shell Profile (lightweight, not a full schema)
-
-Case geometry for 3D rendering. Per-shell: asymmetric padding, corner radius, height, tilt, plate specs. Cyberboard has thick bottom bezel.
+| `NormalizedKeyboard` | Ephemeral render model, never persisted |
 
 ---
 
-## 2. Critical Architecture Decisions
+## 2. Architecture
 
-### Multi-schema decoupling
-
+### Multi-Schema Composition
 ```
-Layout ←capRef→ Keycap
-  ↓                ↓
-  └────→ Normalization ←── Visual + Legend
-              ↓
-        Render Model (ephemeral, never persisted)
+Design Document (eletypes-design/1)
+  ├─ assets.layout  → "layout/generic-75-ansi@1"
+  ├─ assets.keycap  → "keycap/cherry-classic@1"
+  ├─ assets.legend  → "legend/gmk-center@1"
+  ├─ assets.visual  → "visual/botanical-dark@1"
+  ├─ assets.shell   → "shell/cyberboard-r3@1"
+  └─ overrides      → per-key, visual, legend tweaks
+         ↓
+  Asset Resolver (bundled/local/remote)
+         ↓
+  Normalization Pipeline
+         ↓
+  NormalizedKeyboard → 2D Editor / 3D Renderer / JSON Export
 ```
 
-Each schema is independently shareable, importable, and editable. Changing profile doesn't touch layout. Changing colors doesn't touch either. Shell is optional — the 3D renderer has a default case.
-
-### Normalization pipeline
-
-```js
-normalizeKeyboard(layout, keycapPreset, visualPreset) → NormalizedKeyboard
+### Asset Reference Convention
+```
+{schema-type}/{asset-id}@{version}
+e.g., "layout/generic-75-ansi@1", "keycap/artisan-dragon@1"
 ```
 
-Resolves `capRef` → procedural geometry or mesh reference. Maps key Y position → profile row sculpt. Resolves colors by kind with per-key overrides. Output consumed by both 2D and 3D renderers. Computed at runtime, never stored.
-
-### 3D rendering: InstancedMesh + demand mode
-
-- **Single InstancedMesh** for all ~84 keycaps → 1 draw call
-- **`frameloop="demand"`** → zero GPU cost at idle
-- **Animation state in `Float32Array`** → zero React re-renders during keypress
-- **`triggerKey()` is pure imperative** — mutates ref, calls `invalidate()`, no `setState`
-- **Spring physics**: critically damped (stiffness=600, damping=50), ~80ms settle, no overshoot
-- **Geometry**: procedural tapered keycap with dish, generated once per profile family
-
-### Editor-first flat key objects
-
-Keys are flat `{ id, keyName, label, x, y, w }` — not nested. This makes them:
-
-- **Easy to edit**: `key.x += 0.25` (no `key.geometry.x`)
-- **Easy to diff**: one-line JSON diff per change
-- **Easy to undo/redo**: store/restore one object
-- **Stable identity**: `key.id` survives position/size edits (selection state preserved)
-
-Optional fields omitted when default — no noisy `h: 1, r: 0, kind: "alpha"` on every key.
-
-### `capRef` as the only bridge
-
-Layout keys reference keycaps abstractly via `capRef: "dragon-artisan"`. The layout schema never contains mesh paths, geometry parameters, or renderer-specific data. The keycap schema and normalization layer resolve the reference.
-
-90% of keys don't need `capRef` — the profile family's row rules assign geometry automatically from key Y position. Only special keys (artisans, homing bars, novelties) need explicit references.
-
-### Versioning: schema vs meta.version
-
-- **`schema: "eletypes-kbd/1"`** — format version. Parsers branch on this. Changed only on breaking schema changes.
-- **`meta.version: "1.0"`** — document revision. Changed by the user. No programmatic meaning.
-
-### board.id — stable identity
-
-`board.id` is a required stable identifier that survives edits. Used for linking presets, shell profiles, and future override systems. Different from `meta.name` which is a display string.
-
-### `formFactor` vs `layoutStagger`
-
-Separated from the original mixed `layoutType`:
-- `formFactor`: physical size class (75%, 60%, TKL, Alice…)
-- `layoutStagger`: key arrangement style (row-staggered, ortholinear, split…)
-
-A 75% can be row-staggered or ortholinear. These are independent axes.
+### Key Design Decisions
+- **Flat key objects** — easy to edit, diff, undo/redo
+- **capRef as abstract bridge** — layout never contains mesh paths or geometry
+- **Design doc is the product** — users save/share/remix designs, not individual schemas
+- **3D Text legends inside KeyboardModel** — direct access to `restPositions`, no sync issues
+- **frameloop="demand"** — zero GPU cost at idle
+- **InstancedMesh** — 1 draw call for ~84 keycaps
 
 ---
 
-## 3. Functionality
+## 3. Features
 
 ### 3D Keyboard Visualization
 - 75% ANSI layout with realistic row stagger, right nav column, arrow cluster
-- 2 board presets: Generic 75% ANSI (84 keys), Cyberboard R2 (85 keys, different nav column)
-- OrbitControls with constrained polar angles (can't clip below keyboard)
-- Spring animation on key press (instant snap down, smooth spring return)
-- Live typing bridge: DOM keydown → triggerKey() → 3D animation + label follows
+- 2 board presets: Generic 75% ANSI, Cyberboard R2 Layout
+- OrbitControls with zoom range 4–35
+- Spring animation on key press (critically damped, ~80ms settle)
+- Live typing bridge (DOM keydown → triggerKey → 3D animation)
+
+### Parametric Case Editor
+- **2D profile editor**: SVG cross-section editor with draggable control points
+- **4 presets**: Flat Box, Cyberboard Wedge, Chamfered Wedge, Ergonomic
+- **Profile → 3D extrusion**: 2D profile extruded into 3D case geometry
+- **Mount surface**: keys auto-mount on the defined slope with correct tilt angle
+- **Per-vertex depth offset**: create chamfers/ramps via depth slider
+- **Transform operations**: Mirror H/V, Scale Taller/Shorter
+- **3-axis mount offset**: X (red), Y (green), Z (blue) sliders to position key field
+- **Fit ratio**: controls how much of the mount edge keys occupy
+- **Case scale**: overall case size multiplier
+- **Extrusion width**: case width multiplier
+- **Responsive SVG**: scales to container width
+- **Click-to-select**: select a point, edit depth, remove — no hover dependency
 
 ### Sculpted Keycap Profiles
-- Procedural geometry: tapered walls (top narrower than bottom), dish scooped into top surface
-- Cherry: cylindrical dish, 15% taper, per-row height (R0=1.0, R3=0.88)
-- SA: spherical dish, 22% taper, tall (height 0.52 vs Cherry 0.38)
-- DSA: spherical dish, 20% taper, uniform (no row variation)
-- XDA: spherical dish, 12% taper, wide flat top, uniform
-- Real-time profile switching with geometry regeneration
+- 4 profiles: Cherry (sculpted cylindrical), SA (tall spherical), DSA (uniform), XDA (wide)
+- Procedural geometry: tapered walls, per-profile dish shape/depth
+- Per-row height variation from profile sculpting data
+- Opacity/transparency support (9 color presets including translucent, pudding, jelly, frosted)
 
-### Keycap Opacity / Transparency
-- Material supports real-time opacity (0.1–1.0)
-- 9 color presets including translucent, pudding, jelly, frosted
-- Opacity slider in editor
+### Key Legends (3D Text)
+- Troika SDF text rendered inside KeyboardModel (direct access to rest positions)
+- Labels positioned on keycap top surface, tilted with mount surface angle
+- Follow key press animation
+- 6 legend presets: GMK, Minimal, Retro, Top Print, Cyber, Blank
+- Live editing: font size, weight, family, color, uppercase toggle
 
-### Key Legends
-- 3D-transformed HTML labels flat on keycap surface (drei `<Html transform>`)
-- Labels follow key press animation (read Y offsets from KeyboardModel each frame)
-- 6 legend style presets with live editing:
-  - Font size slider (8–40)
-  - Font weight selector (Light → Heavy)
-  - Font family selector (8 system fonts)
-  - Color picker
-  - Uppercase toggle
-- Per-key overrides via legend schema
-
-### 2D Layout View
-- Positioned DOM divs from same JSON as 3D renderer
-- Click-to-select key inspector (shows all key properties)
+### 2D Layout Editor
+- Positioned DOM divs from same JSON as 3D
+- Click-to-select key inspector
 - Color-coded by key kind
-- JSON export / copy to clipboard
+- JSON export/copy
+- Responsive scale from container width
 
-### Color System
-- 9 color presets: midnight, ocean, sakura, forest, arctic, translucent, pudding, jelly, frosted
-- Per-preset legend colors (dark legends on light caps, light on dark)
-- Live color pickers: keycap, accent, case, legend
-- Opacity slider
+### Workspace Layout
+- **3D viewport** (left, resizable) + **sidebar** (right, resizable via drag handle)
+- **Tabbed editor panel**: Case Profile / 2D Layout (share the same space)
+- **Asset selectors**: layout, shell, keycap, legend, color (all as dropdowns)
+- **Controls row**: legend (size/weight/font/color/uppercase) + material (opacity, colors)
+- **Tabbed Monaco JSON editor**: Design | Layout | Keycap | Legend | Shell tabs
+- **Bidirectional JSON editing**: change JSON → UI updates, change UI → JSON updates
+- **Toolbar**: design name, save/load/export/import, demo trigger, live typing toggle
+- **Viewport constrained**: fits within viewport height, no page scroll
 
-### Demo / Editor Controls
-- Board preset switcher
-- Keycap profile switcher
-- Legend preset switcher + live style overrides
-- View toggle (2D / 3D / Both)
-- Programmatic key trigger ("Demo HELLO")
-- Live typing on/off
-- Individual key trigger buttons (Space, Enter, Esc, Backspace)
+### Design Persistence
+- Save/load designs to localStorage
+- Export as JSON file
+- Import from JSON file
+- Stable design ID (no mutation during live typing)
 
 ---
 
-## 4. File Structure (30 files)
+## 4. File Structure (35 files)
 
 ```
 KeyboardLab/
 ├── schema/
-│   ├── SCHEMA_SPEC.md                 ← Canonical V1 spec (TS types, JSON Schema, Zod, migration)
-│   ├── KEYCAP_ARCHITECTURE.md         ← Multi-schema design rationale + product reasoning
+│   ├── SCHEMA_SPEC.md                 ← Canonical V1 spec
+│   ├── KEYCAP_ARCHITECTURE.md         ← Multi-schema design rationale
 │   ├── boardLayout.js                 ← createPreset(), validatePreset(), migrateFromDraft()
-│   ├── shellProfile.js               ← DEFAULT_SHELL, CYBERBOARD_SHELL
-│   ├── derive.js                      ← computeBounds, buildKeyIndex, extractKeys, buildCodeMap
-│   ├── index.js                       ← Barrel export for all schema concerns
+│   ├── shellProfile.js               ← DEFAULT_SHELL, CYBERBOARD_SHELL (eletypes-shell/1)
+│   ├── derive.js                      ← computeBounds, buildKeyIndex, extractKeys, etc.
+│   ├── index.js                       ← Barrel export
 │   ├── types/
-│   │   ├── layout.js                  ← Layout type constants + JSDoc typedefs
-│   │   ├── keycap.js                  ← Keycap type constants + JSDoc typedefs
-│   │   ├── visual.js                  ← Visual type constants + JSDoc typedefs
-│   │   ├── legend.js                  ← Legend type constants + JSDoc typedefs
-│   │   └── normalized.js             ← Normalized render model typedefs
+│   │   ├── layout.js, keycap.js, visual.js, legend.js, shell.js, design.js, normalized.js
 │   ├── validation/
-│   │   └── validate.js                ← Runtime validators for layout, keycap, visual
+│   │   └── validate.js                ← validateLayout, validateKeycap, validateVisual,
+│   │                                     validateShell, validateDesign
 │   ├── normalize/
-│   │   └── normalize.js               ← normalizeKeyboard() + extractRenderData()
+│   │   ├── normalize.js               ← normalizeKeyboard()
+│   │   └── resolveDesign.js           ← resolveDesign(), designFromSelections()
+│   ├── resolve/
+│   │   └── assetResolver.js           ← bundledResolver, listBundledAssets, parseAssetRef
 │   └── examples/
-│       ├── layout-75-ansi.json        ← Example layout document
-│       ├── keycap-cherry.json         ← Procedural keycap preset
-│       ├── keycap-mesh-artisan.json   ← Mesh-backed artisan caps
-│       └── visual-botanical.json      ← GMK Botanical-inspired colorway
+│       ├── layout-75-ansi.json, keycap-cherry.json, keycap-mesh-artisan.json, visual-botanical.json
 ├── presets/
-│   ├── index.js                       ← getPreset(), listPresets(), registerPreset()
-│   ├── generic75.js                   ← Generic 75% ANSI (84 keys)
-│   ├── cyberboard75.js               ← Cyberboard R2 (85 keys, different nav)
-│   ├── keycaps.js                     ← Cherry, SA, DSA, XDA profile presets
-│   └── legends.js                     ← GMK, Minimal, Retro, Top Print, Cyber, Blank
-├── KeyboardLab.jsx                    ← Public API: Canvas + OrbitControls + lighting + env map
-├── KeyboardModel.jsx                  ← InstancedMesh + spring animation + imperative triggerKey()
-├── KeycapGeometry.js                  ← Procedural tapered/dished keycap shape generator
-├── KeycapLabels.jsx                   ← 3D legend rendering (follows press animation)
+│   ├── index.js, generic75.js, cyberboard75.js, keycaps.js, legends.js
+├── CaseEditor/
+│   ├── CaseProfileEditor.jsx          ← SVG 2D profile editor
+│   └── extrudeProfile.js             ← 2D→3D extrusion + mount surface computation
+├── services/
+│   └── designStorage.js              ← save/load/list/delete/export/import
+├── KeyboardLab.jsx                    ← Canvas wrapper, controls, lighting
+├── KeyboardModel.jsx                  ← InstancedMesh + spring animation + legends (3D Text)
+├── KeycapGeometry.js                  ← Procedural tapered/dished keycap generator
+├── KeycapLabels.jsx                   ← Standalone label component (unused, kept for reference)
 ├── KeyboardLayout2D.jsx              ← 2D DOM renderer + key inspector + JSON export
-├── KeyboardLabDemo.jsx               ← Full integration demo with all controls
+├── KeyboardLabDemo.jsx               ← Full workspace: toolbar + 3D + sidebar + editors
 ├── keyboardLayout.js                  ← Backwards compat shim (deprecated)
-└── KEYBOARD_LAB.md                    ← This document
+├── KEYBOARD_LAB.md                    ← This document
+└── PLATFORM_SPEC.md                   ← Open-source platform architecture spec
 ```
 
 ---
 
-## 5. Performance Architecture
+## 5. Roadmap
 
-| Concern | Approach | Cost |
-|---------|----------|------|
-| Keycap rendering | Single InstancedMesh, 1 draw call | ~84 instances |
-| Idle state | `frameloop="demand"` | Zero GPU frames |
-| Key press animation | Float32Array refs, no React state | Zero re-renders |
-| `triggerKey()` | O(1) Map lookup, ref mutation, invalidate() | ~0.01ms |
-| Profile switch | New geometry + rebuild instances | One-time, ~5ms |
-| Color change | instanceColor update + invalidate() | ~1ms |
-| Legend rendering | drei `<Html transform>` per key | 84 DOM elements |
-| Legend animation | useFrame reads offsets ref | Per-frame Y update |
-
----
-
-## 6. Schema Interaction Model
-
-```
-User creates/edits layout        → eletypes-kbd/1 JSON
-User picks keycap profile        → eletypes-cap/1 JSON
-User customizes legend style     → eletypes-legend/1 JSON
-User picks color theme           → eletypes-visual/1 JSON
-                                        ↓
-                              normalizeKeyboard()
-                                        ↓
-                              NormalizedKeyboard
-                              (ephemeral, per-render)
-                                        ↓
-                         ┌──────────────┼──────────────┐
-                         │              │              │
-                     2D Editor     3D Renderer     JSON Export
-```
-
-### What's persisted vs ephemeral
-
-| Persisted (in JSON) | Ephemeral (app state) |
-|---------------------|-----------------------|
-| Key positions, sizes, identities | Selection state, active keys |
-| Board metadata | Camera position, zoom |
-| Profile family + row rules | Animation offsets, velocities |
-| Legend font/size/color | UI panel state |
-| Visual colors, material hints | Normalized render model |
-
----
-
-## 7. Future Roadmap
+### Completed (this branch)
+- [x] 3D keyboard visualization with InstancedMesh
+- [x] Layout schema (eletypes-kbd/1)
+- [x] Keycap schema (eletypes-cap/1) with 4 profiles
+- [x] Legend schema (eletypes-legend/1) with 6 presets
+- [x] Visual schema (eletypes-visual/1)
+- [x] Shell schema (eletypes-shell/1)
+- [x] Design composition schema (eletypes-design/1)
+- [x] Asset resolver with bundled registry
+- [x] Parametric case editor with 2D profile → 3D extrusion
+- [x] Mount surface with key auto-placement and tilt
+- [x] 3-axis mount offset + fit ratio + case scale + extrude width
+- [x] Sculpted keycap profiles (Cherry, SA, DSA, XDA)
+- [x] 3D Text legends following keycap positions and tilt
+- [x] Workspace layout with resizable sidebar
+- [x] Tabbed Monaco JSON editor (5 tabs, bidirectional)
+- [x] Local persistence (save/load/export/import designs)
+- [x] Spring key press animation
+- [x] Keycap opacity/transparency
 
 ### Next priorities
-- [ ] 2D editor: drag keys to reposition, resize handles
-- [ ] TypeBox integration: triggerKey() on each keystroke during typing test
-- [ ] Theme-aware defaults: inherit colors from Eletypes theme system
+- [ ] 2D editor: drag keys to reposition
+- [ ] TypeBox integration: triggerKey on each keystroke
+- [ ] Theme-aware defaults from Eletypes theme system
 - [ ] More profiles: OEM, MT3, KAT, low-profile
-- [ ] More board presets: 60%, 65%, TKL
-
-### Medium-term
-- [ ] Mesh-backed keycap import (GLB upload → register as cap → assign via capRef)
-- [ ] Key legends via canvas texture atlas (replace Html for better performance)
-- [ ] Per-key color painting in 2D editor
-- [ ] Undo/redo stack for layout edits
-- [ ] JSON import from file or URL
+- [ ] More layouts: 60%, 65%, TKL, ISO variants
+- [ ] Package extraction: @eletypes/keyboard-schema, @eletypes/keyboard-assets
 
 ### Long-term
-- [ ] Case/shell schema (eletypes-case/1)
-- [ ] LED underglow from shell features
-- [ ] Keycap marketplace / community sharing
-- [ ] Preset variant/override system (base + delta)
-- [ ] Sound simulation (switch type → click profile)
+- [ ] Mesh-backed keycap import (GLB)
+- [ ] Community asset registry
+- [ ] KLE import converter
 - [ ] Collaborative editing
+- [ ] LED underglow visualization
