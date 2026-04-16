@@ -1,24 +1,19 @@
 /**
- * KeycapLabels — renders key legends flat on keycap surfaces.
+ * KeycapLabels — renders key legends as 3D text on keycap surfaces.
  *
- * Labels follow key press animations by reading the Y offset from
- * KeyboardModel's exposed offsets array each frame.
+ * Uses drei's <Text> (troika-three-text SDF renderer) instead of <Html>.
+ * Text exists in world space — position is stable regardless of Canvas size.
+ * No screen-space projection, no resize dependency.
+ *
+ * Labels follow key press animation by reading Y offsets from KeyboardModel.
  */
 
 import React, { useMemo, useRef } from "react";
-import { Html } from "@react-three/drei";
+import { Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { extractKeys, computeBounds } from "./schema/derive";
 
 const PLATE_Y = 0.02;
-
-const POSITION_OFFSETS = {
-  "center":        { tx: "0%",   ty: "0%" },
-  "top-left":      { tx: "-25%", ty: "-20%" },
-  "top-center":    { tx: "0%",   ty: "-20%" },
-  "bottom-left":   { tx: "-25%", ty: "20%" },
-  "bottom-center": { tx: "0%",   ty: "20%" },
-};
 
 const yToRow = (y) => {
   if (y < 1.0) return 0;
@@ -49,37 +44,39 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset, modelRef }) => {
   };
   const keyOverrides = legendPreset?.keyOverrides || {};
 
-  // Refs for each label group — used to update Y position each frame
   const groupRefs = useRef([]);
 
-  // Pre-compute rest Y positions
+  // Pre-compute rest Y positions for each key
   const restYs = useMemo(() => {
     return keys.map((key) => {
       const row = yToRow(key.y);
       const sculpt = rows?.[row];
       const capH = sculpt ? baseH * sculpt.height : baseH;
-      return capH + PLATE_Y;
+      return capH + PLATE_Y + 0.005; // Slightly above cap surface
     });
   }, [keys, rows, baseH]);
 
-  // Each frame, update label Y positions to follow key press animation
+  // Follow key press animation
   useFrame(() => {
     const offsets = modelRef?.current?.getOffsets?.();
     if (!offsets) return;
-
     for (let i = 0; i < keys.length; i++) {
       const ref = groupRefs.current[i];
-      if (ref && offsets[i] !== 0) {
-        ref.position.y = restYs[i] + offsets[i];
-      } else if (ref) {
-        ref.position.y = restYs[i];
+      if (ref) {
+        ref.position.y = restYs[i] + (offsets[i] || 0);
       }
     }
   });
 
   if (style.fontSize === 0 || style.color === "transparent") return null;
 
-  const posOffset = POSITION_OFFSETS[style.position] || POSITION_OFFSETS["center"];
+  // Convert pixel fontSize to world-space size
+  // At distanceFactor=3, fontSize 28px was readable. In world space, ~0.22 units.
+  const worldFontSize = (style.fontSize / 28) * 0.22;
+
+  // Font URL — use system fonts via troika's default font, or a Google Font
+  // troika-three-text supports any font URL. For system fonts, pass undefined.
+  const fontUrl = undefined; // Uses troika default (Roboto-like)
 
   return (
     <group>
@@ -91,12 +88,15 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset, modelRef }) => {
         const x = (key.x + key.w / 2) - centerX;
         const z = (key.y + (key.h || 1) / 2) - centerZ;
 
-        let fontSize = override?.fontSize || style.fontSize;
-        if (displayLabel.length > 4) fontSize *= 0.65;
+        // Scale font down for long labels or narrow keys
+        let fontSize = worldFontSize;
+        if (displayLabel.length > 4) fontSize *= 0.6;
         else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.7;
 
         const color = override?.color || style.color;
-        const shouldUppercase = style.uppercase && displayLabel.length === 1;
+        const text = style.uppercase && displayLabel.length === 1
+          ? displayLabel.toUpperCase()
+          : displayLabel;
 
         return (
           <group
@@ -104,40 +104,19 @@ const KeycapLabels = ({ layout, keycapPreset, legendPreset, modelRef }) => {
             ref={(el) => { groupRefs.current[i] = el; }}
             position={[x, restYs[i], z]}
           >
-            {/* Rotate flat onto the keycap top surface */}
-            <group rotation={[-Math.PI / 2, 0, 0]}>
-              <Html
-                transform
-                occlude
-                distanceFactor={3}
-                style={{
-                  pointerEvents: "none",
-                  userSelect: "none",
-                  color,
-                  fontSize: `${fontSize}px`,
-                  fontFamily: style.fontFamily,
-                  fontWeight: style.fontWeight || 700,
-                  letterSpacing: style.letterSpacing ? `${style.letterSpacing}em` : "0.03em",
-                  textTransform: shouldUppercase ? "uppercase" : "none",
-                  whiteSpace: "nowrap",
-                  textAlign: "center",
-                  lineHeight: 1,
-                  transform: `translate(${posOffset.tx}, ${posOffset.ty})`,
-                }}
-              >
-                {displayLabel}
-                {override?.subLabel && (
-                  <span style={{
-                    display: "block",
-                    fontSize: `${Math.max(fontSize * 0.65, 6)}px`,
-                    opacity: 0.6,
-                    marginTop: "1px",
-                  }}>
-                    {override.subLabel}
-                  </span>
-                )}
-              </Html>
-            </group>
+            <Text
+              fontSize={fontSize}
+              color={color}
+              anchorX="center"
+              anchorY="middle"
+              rotation={[-Math.PI / 2, 0, 0]}
+              font={fontUrl}
+              fontWeight={style.fontWeight || 700}
+              maxWidth={key.w * 0.8}
+              textAlign="center"
+            >
+              {text}
+            </Text>
           </group>
         );
       })}

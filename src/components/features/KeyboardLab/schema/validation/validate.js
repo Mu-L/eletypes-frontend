@@ -6,6 +6,8 @@
 import { LAYOUT_SCHEMA_VERSION, FORM_FACTORS, LAYOUT_STAGGERS, STANDARDS, KEY_KINDS } from "../types/layout";
 import { KEYCAP_SCHEMA_VERSION } from "../types/keycap";
 import { VISUAL_SCHEMA_VERSION } from "../types/visual";
+import { SHELL_SCHEMA_VERSION } from "../types/shell";
+import { DESIGN_SCHEMA_VERSION } from "../types/design";
 
 // ─── Helpers ───
 
@@ -100,6 +102,54 @@ export const validateVisual = (preset) => {
   if (!isStr(preset.id)) e.push("id required");
   if (!preset.meta?.name) e.push("meta.name required");
   if (!preset.colors) e.push("colors required");
+
+  return { valid: e.length === 0, errors: e };
+};
+
+// ─── Shell validation ───
+
+export const validateShell = (preset) => {
+  const e = [];
+  if (!preset) return { valid: false, errors: ["null"] };
+
+  if (preset.schema !== SHELL_SCHEMA_VERSION) e.push(`schema: expected "${SHELL_SCHEMA_VERSION}"`);
+  if (!isStr(preset.id)) e.push("id required");
+  if (!preset.meta?.name) e.push("meta.name required");
+  if (!preset.case) e.push("case required");
+  else {
+    if (!isNum(preset.case.height)) e.push("case.height required");
+    if (!isNum(preset.case.cornerRadius)) e.push("case.cornerRadius required");
+  }
+  if (!preset.plate) e.push("plate required");
+
+  return { valid: e.length === 0, errors: e };
+};
+
+// ─── Asset ref format ───
+
+const ASSET_REF_RE = /^(layout|keycap|legend|visual|shell|module)\/[\w-]+@\w+$/;
+const isAssetRef = (v) => typeof v === "string" && ASSET_REF_RE.test(v);
+
+// ─── Design validation ───
+
+export const validateDesign = (doc) => {
+  const e = [];
+  if (!doc) return { valid: false, errors: ["null"] };
+
+  if (doc.schema !== DESIGN_SCHEMA_VERSION) e.push(`schema: expected "${DESIGN_SCHEMA_VERSION}"`);
+  if (!isStr(doc.id)) e.push("id required");
+  if (!doc.meta?.name) e.push("meta.name required");
+
+  if (!doc.assets) {
+    e.push("assets required");
+  } else {
+    if (!isAssetRef(doc.assets.layout)) e.push(`assets.layout must be a valid asset ref (got "${doc.assets.layout}")`);
+    // Optional asset refs — validate format only if present
+    if (doc.assets.keycap && !isAssetRef(doc.assets.keycap)) e.push(`assets.keycap invalid ref`);
+    if (doc.assets.legend && !isAssetRef(doc.assets.legend)) e.push(`assets.legend invalid ref`);
+    if (doc.assets.visual && !isAssetRef(doc.assets.visual)) e.push(`assets.visual invalid ref`);
+    if (doc.assets.shell && !isAssetRef(doc.assets.shell)) e.push(`assets.shell invalid ref`);
+  }
 
   return { valid: e.length === 0, errors: e };
 };

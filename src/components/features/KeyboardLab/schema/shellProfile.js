@@ -1,25 +1,13 @@
 /**
- * ShellProfile — optional visual identity layer for keyboard cases.
- *
- * The shell is separate from the layout because:
- * - Same layout (e.g., 75% ANSI) can pair with different shells
- * - Shell metadata has no effect on key positioning
- * - 2D renderer doesn't need shell data; 3D renderer does
- *
- * Schema: "eletypes-shell/1"
+ * Built-in shell presets — formalized as eletypes-shell/1 documents.
  */
 
-export const SHELL_SCHEMA_VERSION = "eletypes-shell/1";
+import { SHELL_SCHEMA_VERSION } from "./types/shell";
 
-/**
- * Default shell profile — generic 75% case.
- * Matches the current KeyboardModel.jsx constants.
- */
 export const DEFAULT_SHELL = {
   schema: SHELL_SCHEMA_VERSION,
   id: "generic-75",
-  name: "Generic 75%",
-  compatibleLayouts: ["75%"],
+  meta: { name: "Generic 75% Case" },
   case: {
     paddingTop: 0.4,
     paddingBottom: 0.4,
@@ -30,45 +18,34 @@ export const DEFAULT_SHELL = {
     tilt: 0,
   },
   plate: {
-    inset: 0.3,    // how much smaller than the case
+    inset: 0.3,
     height: 0.02,
     color: "#0a0a0c",
   },
-  features: [],
 };
 
-/**
- * Cyberboard-inspired shell — thicker bottom bezel, higher case.
- */
 export const CYBERBOARD_SHELL = {
   schema: SHELL_SCHEMA_VERSION,
   id: "cyberboard-r3",
-  name: "Cyberboard R3",
-  compatibleLayouts: ["75%"],
+  meta: {
+    name: "Cyberboard R3 Case",
+    description: "Cybertruck-inspired wedge case with LED pixel matrix panel, angular sidewalls, and rear tilt",
+  },
   case: {
-    paddingTop: 0.35,
-    paddingBottom: 1.0,     // Cyberboard signature: thick bottom bezel
+    paddingTop: 1.8,      // Large top area for LED pixel matrix panel
+    paddingBottom: 0.4,
     paddingLeft: 0.45,
     paddingRight: 0.45,
-    cornerRadius: 0.12,
-    height: 0.3,
-    tilt: 0,
+    cornerRadius: 0.02,   // Sharp angular edges — Cybertruck-like
+    height: 0.8,          // Tall case — the back is very thick in the real board
+    tilt: 8,              // Steep slope — visible wedge angle from the side photo
   },
   plate: {
-    inset: 0.35,
+    inset: 0.4,
     height: 0.02,
-    color: "#080810",
+    color: "#060610",
   },
-  features: [
-    // Future: LED bar, badge area, knob position
-    { type: "led-bar", position: "bottom", height: 0.15 },
+  modules: [
+    { type: "led-matrix", position: "top-center", height: 1.2, width: 14 },
   ],
-};
-
-export const validateShellProfile = (shell) => {
-  const errors = [];
-  if (!shell) return { valid: false, errors: ["Shell is null"] };
-  if (!shell.id) errors.push("Missing id");
-  if (!shell.case) errors.push("Missing case object");
-  return { valid: errors.length === 0, errors };
 };

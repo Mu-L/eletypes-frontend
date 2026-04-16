@@ -39,7 +39,7 @@ const KeyboardLab = forwardRef(({
         frameloop="demand"
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
-        camera={{ position: [0, 7, 9], fov: 40, near: 0.1, far: 100 }}
+        camera={{ position: [0, 9, 12], fov: 40, near: 0.1, far: 100 }}
         onCreated={({ gl }) => { gl.setClearColor("#111115"); }}
       >
         <ambientLight intensity={0.35} />
@@ -69,8 +69,8 @@ const KeyboardLab = forwardRef(({
           enablePan={false}
           minPolarAngle={Math.PI * 0.05}
           maxPolarAngle={Math.PI * 0.42}
-          minDistance={5}
-          maxDistance={18}
+          minDistance={4}
+          maxDistance={35}
           enableDamping
           dampingFactor={0.06}
           target={[0, 0.15, 0]}

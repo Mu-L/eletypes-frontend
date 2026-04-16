@@ -288,7 +288,9 @@ function App() {
               <WordsCard soundMode={soundMode} soundType={soundType}></WordsCard>
             )}
             {isKeyboardLabMode && (
-              <KeyboardLabDemo theme={theme} />
+              <div style={{ height: "calc(100vh - 200px)", maxHeight: "calc(100vh - 200px)", overflow: "hidden" }}>
+                <KeyboardLabDemo theme={theme} />
+              </div>
             )}
           </Suspense>
           <div className="bottomBar">

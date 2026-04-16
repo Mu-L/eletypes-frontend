@@ -17,7 +17,7 @@ const RC_LEFT = 14.5;  // Delete position (shifted left 1 from generic)
 const RC = 15.5;       // Right column (Home, End, PgUp, PgDn)
 
 export default createPreset({
-  name: "Cyberboard 75% ANSI",
+  name: "Cyberboard R2 Layout",
   boardId: "cyberboard-75-ansi",
   formFactor: "75%",
   layoutStagger: "row-staggered",
