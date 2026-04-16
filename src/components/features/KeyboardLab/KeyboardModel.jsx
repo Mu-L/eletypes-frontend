@@ -18,6 +18,7 @@ import { RoundedBoxGeometry } from "three-stdlib";
 import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema/derive";
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 import { createKeycapFromSpec } from "./KeycapGeometry";
+import { extrudeCaseProfile, computeMountSurface } from "./CaseEditor/extrudeProfile";
 
 extend({ RoundedBoxGeometry });
 
@@ -53,6 +54,7 @@ const KeyboardModel = forwardRef(({
   accentKeyColor,
   caseColor,
   keycapOpacity = 1.0,
+  caseProfile,
 }, ref) => {
   const meshRef = useRef();
   const { invalidate } = useThree();
@@ -92,19 +94,49 @@ const KeyboardModel = forwardRef(({
   const caseD = bounds.height + shellConfig.paddingTop + shellConfig.paddingBottom;
   const caseCenterZ = (shellConfig.paddingTop - shellConfig.paddingBottom) / 2;
 
-  // ─── Rest positions (with per-row sculpting + slope following) ───
+  // ─── Shared profile scaling (used by BOTH case geo and mount surface) ───
+  const profileScale = useMemo(() => {
+    if (!caseProfile?.points || caseProfile.points.length < 3) return null;
+    const maxPY = Math.max(...caseProfile.points.map(p => p.y)) || 1;
+    return {
+      maxHeight: (maxPY / 60) * 2.0,
+      points: caseProfile.points,
+      mountEdge: caseProfile.mountEdge,
+    };
+  }, [caseProfile]);
+
+  // ─── Profile-based case geometry ───
+  const profileCaseGeo = useMemo(() => {
+    if (!profileScale) return null;
+    return extrudeCaseProfile(profileScale.points, caseW, caseD, profileScale.maxHeight);
+  }, [profileScale, caseW, caseD]);
+
+  // ─── Mount surface from profile (same scaling as case geometry) ───
+  const mountSurface = useMemo(() => {
+    if (!profileScale || !profileScale.mountEdge) return null;
+    const ms = computeMountSurface(profileScale.points, profileScale.mountEdge, caseD, profileScale.maxHeight);
+    const msRangeZ = ms.endZ - ms.startZ;
+
+    return {
+      ...ms,
+      getY: (keyZ) => {
+        if (msRangeZ === 0) return ms.startY;
+        // Keys are centered on key field (0 = center).
+        // Mount surface is centered on case (0 = center, shifted by caseCenterZ).
+        const caseZ = keyZ + caseCenterZ;
+        const t = Math.max(0, Math.min(1, (caseZ - ms.startZ) / msRangeZ));
+        return ms.startY + t * (ms.endY - ms.startY);
+      },
+    };
+  }, [profileScale, caseD, caseCenterZ]);
+
+  // ─── Rest positions (keys mount on the case surface) ───
   const restPositions = useMemo(() => {
     const profile = keycapPreset?.profile;
     const rowsData = (!profile?.uniform && profile?.rows) ? profile.rows : null;
     const baseH = profile?.defaultCap?.height || KEY_HEIGHT;
 
-    // For wedge cases: compute the top surface Y at each Z position
-    // Top surface slopes from backTopY at -hd to frontTopY at +hd
-    const tiltAngle = (shellConfig.tilt || 0) * Math.PI / 180;
-    const hasSlope = tiltAngle > 0;
     const hd = caseD / 2;
-    const backTopY = hasSlope ? shellConfig.height + Math.tan(tiltAngle) * caseD : 0;
-    const frontTopY = hasSlope ? shellConfig.height * 0.25 : 0;
 
     return keys.map((key) => {
       const row = yToRow(key.y);
@@ -114,23 +146,39 @@ const KeyboardModel = forwardRef(({
       const x = (key.x + key.w / 2) - centerX;
       const z = (key.y + (key.h || 1) / 2) - centerZ;
 
-      // Interpolate the surface Y at this key's Z position
+      // Compute surface Y at this key's Z position
       let surfaceY = PLATE_Y;
-      if (hasSlope) {
-        const t = (z + hd) / caseD; // 0 = back (-hd), 1 = front (+hd)
+
+      if (mountSurface) {
+        surfaceY = mountSurface.getY(z) + PLATE_Y;
+      } else if (shellConfig.tilt > 0) {
+        // Shell tilt-based fallback
+        const tiltAngle = shellConfig.tilt * Math.PI / 180;
+        const backTopY = shellConfig.height + Math.tan(tiltAngle) * caseD;
+        const frontTopY = shellConfig.height * 0.25;
+        const t = (z + hd) / caseD;
         surfaceY = backTopY + t * (frontTopY - backTopY) + PLATE_Y;
+      }
+
+      // Compute tilt angle for the key to sit flush on the surface
+      let tiltAngleX = 0;
+      if (mountSurface) {
+        tiltAngleX = -mountSurface.angle; // Negative because keys tilt forward on a back-high slope
+      } else if (shellConfig.tilt > 0) {
+        tiltAngleX = -(shellConfig.tilt * Math.PI / 180);
       }
 
       return {
         x,
-        y: surfaceY + capH / 2,
+        y: surfaceY + capH / 2 * Math.cos(tiltAngleX),
         z,
         sx: key.w - KEY_GAP,
         sy: capH,
         sz: (key.h || 1) - KEY_GAP,
+        tiltX: tiltAngleX,
       };
     });
-  }, [keys, centerX, centerZ, keycapPreset, shellConfig, caseD]);
+  }, [keys, centerX, centerZ, keycapPreset, mountSurface, shellConfig, caseD]);
 
   // ─── Keycap geometry: sculpted from profile data ───
   // Creates tapered shape with dish based on the active profile's defaultCap.
@@ -155,12 +203,21 @@ const KeyboardModel = forwardRef(({
     []
   );
 
+  // Pre-allocated quaternion for key tilt
+  const _tiltQuat = useMemo(() => new THREE.Quaternion(), []);
+
   const setKeyMatrix = (index, yOffset) => {
     const rest = restPositions[index];
     if (!rest) return;
     _pos.set(rest.x, rest.y + yOffset, rest.z);
     _scale.set(rest.sx, rest.sy, rest.sz);
-    _mat4.compose(_pos, _quat, _scale);
+    // Apply mount surface tilt angle
+    if (rest.tiltX) {
+      _tiltQuat.setFromAxisAngle(new THREE.Vector3(1, 0, 0), rest.tiltX);
+      _mat4.compose(_pos, _tiltQuat, _scale);
+    } else {
+      _mat4.compose(_pos, _quat, _scale);
+    }
     meshRef.current.setMatrixAt(index, _mat4);
   };
 
@@ -188,7 +245,7 @@ const KeyboardModel = forwardRef(({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, invalidate]);
+  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, invalidate]);
 
   // ─── Animation loop ───
   useFrame((_, delta) => {
@@ -237,7 +294,7 @@ const KeyboardModel = forwardRef(({
 
 
   const caseMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: caseColor, roughness: 0.2, metalness: 0.9, envMapIntensity: 1.0 }),
+    () => new THREE.MeshStandardMaterial({ color: caseColor, roughness: 0.2, metalness: 0.9, envMapIntensity: 1.0, side: THREE.DoubleSide }),
     [caseColor]
   );
   const plateMat = useMemo(
@@ -320,8 +377,13 @@ const KeyboardModel = forwardRef(({
 
   return (
     <group>
-      {/* Case body */}
-      {tilt > 0 && wedgeGeo ? (
+      {/* Case body — profile-extruded, wedge, or flat box */}
+      {profileCaseGeo ? (
+        <mesh position={[0, 0, caseCenterZ]}>
+          <primitive object={profileCaseGeo} attach="geometry" />
+          <primitive object={caseMat} attach="material" />
+        </mesh>
+      ) : tilt > 0 && wedgeGeo ? (
         <mesh position={[0, 0, caseCenterZ]}>
           <primitive object={wedgeGeo} attach="geometry" />
           <primitive object={caseMat} attach="material" />

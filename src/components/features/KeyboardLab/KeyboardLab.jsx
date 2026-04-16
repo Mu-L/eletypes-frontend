@@ -23,6 +23,7 @@ const KeyboardLab = forwardRef(({
   caseColor = "#1a1a1e",
   keycapOpacity = 1.0,
   legendPreset,
+  caseProfile,
   style,
 }, ref) => {
   const modelRef = useRef();
@@ -57,6 +58,7 @@ const KeyboardLab = forwardRef(({
           accentKeyColor={accentKeyColor}
           caseColor={caseColor}
           keycapOpacity={keycapOpacity}
+          caseProfile={caseProfile}
         />
         <KeycapLabels
           layout={layout}

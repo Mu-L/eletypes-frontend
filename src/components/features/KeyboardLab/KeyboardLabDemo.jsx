@@ -10,6 +10,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import KeyboardLab from "./KeyboardLab";
 import KeyboardLayout2D from "./KeyboardLayout2D";
+import CaseProfileEditor, { PROFILE_PRESETS } from "./CaseEditor/CaseProfileEditor";
 import { bundledResolver, listBundledByType } from "./schema/resolve/assetResolver";
 import { designFromSelections } from "./schema/normalize/resolveDesign";
 import { buildCodeMap, extractKeys } from "./schema/derive";
@@ -65,8 +66,9 @@ const KeyboardLabDemo = ({ theme }) => {
   const [designName, setDesignName] = useState("Untitled Design");
   const [savedDesigns, setSavedDesigns] = useState(() => listDesigns());
   const [saveMsg, setSaveMsg] = useState("");
-  const [splitPercent, setSplitPercent] = useState(45); // 3D gets 45%, sidebar gets 55%
+  const [splitPercent, setSplitPercent] = useState(45);
   const [jsonTab, setJsonTab] = useState("Design");
+  const [caseProfile, setCaseProfile] = useState(PROFILE_PRESETS.wedge);
   const isDragging = useRef(false);
 
   // Resolve assets
@@ -244,7 +246,7 @@ const KeyboardLabDemo = ({ theme }) => {
         <div style={{ minHeight: 0, minWidth: 0 }}>
           <KeyboardLab ref={keyboardRef} layout={layout} shell={shell} keycapPreset={keycapPreset}
             keycapColor={colors.keycapColor} accentKeyColor={colors.accentKeyColor} caseColor={colors.caseColor}
-            keycapOpacity={opacity} legendPreset={legendPreset} />
+            keycapOpacity={opacity} legendPreset={legendPreset} caseProfile={caseProfile} />
         </div>
 
         {/* Drag handle */}
@@ -282,6 +284,16 @@ const KeyboardLabDemo = ({ theme }) => {
           <div style={sectionTitle}>Layout</div>
           <div style={{ overflow: "auto", padding: "0 8px 6px" }}>
             <KeyboardLayout2D layout={layout} activeKeys={activeKeys} theme={theme} scale={scale2D} />
+          </div>
+
+          {/* Case Profile Editor */}
+          <div style={{ padding: "0 8px 4px", borderTop: `1px solid ${text}08` }}>
+            <div style={sectionTitle}>Case Profile</div>
+            <CaseProfileEditor
+              theme={theme}
+              initialProfile={caseProfile}
+              onChange={setCaseProfile}
+            />
           </div>
 
           {/* Controls */}
