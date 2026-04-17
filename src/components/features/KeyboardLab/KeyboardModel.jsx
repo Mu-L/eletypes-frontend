@@ -18,7 +18,7 @@ import { RoundedBoxGeometry } from "three-stdlib";
 import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema/derive";
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 import { createKeycapFromSpec } from "./KeycapGeometry";
-import { extrudeCaseProfile, computeMountSurface } from "./CaseEditor/extrudeProfile";
+import { extrudeCaseProfile, computeMountSurface, extrudeEdgeStrip } from "./CaseEditor/extrudeProfile";
 import { Text } from "@react-three/drei";
 
 extend({ RoundedBoxGeometry });
@@ -47,6 +47,8 @@ const yToRow = (y) => {
   return 5;
 };
 
+const DEFAULT_OPACITY = { keycap: 1.0, accent: 1.0, case: 1.0, legend: 1.0 };
+
 const KeyboardModel = forwardRef(({
   layout,          // BoardLayout object (or just the keys array for backwards compat)
   shell,           // Optional ShellProfile
@@ -54,7 +56,7 @@ const KeyboardModel = forwardRef(({
   keycapColor,
   accentKeyColor,
   caseColor,
-  keycapOpacity = 1.0,
+  opacity: opacityProp,
   legendPreset,
   caseProfile,
   caseScale = 1.0,
@@ -62,7 +64,9 @@ const KeyboardModel = forwardRef(({
   mountFit = 0.85,
   extrudeWidth = 1.0,
 }, ref) => {
-  const meshRef = useRef();
+  const opacity = { ...DEFAULT_OPACITY, ...opacityProp };
+  const regularMeshRef = useRef();
+  const accentMeshRef = useRef();
   const { invalidate } = useThree();
 
   // ─── Normalize inputs (handles full preset, { keys }, or raw array) ───
@@ -76,6 +80,23 @@ const KeyboardModel = forwardRef(({
 
   const centerX = bounds.width / 2;
   const centerZ = bounds.height / 2;
+
+  // ─── Split keys into regular / accent groups ───
+  const { regularIndices, accentIndices, meshMap } = useMemo(() => {
+    const reg = [];
+    const acc = [];
+    const map = new Array(keyCount); // map[globalIndex] → { ref: 'regular'|'accent', instanceIndex }
+    for (let i = 0; i < keyCount; i++) {
+      if (isAccentKey(keys[i])) {
+        map[i] = { group: "accent", idx: acc.length };
+        acc.push(i);
+      } else {
+        map[i] = { group: "regular", idx: reg.length };
+        reg.push(i);
+      }
+    }
+    return { regularIndices: reg, accentIndices: acc, meshMap: map };
+  }, [keys, keyCount]);
 
   // ─── Animation state ───
   const offsets = useRef(new Float32Array(keyCount));
@@ -118,6 +139,16 @@ const KeyboardModel = forwardRef(({
     return extrudeCaseProfile(profileScale.points, caseW * extrudeWidth, caseD, profileScale.maxHeight);
   }, [profileScale, caseW, caseD, extrudeWidth]);
 
+  // ─── Colored edge strip geometries ───
+  const edgeStrips = useMemo(() => {
+    if (!profileScale || !caseProfile?.coloredEdges?.length) return [];
+    return caseProfile.coloredEdges.map((edge) => ({
+      geo: extrudeEdgeStrip(profileScale.points, edge.from, edge.to, caseW * extrudeWidth, caseD, profileScale.maxHeight),
+      color: edge.color,
+      emissive: edge.emissive ?? 0.5,
+    }));
+  }, [profileScale, caseProfile?.coloredEdges, caseW, caseD, extrudeWidth]);
+
   // ─── Mount surface from profile (same scaling as case geometry) ───
   const mountSurface = useMemo(() => {
     if (!profileScale || !profileScale.mountEdge) return null;
@@ -132,9 +163,9 @@ const KeyboardModel = forwardRef(({
     return {
       ...ms,
       getY: (keyZ) => {
-        // Map key Z range (-centerZ..+centerZ) to mount surface t (margin..1-margin)
+        // Map key Z range: +centerZ (front, low) → t=0, -centerZ (back, high) → t=1
         const keyRange = centerZ * 2;
-        const rawT = keyRange !== 0 ? (keyZ + centerZ) / keyRange : 0.5;
+        const rawT = keyRange !== 0 ? (centerZ - keyZ) / keyRange : 0.5;
         const t = margin + rawT * mountFit;
         const clampedT = Math.max(0, Math.min(1, t));
         return ms.startY + clampedT * (ms.endY - ms.startY) + (mountOffset.y || 0);
@@ -176,9 +207,9 @@ const KeyboardModel = forwardRef(({
       // Compute tilt angle for the key to sit flush on the surface
       let tiltAngleX = 0;
       if (mountSurface) {
-        tiltAngleX = -mountSurface.angle; // Negative because keys tilt forward on a back-high slope
+        tiltAngleX = mountSurface.angle; // Positive tilts key tops toward +Z (front/user)
       } else if (shellConfig.tilt > 0) {
-        tiltAngleX = -(shellConfig.tilt * Math.PI / 180);
+        tiltAngleX = shellConfig.tilt * Math.PI / 180;
       }
 
       return {
@@ -204,14 +235,18 @@ const KeyboardModel = forwardRef(({
     // Fallback: basic rounded box if no keycap preset
     return new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL);
   }, [keycapPreset]);
-  const material = useMemo(
+
+  const regularMaterial = useMemo(
     () => new THREE.MeshStandardMaterial({
-      roughness: 0.4,
-      metalness: 0.05,
-      envMapIntensity: 0.4,
+      roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4,
       side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 1.0,
+    }),
+    []
+  );
+  const accentMaterial = useMemo(
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4,
+      side: THREE.DoubleSide,
     }),
     []
   );
@@ -221,44 +256,64 @@ const KeyboardModel = forwardRef(({
 
   const setKeyMatrix = (index, yOffset) => {
     const rest = restPositions[index];
-    if (!rest) return;
+    const entry = meshMap[index];
+    if (!rest || !entry) return;
     _pos.set(rest.x, rest.y + yOffset, rest.z);
     _scale.set(rest.sx, rest.sy, rest.sz);
-    // Apply mount surface tilt angle
     if (rest.tiltX) {
       _tiltQuat.setFromAxisAngle(new THREE.Vector3(1, 0, 0), rest.tiltX);
       _mat4.compose(_pos, _tiltQuat, _scale);
     } else {
       _mat4.compose(_pos, _quat, _scale);
     }
-    meshRef.current.setMatrixAt(index, _mat4);
+    const mesh = entry.group === "accent" ? accentMeshRef.current : regularMeshRef.current;
+    if (mesh) mesh.setMatrixAt(entry.idx, _mat4);
   };
 
-  // ─── Update opacity ───
+  // ─── Update per-group opacity ───
   useEffect(() => {
-    material.opacity = keycapOpacity;
-    material.needsUpdate = true;
+    regularMaterial.opacity = opacity.keycap;
+    regularMaterial.transparent = opacity.keycap < 1.0;
+    regularMaterial.depthWrite = opacity.keycap >= 0.99;
+    regularMaterial.needsUpdate = true;
+    accentMaterial.opacity = opacity.accent;
+    accentMaterial.transparent = opacity.accent < 1.0;
+    accentMaterial.depthWrite = opacity.accent >= 0.99;
+    accentMaterial.needsUpdate = true;
     invalidate();
-  }, [keycapOpacity, material, invalidate]);
+  }, [opacity.keycap, opacity.accent, regularMaterial, accentMaterial, invalidate]);
 
-  // ─── Build instances ───
+  // ─── Build instances (split into regular + accent meshes) ───
   useEffect(() => {
-    const mesh = meshRef.current;
-    if (!mesh || keyCount === 0) return;
+    const regMesh = regularMeshRef.current;
+    const accMesh = accentMeshRef.current;
+    if (keyCount === 0) return;
 
     const regularColor = new THREE.Color(keycapColor);
     const accentColor = new THREE.Color(accentKeyColor);
 
-    for (let i = 0; i < keyCount; i++) {
-      setKeyMatrix(i, 0);
-      mesh.setColorAt(i, isAccentKey(keys[i]) ? accentColor : regularColor);
+    for (const gi of regularIndices) {
+      setKeyMatrix(gi, 0);
+      const entry = meshMap[gi];
+      if (regMesh) regMesh.setColorAt(entry.idx, regularColor);
+    }
+    for (const gi of accentIndices) {
+      setKeyMatrix(gi, 0);
+      const entry = meshMap[gi];
+      if (accMesh) accMesh.setColorAt(entry.idx, accentColor);
     }
 
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    if (regMesh) {
+      regMesh.instanceMatrix.needsUpdate = true;
+      if (regMesh.instanceColor) regMesh.instanceColor.needsUpdate = true;
+    }
+    if (accMesh) {
+      accMesh.instanceMatrix.needsUpdate = true;
+      if (accMesh.instanceColor) accMesh.instanceColor.needsUpdate = true;
+    }
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, caseScale, mountOffset, mountFit, invalidate]);
+  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, caseScale, mountOffset, mountFit, regularIndices, accentIndices, invalidate]);
 
   // ─── Animation loop ───
   useFrame((_, delta) => {
@@ -287,7 +342,8 @@ const KeyboardModel = forwardRef(({
     }
 
     for (const i of toRemove) active.delete(i);
-    if (meshRef.current) meshRef.current.instanceMatrix.needsUpdate = true;
+    if (regularMeshRef.current) regularMeshRef.current.instanceMatrix.needsUpdate = true;
+    if (accentMeshRef.current) accentMeshRef.current.instanceMatrix.needsUpdate = true;
     if (active.size > 0) invalidate();
   });
 
@@ -318,6 +374,19 @@ const KeyboardModel = forwardRef(({
     () => new THREE.MeshStandardMaterial({ color: caseColor, roughness: 0.35, metalness: 0.85 }),
     [caseColor]
   );
+
+  // Update case opacity
+  useEffect(() => {
+    caseMat.opacity = opacity.case;
+    caseMat.transparent = opacity.case < 1.0;
+    caseMat.depthWrite = opacity.case >= 0.99;
+    caseMat.needsUpdate = true;
+    plateMat.opacity = opacity.case;
+    plateMat.transparent = opacity.case < 1.0;
+    plateMat.depthWrite = opacity.case >= 0.99;
+    plateMat.needsUpdate = true;
+    invalidate();
+  }, [opacity.case, caseMat, plateMat, invalidate]);
 
   const tilt = shellConfig.tilt || 0;
   const tiltRad = (tilt * Math.PI) / 180;
@@ -412,13 +481,38 @@ const KeyboardModel = forwardRef(({
         </mesh>
       )}
 
-      {/* Instanced keycaps — positioned on the sloped surface */}
-      <instancedMesh
-        ref={meshRef}
-        args={[geometry, material, keyCount]}
-        key={keyCount}
-        frustumCulled={false}
-      />
+      {/* Colored edge accent strips */}
+      {edgeStrips.map((strip, i) => (
+        <mesh key={`edge-${i}`} position={[0, 0, caseCenterZ]}>
+          <primitive object={strip.geo} attach="geometry" />
+          <meshStandardMaterial
+            color={strip.color}
+            emissive={strip.color}
+            emissiveIntensity={strip.emissive}
+            roughness={0.3}
+            metalness={0.1}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
+
+      {/* Instanced keycaps — split into regular + accent for per-group opacity */}
+      {regularIndices.length > 0 && (
+        <instancedMesh
+          ref={regularMeshRef}
+          args={[geometry, regularMaterial, regularIndices.length]}
+          key={`reg-${keyCount}`}
+          frustumCulled={false}
+        />
+      )}
+      {accentIndices.length > 0 && (
+        <instancedMesh
+          ref={accentMeshRef}
+          args={[geometry, accentMaterial, accentIndices.length]}
+          key={`acc-${keyCount}`}
+          frustumCulled={false}
+        />
+      )}
 
       {/* Key legends — rendered here so they have direct access to restPositions */}
       {legendPreset?.style?.fontSize > 0 && legendPreset?.style?.color !== "transparent" && (
@@ -448,6 +542,7 @@ const KeyboardModel = forwardRef(({
                 <Text
                   fontSize={fontSize}
                   color={color}
+                  fillOpacity={opacity.legend}
                   anchorX="center"
                   anchorY="middle"
                   rotation={[-Math.PI / 2, 0, 0]}

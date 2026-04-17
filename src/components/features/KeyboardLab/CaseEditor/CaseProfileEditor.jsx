@@ -2,11 +2,13 @@
  * CaseProfileEditor — 2D parametric case cross-section editor.
  *
  * The user drags control points to shape the keyboard case side profile.
- * The profile is an array of {x, y} points defining the cross-section polygon.
- * The system extrudes this into 3D geometry.
+ * The profile is an array of {x, y, d?} points defining the cross-section polygon.
+ * The system extrudes this symmetrically along the width axis into 3D geometry.
  *
- * Built-in presets: flat box, wedge (Cyberboard), ergonomic curve.
- * Mount surface: the edge between two marked points where keys sit.
+ * Each point may have a `d` (depth inset) that narrows the extrusion at that
+ * vertex — applied equally on both sides (symmetric).
+ *
+ * Mount surface: click any edge to designate it as the key mount surface.
  */
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
@@ -29,10 +31,11 @@ const PROFILE_PRESETS = {
     points: [
       { x: 0, y: 0 },
       { x: 100, y: 0 },
-      { x: 100, y: 50 },
+      { x: 100, y: 12 },
+      { x: 82, y: 30, d: 2 },
       { x: 0, y: 12 },
     ],
-    mountEdge: [3, 2],
+    mountEdge: [3, 4],
   },
   chamferedWedge: {
     name: "Chamfered Wedge",
@@ -40,8 +43,8 @@ const PROFILE_PRESETS = {
       { x: 0, y: 0 },
       { x: 100, y: 0 },
       { x: 100, y: 45 },
-      { x: 90, y: 50, d: 3 },  // back chamfer ramp (d = depth offset)
-      { x: 10, y: 16, d: 3 },  // front chamfer ramp
+      { x: 90, y: 50, d: 3 },
+      { x: 10, y: 16, d: 3 },
       { x: 0, y: 12 },
     ],
     mountEdge: [5, 2],
@@ -59,36 +62,35 @@ const PROFILE_PRESETS = {
   },
 };
 
-const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
+const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onExtrudeWidthChange }) => {
   const svgRef = useRef(null);
-  const [presetKey, setPresetKey] = useState("wedge");
   const [points, setPoints] = useState(initialProfile?.points || PROFILE_PRESETS.wedge.points);
   const [mountEdge, setMountEdge] = useState(initialProfile?.mountEdge || PROFILE_PRESETS.wedge.mountEdge);
+  const [coloredEdges, setColoredEdges] = useState(initialProfile?.coloredEdges || []);
   const [dragging, setDragging] = useState(null);
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [hoveredEdge, setHoveredEdge] = useState(null);
 
   // Sync from parent when initialProfile changes (e.g., loading a saved design)
   const lastLoadedRef = useRef(null);
   useEffect(() => {
     if (!initialProfile?.points) return;
-    // Only update if this is a genuinely new profile (not our own onChange echo)
     const key = JSON.stringify(initialProfile.points);
     if (key !== lastLoadedRef.current) {
       lastLoadedRef.current = key;
-      setPoints(initialProfile.points.map(p => ({ ...p }))); // deep copy with d preserved
+      setPoints(initialProfile.points.map(p => ({ ...p })));
       if (initialProfile.mountEdge) setMountEdge([...initialProfile.mountEdge]);
+      setColoredEdges(initialProfile.coloredEdges || []);
       setSelectedPoint(null);
     }
   }, [initialProfile]);
 
   const text = theme?.text || "#e0e0e0";
   const accent = theme?.stats || "#6ec6ff";
-  const bg = theme?.background || "#111115";
+  const mountColor = "#44dd88";
 
   // SVG coordinate system: x=0 left (front), x=100 right (back), y=0 bottom, y grows up
-  // SVG renders y-flipped (y=0 at top), so we flip in rendering
-  // SVG fills container width, height proportional
   const containerRef = useRef(null);
   const [containerW, setContainerW] = useState(400);
   useEffect(() => {
@@ -98,15 +100,15 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
     return () => obs.disconnect();
   }, []);
   const svgW = Math.max(200, containerW - 16);
-  const svgH = Math.round(svgW * 0.55);
-  const padX = 30;
-  const padY = 20;
+  const svgH = Math.round(svgW * 0.32);
+  const padX = 24;
+  const padY = 14;
   const scaleX = (svgW - padX * 2) / 100;
-  const scaleY = (svgH - padY * 2) / 60; // max Y = 60
+  const scaleY = (svgH - padY * 2) / 60;
 
   const toSvg = (pt) => ({
     sx: padX + pt.x * scaleX,
-    sy: svgH - padY - pt.y * scaleY, // flip Y
+    sy: svgH - padY - pt.y * scaleY,
   });
 
   const fromSvg = (sx, sy) => ({
@@ -116,20 +118,14 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
 
   // Emit profile changes
   useEffect(() => {
-    if (onChange) {
-      onChange({ points, mountEdge });
-    }
-  }, [points, mountEdge, onChange]);
+    if (onChange) onChange({ points, mountEdge, coloredEdges });
+  }, [points, mountEdge, coloredEdges, onChange]);
 
-  const applyPreset = (key) => {
-    setPresetKey(key);
-    setPoints([...PROFILE_PRESETS[key].points]);
-    setMountEdge([...PROFILE_PRESETS[key].mountEdge]);
-  };
 
   // ─── Drag handling ───
-  const handleMouseDown = (idx, e) => {
+  const handlePointMouseDown = (idx, e) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(idx);
     setSelectedPoint(idx);
   };
@@ -137,12 +133,10 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
   const handleMouseMove = useCallback((e) => {
     if (dragging === null || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const pt = fromSvg(sx, sy);
+    const pt = fromSvg(e.clientX - rect.left, e.clientY - rect.top);
     setPoints((prev) => {
       const next = [...prev];
-      next[dragging] = pt;
+      next[dragging] = { ...next[dragging], ...pt };
       return next;
     });
   }, [dragging]);
@@ -160,18 +154,16 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
     }
   }, [dragging, handleMouseMove, handleMouseUp]);
 
-  // Add point: click the "+" button or double-click near an edge
+  // ─── Add breakpoint on edge (double-click) ───
   const addPointOnEdge = useCallback((e) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
     const click = fromSvg(e.clientX - rect.left, e.clientY - rect.top);
 
-    // Find the closest edge (segment between consecutive points)
     let minDist = Infinity, bestEdge = 0;
     for (let i = 0; i < points.length; i++) {
       const j = (i + 1) % points.length;
       const a = points[i], b = points[j];
-      // Distance from click to line segment a→b
       const dx = b.x - a.x, dy = b.y - a.y;
       const len2 = dx * dx + dy * dy;
       let t = len2 > 0 ? ((click.x - a.x) * dx + (click.y - a.y) * dy) / len2 : 0;
@@ -181,21 +173,53 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
       if (d < minDist) { minDist = d; bestEdge = i; }
     }
 
-    // Insert the new point after bestEdge
     const a = points[bestEdge];
     const b = points[(bestEdge + 1) % points.length];
     const newPt = { x: Math.round((a.x + b.x) / 2), y: Math.round((a.y + b.y) / 2) };
+    const insertIdx = bestEdge + 1;
+
     const next = [...points];
-    next.splice(bestEdge + 1, 0, newPt);
+    next.splice(insertIdx, 0, newPt);
     setPoints(next);
+    setMountEdge(prev => prev.map(mi => mi >= insertIdx ? mi + 1 : mi));
+    setColoredEdges(prev => prev.map(e => ({
+      ...e,
+      from: e.from >= insertIdx ? e.from + 1 : e.from,
+      to: e.to >= insertIdx ? e.to + 1 : e.to,
+    })));
+    setSelectedPoint(insertIdx);
   }, [points]);
 
-  // Remove point on right-click (keep min 3)
+  // ─── Remove point (keep min 3) ───
+  const removePoint = useCallback((idx) => {
+    if (points.length <= 3) return;
+    setPoints(prev => prev.filter((_, i) => i !== idx));
+    setMountEdge(prev => prev.map(mi => {
+      if (mi === idx) return Math.max(0, mi - 1);
+      return mi > idx ? mi - 1 : mi;
+    }));
+    setColoredEdges(prev => prev
+      .filter(e => e.from !== idx && e.to !== idx)
+      .map(e => ({
+        ...e,
+        from: e.from > idx ? e.from - 1 : e.from,
+        to: e.to > idx ? e.to - 1 : e.to,
+      })));
+    if (selectedPoint === idx) setSelectedPoint(null);
+    else if (selectedPoint !== null && selectedPoint > idx) setSelectedPoint(s => s - 1);
+  }, [points.length, selectedPoint]);
+
   const handleRightClick = (idx, e) => {
     e.preventDefault();
-    if (points.length <= 3) return;
-    setPoints((prev) => prev.filter((_, i) => i !== idx));
+    removePoint(idx);
   };
+
+  // ─── Edge click → set mount surface ───
+  const handleEdgeClick = useCallback((i, e) => {
+    e.stopPropagation();
+    const j = (i + 1) % points.length;
+    setMountEdge([i, j]);
+  }, [points.length]);
 
   // Build SVG polygon path
   const pathD = points.map((pt, i) => {
@@ -207,22 +231,11 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
   const mountFrom = toSvg(points[mountEdge[0]]);
   const mountTo = toSvg(points[mountEdge[1]]);
 
-  const sel = { background: "#1a1a1e", color: text, border: `1px solid ${text}33`, borderRadius: "3px", padding: "2px 6px", fontSize: "11px" };
-  const btn = { background: "transparent", border: `1px solid ${accent}44`, borderRadius: "4px", color: text, padding: "3px 8px", cursor: "pointer", fontSize: "10px" };
+  const btnStyle = { background: "transparent", border: `1px solid ${accent}44`, borderRadius: "4px", color: text, padding: "4px 10px", cursor: "pointer", fontSize: "12px" };
+  const lbl = { display: "flex", alignItems: "center", gap: "4px", color: text, fontSize: "12px" };
 
   return (
-    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      {/* Preset selector */}
-      <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-        <span style={{ fontSize: "9px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px" }}>Profile</span>
-        {Object.entries(PROFILE_PRESETS).map(([key, preset]) => (
-          <button key={key} onClick={() => applyPreset(key)}
-            style={{ ...btn, borderColor: presetKey === key ? accent : `${accent}44`, color: presetKey === key ? accent : text }}>
-            {preset.name}
-          </button>
-        ))}
-      </div>
-
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
       {/* SVG Editor */}
       <svg
         ref={svgRef}
@@ -230,25 +243,57 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
         height={svgH}
         style={{ background: `${text}05`, borderRadius: "6px", border: `1px solid ${text}10`, cursor: dragging !== null ? "grabbing" : "default" }}
         onDoubleClick={addPointOnEdge}
+        onClick={() => { if (dragging === null) setSelectedPoint(null); }}
       >
-        {/* Grid lines */}
-        {[0, 20, 40, 60, 80, 100].map((x) => {
+        {/* Grid */}
+        {[0, 25, 50, 75, 100].map((x) => {
           const { sx } = toSvg({ x, y: 0 });
-          return <line key={`gx${x}`} x1={sx} y1={padY} x2={sx} y2={svgH - padY} stroke={`${text}08`} />;
+          return <line key={`gx${x}`} x1={sx} y1={padY} x2={sx} y2={svgH - padY} stroke={`${text}06`} />;
         })}
-        {[0, 15, 30, 45, 60].map((y) => {
+        {[0, 20, 40, 60].map((y) => {
           const { sy } = toSvg({ x: 0, y });
-          return <line key={`gy${y}`} x1={padX} y1={sy} x2={svgW - padX} y2={sy} stroke={`${text}08`} />;
+          return <line key={`gy${y}`} x1={padX} y1={sy} x2={svgW - padX} y2={sy} stroke={`${text}06`} />;
         })}
 
-        {/* Case profile fill */}
-        <path d={pathD} fill={`${accent}15`} stroke={`${accent}55`} strokeWidth={1.5} />
+        {/* Profile fill */}
+        <path d={pathD} fill={`${accent}12`} stroke={`${accent}40`} strokeWidth={1} />
 
-        {/* Mount surface highlight */}
-        <line x1={mountFrom.sx} y1={mountFrom.sy} x2={mountTo.sx} y2={mountTo.sy}
-          stroke={accent} strokeWidth={2.5} strokeDasharray="4,3" />
-        <text x={(mountFrom.sx + mountTo.sx) / 2} y={(mountFrom.sy + mountTo.sy) / 2 - 6}
-          fontSize="8" fill={accent} textAnchor="middle" opacity={0.7}>mount surface</text>
+        {/* Clickable edges */}
+        {points.map((pt, i) => {
+          const j = (i + 1) % points.length;
+          const a = toSvg(pt);
+          const b = toSvg(points[j]);
+          const isMount = (mountEdge[0] === i && mountEdge[1] === j) || (mountEdge[0] === j && mountEdge[1] === i);
+          const isHover = hoveredEdge === i;
+          const ce = coloredEdges.find(e => (e.from === i && e.to === j) || (e.from === j && e.to === i));
+          return (
+            <g key={`edge-${i}`}>
+              <line x1={a.sx} y1={a.sy} x2={b.sx} y2={b.sy}
+                stroke="transparent" strokeWidth={12}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => handleEdgeClick(i, e)}
+                onMouseEnter={() => setHoveredEdge(i)}
+                onMouseLeave={() => setHoveredEdge(null)}
+              />
+              {ce && (
+                <line x1={a.sx} y1={a.sy} x2={b.sx} y2={b.sy}
+                  stroke={ce.color} strokeWidth={3} pointerEvents="none" />
+              )}
+              {isMount && (
+                <line x1={a.sx} y1={a.sy} x2={b.sx} y2={b.sy}
+                  stroke={mountColor} strokeWidth={2.5} strokeDasharray="4,3" pointerEvents="none" />
+              )}
+              {isHover && !isMount && (
+                <line x1={a.sx} y1={a.sy} x2={b.sx} y2={b.sy}
+                  stroke={`${mountColor}66`} strokeWidth={2} strokeDasharray="3,3" pointerEvents="none" />
+              )}
+            </g>
+          );
+        })}
+
+        {/* Mount label */}
+        <text x={(mountFrom.sx + mountTo.sx) / 2} y={(mountFrom.sy + mountTo.sy) / 2 - 5}
+          fontSize="7" fill={mountColor} textAnchor="middle" opacity={0.8} pointerEvents="none">mount</text>
 
         {/* Control points */}
         {points.map((pt, i) => {
@@ -256,85 +301,144 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile }) => {
           const isHovered = hoveredPoint === i;
           const isSelected = selectedPoint === i;
           const isDrag = dragging === i;
+          const isOnMount = mountEdge.includes(i);
           return (
             <g key={i}>
-              <circle cx={sx} cy={sy} r={isDrag ? 7 : isSelected ? 7 : isHovered ? 6 : 5}
-                fill={isDrag ? accent : isSelected ? accent : isHovered ? `${accent}88` : `${accent}44`}
-                stroke={accent} strokeWidth={1.5}
+              <circle cx={sx} cy={sy} r={isDrag ? 6 : isSelected ? 6 : isHovered ? 5 : 4}
+                fill={isDrag ? accent : isSelected ? accent : isHovered ? `${accent}88` : isOnMount ? `${mountColor}66` : `${accent}44`}
+                stroke={isOnMount ? mountColor : accent} strokeWidth={1.5}
                 style={{ cursor: "grab" }}
-                onMouseDown={(e) => handleMouseDown(i, e)}
+                onMouseDown={(e) => handlePointMouseDown(i, e)}
                 onMouseEnter={() => setHoveredPoint(i)}
                 onMouseLeave={() => setHoveredPoint(null)}
                 onContextMenu={(e) => handleRightClick(i, e)}
               />
-              <text x={sx} y={sy - 10} fontSize="8" fill={text} textAnchor="middle" opacity={0.5}>
-                {pt.x},{pt.y}{pt.d ? ` d${pt.d}` : ""}
+              <text x={sx} y={sy - 8} fontSize="7" fill={text} textAnchor="middle" opacity={0.4} pointerEvents="none">
+                {pt.x},{pt.y}
               </text>
             </g>
           );
         })}
 
         {/* Labels */}
-        <text x={padX} y={svgH - 4} fontSize="8" fill={text} opacity={0.3}>Front</text>
-        <text x={svgW - padX - 20} y={svgH - 4} fontSize="8" fill={text} opacity={0.3}>Back</text>
+        <text x={padX} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>Front</text>
+        <text x={svgW - padX - 16} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>Back</text>
       </svg>
 
-      {/* Selected point controls */}
-      {selectedPoint !== null && selectedPoint < points.length && (
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "2px 0" }}>
-          <span style={{ fontSize: "9px", color: accent, opacity: 0.8 }}>
-            Point {selectedPoint} ({points[selectedPoint].x}, {points[selectedPoint].y})
-          </span>
-          <label style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "9px", color: text }}>
-            Depth
-            <input type="range" min="0" max="15" step="1"
-              value={points[selectedPoint]?.d || 0}
-              onChange={(e) => {
-                const d = parseInt(e.target.value);
-                setPoints(prev => {
-                  const next = [...prev];
-                  next[selectedPoint] = { ...next[selectedPoint], d: d > 0 ? d : undefined };
-                  return next;
-                });
-              }}
-              style={{ width: "60px", accentColor: accent }}
-            />
-            <span style={{ minWidth: "14px" }}>{points[selectedPoint]?.d || 0}</span>
-          </label>
-          <button onClick={() => {
-            if (points.length <= 3) return;
-            setPoints(prev => prev.filter((_, i) => i !== selectedPoint));
-            setSelectedPoint(null);
-          }} style={{ ...btn, color: "#ff6666", borderColor: "#ff666644", fontSize: "9px", padding: "1px 6px" }}>
-            Remove
-          </button>
-        </div>
-      )}
-      {/* Mirror + transform operations */}
-      <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
-        <span style={{ fontSize: "9px", color: text, opacity: 0.4 }}>Transform:</span>
-        <button onClick={() => {
-          // Mirror horizontally (flip front/back)
-          const maxX = Math.max(...points.map(p => p.x));
-          setPoints(points.map(p => ({ ...p, x: maxX - p.x })).reverse());
-        }} style={btn}>Mirror H</button>
-        <button onClick={() => {
-          // Mirror vertically (flip top/bottom)
-          const maxY = Math.max(...points.map(p => p.y));
-          setPoints(points.map(p => ({ ...p, y: maxY - p.y })));
-        }} style={btn}>Mirror V</button>
-        <button onClick={() => {
-          // Scale up Y by 10%
-          setPoints(points.map(p => ({ ...p, y: Math.round(p.y * 1.1) })));
-        }} style={btn}>↑ Taller</button>
-        <button onClick={() => {
-          // Scale down Y by 10%
-          setPoints(points.map(p => ({ ...p, y: Math.max(0, Math.round(p.y * 0.9)) })));
-        }} style={btn}>↓ Shorter</button>
+      {/* ─── Extrusion width (always visible) ─── */}
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <label style={lbl}
+          title="Width of the extruded case. The cross-section above is extruded symmetrically in both directions along the width axis.">
+          Extrusion Width
+          <input type="number" min="50" max="200" step="1"
+            value={Math.round((extrudeWidth ?? 1.0) * 100)}
+            onChange={(e) => {
+              const v = Math.max(50, Math.min(200, parseInt(e.target.value) || 100));
+              onExtrudeWidthChange?.(v / 100);
+            }}
+            style={{
+              background: "#1a1a1e", color: text, border: `1px solid ${text}22`,
+              borderRadius: "3px", width: "42px", padding: "1px 3px",
+              fontSize: "12px", textAlign: "center",
+            }}
+          />%
+        </label>
+        <span style={{ fontSize: "11px", color: text, opacity: 0.3 }}>symmetric ←→</span>
+        <span style={{ flex: 1 }} />
+        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.round(p.y * 1.1) })))} style={btnStyle}>↑ Taller</button>
+        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.max(0, Math.round(p.y * 0.9)) })))} style={btnStyle}>↓ Shorter</button>
       </div>
 
-      <div style={{ fontSize: "9px", color: text, opacity: 0.3 }}>
-        Click point to select · Drag to move · Double-click edge to add
+      {/* ─── Points table (always visible) ─── */}
+      <div style={{ display: "flex", gap: "3px", flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>Points</span>
+        {points.map((pt, i) => {
+          const isSelected = selectedPoint === i;
+          const isOnMount = mountEdge.includes(i);
+          return (
+            <div key={i}
+              onClick={(e) => { e.stopPropagation(); setSelectedPoint(i); }}
+              style={{
+                display: "flex", alignItems: "center", gap: "3px",
+                padding: "2px 5px", borderRadius: "3px", cursor: "pointer",
+                background: isSelected ? `${accent}22` : "transparent",
+                border: `1px solid ${isSelected ? accent : isOnMount ? `${mountColor}44` : `${text}11`}`,
+                fontSize: "11px", color: text,
+              }}>
+              <span style={{ color: isOnMount ? mountColor : `${text}66`, fontWeight: 600, minWidth: "8px" }}>{i}</span>
+              <span style={{ opacity: 0.5 }}>{pt.x},{pt.y}</span>
+              <span style={{ opacity: 0.3 }}>inset</span>
+              <input type="number" min="0" max="20"
+                value={pt.d || 0}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  const d = parseInt(e.target.value) || 0;
+                  setPoints(prev => {
+                    const next = [...prev];
+                    next[i] = { ...next[i], d: d > 0 ? d : undefined };
+                    return next;
+                  });
+                }}
+                style={{
+                  background: "#1a1a1e", color: text, border: `1px solid ${text}22`,
+                  borderRadius: "2px", width: "32px", padding: "1px 3px",
+                  fontSize: "11px", textAlign: "center",
+                }}
+              />
+              {points.length > 3 && (
+                <span onClick={(e) => { e.stopPropagation(); removePoint(i); }}
+                  style={{ color: "#ff666688", cursor: "pointer", fontSize: "10px", lineHeight: 1 }}
+                  title="Remove point">×</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ─── Edge accents ─── */}
+      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>Edge Accents</span>
+        {points.map((_, i) => {
+          const j = (i + 1) % points.length;
+          const ce = coloredEdges.find(e => (e.from === i && e.to === j) || (e.from === j && e.to === i));
+          const isMount = (mountEdge[0] === i && mountEdge[1] === j) || (mountEdge[0] === j && mountEdge[1] === i);
+          return (
+            <div key={`ce-${i}`} style={{
+              display: "flex", alignItems: "center", gap: "3px",
+              padding: "2px 5px", borderRadius: "3px",
+              border: `1px solid ${ce ? ce.color + "66" : `${text}11`}`,
+              fontSize: "11px", color: text,
+            }}>
+              <span style={{ opacity: 0.5 }}>{i}→{j}</span>
+              {isMount && <span style={{ color: mountColor, fontSize: "9px" }}>M</span>}
+              <input type="color"
+                value={ce?.color || "#ffffff"}
+                onChange={(e) => {
+                  const color = e.target.value;
+                  setColoredEdges(prev => {
+                    const idx = prev.findIndex(ed => (ed.from === i && ed.to === j) || (ed.from === j && ed.to === i));
+                    if (idx >= 0) {
+                      const next = [...prev];
+                      next[idx] = { ...next[idx], color };
+                      return next;
+                    }
+                    return [...prev, { from: i, to: j, color }];
+                  });
+                }}
+                style={{ width: "20px", height: "20px", border: `1px solid ${text}22`, borderRadius: "3px", cursor: "pointer", background: "transparent", padding: 0 }}
+              />
+              {ce && (
+                <span onClick={() => setColoredEdges(prev => prev.filter(e => !((e.from === i && e.to === j) || (e.from === j && e.to === i))))}
+                  style={{ color: "#ff666688", cursor: "pointer", fontSize: "12px", lineHeight: 1 }}
+                  title="Remove accent">×</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: "11px", color: text, opacity: 0.3, lineHeight: 1.4 }}>
+        Drag points · Double-click edge to add · Right-click to remove · Click edge to set mount · Inset narrows width at vertex (symmetric)
       </div>
     </div>
   );

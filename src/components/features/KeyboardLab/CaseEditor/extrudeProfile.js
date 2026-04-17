@@ -2,7 +2,7 @@
  * Extrude a 2D profile into 3D case geometry.
  *
  * Profile coordinate system:
- *   profile x → 3D Z (front=0 to back=max)
+ *   profile x → 3D Z (front=0 → +Z, back=max → -Z)
  *   profile y → 3D Y (height)
  *   extrusion → 3D X (left/right width)
  *
@@ -32,7 +32,7 @@ export function extrudeCaseProfile(profilePoints, width, depth, maxHeight) {
   const scaleY = maxHeight / maxPY;
 
   const wp = profilePoints.map((p) => ({
-    z: (p.x * scaleZ) - depth / 2,
+    z: depth / 2 - (p.x * scaleZ),
     y: p.y * scaleY,
     // Per-vertex width offset: d=0 means full width, d>0 means narrower at this vertex
     hwLocal: hw - (p.d || 0) * (width / 100),
@@ -117,19 +117,98 @@ export function computeMountSurface(profilePoints, mountEdge, depth, maxHeight) 
   const scaleZ = depth / maxPX;
   const scaleY = maxHeight / maxPY;
 
-  const from = profilePoints[mountEdge[0]];
-  const to = profilePoints[mountEdge[1]];
+  // Always orient front-to-back (lower profile x = front) regardless of
+  // mountEdge winding order.  This ensures dy and angle are consistent
+  // no matter which direction the edge was specified.
+  let from = profilePoints[mountEdge[0]];
+  let to = profilePoints[mountEdge[1]];
+  if (from.x > to.x) { const tmp = from; from = to; to = tmp; }
 
-  const startZ = (from.x * scaleZ) - depth / 2;
+  const startZ = depth / 2 - (from.x * scaleZ);   // front → +Z
   const startY = from.y * scaleY;
-  const endZ = (to.x * scaleZ) - depth / 2;
+  const endZ = depth / 2 - (to.x * scaleZ);        // back  → -Z
   const endY = to.y * scaleY;
 
-  const dz = endZ - startZ;
+  // Slope angle: positive when back is higher than front
+  const dz = Math.abs(endZ - startZ) || 1;
   const dy = endY - startY;
   const angle = Math.atan2(dy, dz);
 
   return { startY, startZ, endY, endZ, angle };
+}
+
+/**
+ * Extrude a single edge into a thin strip geometry (accent / LED strip).
+ *
+ * The strip sits slightly above the case surface so it's visible.
+ * It spans the full extrusion width at the two endpoints.
+ *
+ * @param {Array<{x: number, y: number, d?: number}>} profilePoints
+ * @param {number} fromIdx — start point index
+ * @param {number} toIdx   — end point index
+ * @param {number} width   — case width
+ * @param {number} depth   — case depth
+ * @param {number} maxHeight
+ * @param {number} [thickness=0.03] — strip thickness (height above surface)
+ * @returns {THREE.BufferGeometry}
+ */
+export function extrudeEdgeStrip(profilePoints, fromIdx, toIdx, width, depth, maxHeight, thickness = 0.03) {
+  const hw = width / 2;
+  const maxPX = Math.max(...profilePoints.map((p) => p.x)) || 1;
+  const maxPY = Math.max(...profilePoints.map((p) => p.y)) || 1;
+  const scaleZ = depth / maxPX;
+  const scaleY = maxHeight / maxPY;
+
+  const pFrom = profilePoints[fromIdx];
+  const pTo = profilePoints[toIdx];
+
+  const z0 = depth / 2 - (pFrom.x * scaleZ);
+  const y0 = pFrom.y * scaleY;
+  const hw0 = hw - (pFrom.d || 0) * (width / 100);
+
+  const z1 = depth / 2 - (pTo.x * scaleZ);
+  const y1 = pTo.y * scaleY;
+  const hw1 = hw - (pTo.d || 0) * (width / 100);
+
+  // Compute outward normal for offset (so strip sits on surface, not inside)
+  const dz = z1 - z0;
+  const dy = y1 - y0;
+  const len = Math.hypot(dz, dy) || 1;
+  const ny = dz / len;   // outward normal Y component
+  const nz = -dy / len;  // outward normal Z component
+  const off = thickness;
+
+  // 4 corners at "from", 4 corners at "to" — outer face strip
+  const verts = new Float32Array([
+    // From end — bottom edge
+    -hw0, y0,          z0,
+     hw0, y0,          z0,
+    // From end — top edge (offset outward)
+    -hw0, y0 + ny*off, z0 + nz*off,
+     hw0, y0 + ny*off, z0 + nz*off,
+    // To end — bottom edge
+    -hw1, y1,          z1,
+     hw1, y1,          z1,
+    // To end — top edge (offset outward)
+    -hw1, y1 + ny*off, z1 + nz*off,
+     hw1, y1 + ny*off, z1 + nz*off,
+  ]);
+
+  const indices = [
+    // Front face (from bottom to top, from→to)
+    0, 1, 5, 0, 5, 4,  // bottom strip
+    2, 3, 7, 2, 7, 6,  // top strip
+    0, 2, 6, 0, 6, 4,  // left side
+    1, 5, 7, 1, 7, 3,  // right side
+    0, 1, 3, 0, 3, 2,  // from cap
+    4, 5, 7, 4, 7, 6,  // to cap
+  ];
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(verts, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
 }
 
 /**

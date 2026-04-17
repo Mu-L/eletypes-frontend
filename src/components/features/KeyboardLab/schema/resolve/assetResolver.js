@@ -12,7 +12,8 @@ import generic75 from "../../presets/generic75";
 import cyberboard75 from "../../presets/cyberboard75";
 import { CHERRY_PROFILE, SA_PROFILE, DSA_PROFILE, XDA_PROFILE } from "../../presets/keycaps";
 import { LEGEND_PRESETS } from "../../presets/legends";
-import { DEFAULT_SHELL, CYBERBOARD_SHELL } from "../shellProfile";
+import { DEFAULT_SHELL } from "../shellProfile";
+import { CYBERBOARD_WEDGE_PROFILE, FLAT_BOX_PROFILE, CHAMFERED_WEDGE_PROFILE, ERGONOMIC_PROFILE } from "../../presets/profiles";
 
 // ─── Bundled asset registry ───
 
@@ -37,7 +38,12 @@ const BUNDLED = {
 
   // Shells
   "shell/generic-75@1": DEFAULT_SHELL,
-  "shell/cyberboard-r3@1": CYBERBOARD_SHELL,
+
+  // Case profiles (case + mount)
+  "caseProfile/cyberboard-wedge@1": CYBERBOARD_WEDGE_PROFILE,
+  "caseProfile/flat-box@1": FLAT_BOX_PROFILE,
+  "caseProfile/chamfered-wedge@1": CHAMFERED_WEDGE_PROFILE,
+  "caseProfile/ergonomic@1": ERGONOMIC_PROFILE,
 };
 
 /**
@@ -80,7 +86,7 @@ export function listBundledByType(type) {
  * @returns {{ type: string, id: string, version: string }}
  */
 export function parseAssetRef(ref) {
-  const match = ref.match(/^(\w+)\/([\w-]+)@(\w+)$/);
+  const match = ref.match(/^([a-zA-Z]+)\/([\w-]+)@(\w+)$/);
   if (!match) throw new Error(`Invalid asset ref: "${ref}"`);
   return { type: match[1], id: match[2], version: match[3] };
 }
