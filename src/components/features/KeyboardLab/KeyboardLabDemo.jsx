@@ -554,7 +554,7 @@ const KeyboardLabDemo = ({ theme }) => {
               onChange={(e) => setLegendOverrides(o => ({...o, fontSize: parseInt(e.target.value)}))} style={{ width: "36px", accentColor: accent }} />{legendPreset.style.fontSize}</label>
             <label style={lbl}>{tLab("lab_weight")}<select value={legendPreset.style.fontWeight} onChange={(e) => setLegendOverrides(o => ({...o, fontWeight: parseInt(e.target.value)}))} style={sel}>
               <option value="400">{tLab("lab_light")}</option><option value="600">{tLab("lab_semi")}</option><option value="700">{tLab("lab_bold")}</option></select></label>
-            <label style={lbl}>{tLab("lab_font")}<select value={legendPreset.style.fontFamily.split(",")[0].trim()} onChange={(e) => setLegendOverrides(o => ({...o, fontFamily: e.target.value}))} style={sel}>
+            <label style={lbl}>{tLab("lab_font")}<select value={legendPreset.style.fontFamily} onChange={(e) => setLegendOverrides(o => ({...o, fontFamily: e.target.value}))} style={sel}>
               <option value="Arial, sans-serif">Arial</option><option value="Courier New, monospace">Courier</option><option value="Tomorrow, monospace">Tomorrow</option></select></label>
             <label style={lbl}>{tLab("lab_color")}<input type="color" value={legendPreset.style.color} onChange={(e) => setLegendOverrides(o => ({...o, color: e.target.value}))}
               style={{ width: "24px", height: "24px", border: `1px solid ${text}22`, borderRadius: "3px", cursor: "pointer", background: "transparent", padding: 0 }} /></label>
