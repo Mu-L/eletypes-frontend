@@ -4,10 +4,11 @@
 
 import { SHELL_SCHEMA_VERSION } from "./types/shell";
 
+/** Standard — balanced bezels, rounded corners, fits any layout */
 export const DEFAULT_SHELL = {
   schema: SHELL_SCHEMA_VERSION,
-  id: "generic-75",
-  meta: { name: "Generic 75% Case" },
+  id: "standard",
+  meta: { name: "Standard" },
   case: {
     paddingTop: 0.4,
     paddingBottom: 0.4,
@@ -24,28 +25,86 @@ export const DEFAULT_SHELL = {
   },
 };
 
-export const CYBERBOARD_SHELL = {
+/** Slim — minimal bezels, tight fit */
+export const SLIM_SHELL = {
   schema: SHELL_SCHEMA_VERSION,
-  id: "cyberboard-r3",
-  meta: {
-    name: "Cyberboard R3 Case",
-    description: "Cybertruck-inspired wedge case with LED pixel matrix panel, angular sidewalls, and rear tilt",
-  },
+  id: "slim",
+  meta: { name: "Slim" },
   case: {
-    paddingTop: 1.8,      // Large top area for LED pixel matrix panel
-    paddingBottom: 0.4,
-    paddingLeft: 0.45,
-    paddingRight: 0.45,
-    cornerRadius: 0.02,   // Sharp angular edges — Cybertruck-like
-    height: 0.8,          // Tall case — the back is very thick in the real board
-    tilt: 8,              // Steep slope — visible wedge angle from the side photo
+    paddingTop: 0.2,
+    paddingBottom: 0.2,
+    paddingLeft: 0.2,
+    paddingRight: 0.2,
+    cornerRadius: 0.04,
+    height: 0.2,
+    tilt: 0,
+  },
+  plate: {
+    inset: 0.15,
+    height: 0.02,
+    color: "#0a0a0c",
+  },
+};
+
+/** Wide Bezel — generous bezels, premium feel */
+export const WIDE_BEZEL_SHELL = {
+  schema: SHELL_SCHEMA_VERSION,
+  id: "wide-bezel",
+  meta: { name: "Wide Bezel" },
+  case: {
+    paddingTop: 0.8,
+    paddingBottom: 0.6,
+    paddingLeft: 0.6,
+    paddingRight: 0.6,
+    cornerRadius: 0.12,
+    height: 0.3,
+    tilt: 0,
   },
   plate: {
     inset: 0.4,
     height: 0.02,
-    color: "#060610",
+    color: "#0a0a0c",
   },
-  modules: [
-    { type: "led-matrix", position: "top-center", height: 1.2, width: 14 },
-  ],
+};
+
+/** Angular — sharp corners, industrial look */
+export const ANGULAR_SHELL = {
+  schema: SHELL_SCHEMA_VERSION,
+  id: "angular",
+  meta: { name: "Angular" },
+  case: {
+    paddingTop: 0.5,
+    paddingBottom: 0.4,
+    paddingLeft: 0.45,
+    paddingRight: 0.45,
+    cornerRadius: 0.02,
+    height: 0.3,
+    tilt: 0,
+  },
+  plate: {
+    inset: 0.3,
+    height: 0.02,
+    color: "#0a0a0c",
+  },
+};
+
+/** Top-heavy — extra top bezel for branding/display area */
+export const TOP_HEAVY_SHELL = {
+  schema: SHELL_SCHEMA_VERSION,
+  id: "top-heavy",
+  meta: { name: "Top Heavy" },
+  case: {
+    paddingTop: 1.5,
+    paddingBottom: 0.4,
+    paddingLeft: 0.45,
+    paddingRight: 0.45,
+    cornerRadius: 0.06,
+    height: 0.3,
+    tilt: 0,
+  },
+  plate: {
+    inset: 0.35,
+    height: 0.02,
+    color: "#0a0a0c",
+  },
 };

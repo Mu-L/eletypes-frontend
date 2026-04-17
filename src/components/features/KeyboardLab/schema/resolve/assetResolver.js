@@ -16,7 +16,7 @@ import layoutTKL from "../../presets/layoutTKL";
 import layoutFullSize from "../../presets/layoutFullSize";
 import { CHERRY_PROFILE, OEM_PROFILE, SA_PROFILE, MT3_PROFILE, KAT_PROFILE, DSA_PROFILE, XDA_PROFILE, LOW_PROFILE } from "../../presets/keycaps";
 import { LEGEND_PRESETS } from "../../presets/legends";
-import { DEFAULT_SHELL } from "../shellProfile";
+import { DEFAULT_SHELL, SLIM_SHELL, WIDE_BEZEL_SHELL, ANGULAR_SHELL, TOP_HEAVY_SHELL } from "../shellProfile";
 import { CYBERBOARD_WEDGE_PROFILE, FLAT_BOX_PROFILE, CHAMFERED_WEDGE_PROFILE, ERGONOMIC_PROFILE } from "../../presets/profiles";
 
 // ─── Bundled asset registry ───
@@ -49,7 +49,11 @@ const BUNDLED = {
   "legend/blank@1": LEGEND_PRESETS["blank"],
 
   // Shells
-  "shell/generic-75@1": DEFAULT_SHELL,
+  "shell/standard@1": DEFAULT_SHELL,
+  "shell/slim@1": SLIM_SHELL,
+  "shell/wide-bezel@1": WIDE_BEZEL_SHELL,
+  "shell/angular@1": ANGULAR_SHELL,
+  "shell/top-heavy@1": TOP_HEAVY_SHELL,
 
   // Case profiles (case + mount)
   "caseProfile/cyberboard-wedge@1": CYBERBOARD_WEDGE_PROFILE,

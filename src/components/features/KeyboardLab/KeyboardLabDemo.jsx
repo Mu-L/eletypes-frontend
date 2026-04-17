@@ -64,7 +64,7 @@ const DEFAULTS = {
   layoutRef: "layout/cyberboard-75-ansi@1",
   keycapRef: "keycap/cherry-classic@1",
   legendRef: "legend/gmk-center@1",
-  shellRef: "shell/generic-75@1",
+  shellRef: "shell/standard@1",
   caseProfileRef: "caseProfile/cyberboard-wedge@1",
   colorPreset: "le smoking",
   mountOffset: { x: 0.1, y: 0, z: 0.7 },
@@ -81,7 +81,7 @@ const KeyboardLabDemo = ({ theme }) => {
   const [layoutRef, setLayoutRef] = useState("layout/cyberboard-75-ansi@1");
   const [keycapRef, setKeycapRef] = useState("keycap/cherry-classic@1");
   const [legendRef, setLegendRef] = useState("legend/gmk-center@1");
-  const [shellRef, setShellRef] = useState("shell/generic-75@1");
+  const [shellRef, setShellRef] = useState("shell/standard@1");
   const [colorPreset, setColorPreset] = useState("le smoking");
   const [colors, setColors] = useState(COLOR_PRESETS["le smoking"]);
   const [opacity, setOpacity] = useState({ ...COLOR_PRESETS["le smoking"].opacity });
