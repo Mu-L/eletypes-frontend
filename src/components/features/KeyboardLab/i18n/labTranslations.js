@@ -15,7 +15,8 @@ export const labTranslations = {
     lab_roadmap_future: "On the Horizon",
     lab_roadmap_done_items: [
       "3D keyboard visualization with spring animation",
-      "4 keycap profiles: Cherry, SA, DSA, XDA",
+      "8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile",
+      "6 layouts: 60%, 65%, 75%, TKL, Full-size, Cyberboard R2",
       "6 legend presets with live editing",
       "Parametric case profile editor with 2D → 3D extrusion",
       "Colored edge accent strips (LED-style glow)",
@@ -26,9 +27,7 @@ export const labTranslations = {
       "English & Chinese localization",
     ],
     lab_roadmap_next_items: [
-      "[P0] More layouts: 60%, 65%, TKL, full-size, ISO",
-      "[P0] More keycap profiles: OEM, MT3, KAT, low-profile",
-      "[P1] Online cloud save — upload & download designs",
+      "[P0] Online cloud save — upload & download designs",
       "[P1] Community gallery — browse, share & remix designs",
       "[P2] Drag & drop 2D layout editor — reposition keys freely",
       "[P3] Eletypes typing test animation integration",
@@ -256,7 +255,8 @@ mount — Keycap placement settings:
     lab_roadmap_future: "远期规划",
     lab_roadmap_done_items: [
       "3D 键盘可视化，弹簧按键动画",
-      "4 种键帽轮廓：Cherry、SA、DSA、XDA",
+      "8 种键帽轮廓：Cherry、OEM、SA、MT3、KAT、DSA、XDA、矮轴",
+      "6 种布局：60%、65%、75%、TKL、全尺寸、Cyberboard R2",
       "6 种字符预设，支持实时编辑",
       "参数化外壳轮廓编辑器，2D → 3D 挤出",
       "彩色边缘装饰条（LED 发光效果）",
@@ -267,9 +267,7 @@ mount — Keycap placement settings:
       "中英文界面支持",
     ],
     lab_roadmap_next_items: [
-      "[P0] 更多布局：60%、65%、TKL、全尺寸、ISO",
-      "[P0] 更多键帽轮廓：OEM、MT3、KAT、矮轴",
-      "[P1] 云端存储 — 上传和下载设计",
+      "[P0] 云端存储 — 上传和下载设计",
       "[P1] 社区画廊 — 浏览、分享和混搭设计",
       "[P2] 拖放式 2D 布局编辑器 — 自由移动按键",
       "[P3] Eletypes 打字测试动画集成",

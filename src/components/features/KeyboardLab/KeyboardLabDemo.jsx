@@ -27,8 +27,11 @@ const SHELL_REFS = listBundledByType("shell");
 const CASE_PROFILE_REFS = listBundledByType("caseProfile");
 
 const KEYCAP_ID_TO_REF = {
-  "cherry-profile": "keycap/cherry-classic@1", "sa-profile": "keycap/sa-classic@1",
+  "cherry-profile": "keycap/cherry-classic@1", "oem-profile": "keycap/oem-classic@1",
+  "sa-profile": "keycap/sa-classic@1", "mt3-profile": "keycap/mt3-sculpted@1",
+  "kat-profile": "keycap/kat-sculpted@1",
   "dsa-profile": "keycap/dsa-uniform@1", "xda-profile": "keycap/xda-uniform@1",
+  "low-profile": "keycap/low-profile@1",
 };
 const LEGEND_ID_TO_REF = {
   "gmk-classic": "legend/gmk-center@1", "minimalist": "legend/minimalist@1",

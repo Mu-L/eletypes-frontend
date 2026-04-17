@@ -13,7 +13,8 @@ import cyberboard75 from "../../presets/cyberboard75";
 import layout60 from "../../presets/layout60";
 import layout65 from "../../presets/layout65";
 import layoutTKL from "../../presets/layoutTKL";
-import { CHERRY_PROFILE, SA_PROFILE, DSA_PROFILE, XDA_PROFILE } from "../../presets/keycaps";
+import layoutFullSize from "../../presets/layoutFullSize";
+import { CHERRY_PROFILE, OEM_PROFILE, SA_PROFILE, MT3_PROFILE, KAT_PROFILE, DSA_PROFILE, XDA_PROFILE, LOW_PROFILE } from "../../presets/keycaps";
 import { LEGEND_PRESETS } from "../../presets/legends";
 import { DEFAULT_SHELL } from "../shellProfile";
 import { CYBERBOARD_WEDGE_PROFILE, FLAT_BOX_PROFILE, CHAMFERED_WEDGE_PROFILE, ERGONOMIC_PROFILE } from "../../presets/profiles";
@@ -27,12 +28,17 @@ const BUNDLED = {
   "layout/60-ansi@1": layout60,
   "layout/65-ansi@1": layout65,
   "layout/tkl-ansi@1": layoutTKL,
+  "layout/full-ansi@1": layoutFullSize,
 
   // Keycap profiles
   "keycap/cherry-classic@1": CHERRY_PROFILE,
+  "keycap/oem-classic@1": OEM_PROFILE,
   "keycap/sa-classic@1": SA_PROFILE,
+  "keycap/mt3-sculpted@1": MT3_PROFILE,
+  "keycap/kat-sculpted@1": KAT_PROFILE,
   "keycap/dsa-uniform@1": DSA_PROFILE,
   "keycap/xda-uniform@1": XDA_PROFILE,
+  "keycap/low-profile@1": LOW_PROFILE,
 
   // Legends
   "legend/gmk-center@1": LEGEND_PRESETS["gmk-classic"],
