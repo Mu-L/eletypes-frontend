@@ -4,11 +4,17 @@
 
 import generic75 from "./generic75";
 import cyberboard75 from "./cyberboard75";
+import layout60 from "./layout60";
+import layout65 from "./layout65";
+import layoutTKL from "./layoutTKL";
 import { DEFAULT_SHELL } from "../schema/shellProfile";
 
 const PRESETS = {
   "generic-75-ansi": { layout: generic75, shell: DEFAULT_SHELL },
   "cyberboard-75-ansi": { layout: cyberboard75, shell: DEFAULT_SHELL },
+  "60-ansi": { layout: layout60, shell: DEFAULT_SHELL },
+  "65-ansi": { layout: layout65, shell: DEFAULT_SHELL },
+  "tkl-ansi": { layout: layoutTKL, shell: DEFAULT_SHELL },
 };
 
 /** Get a preset by id. Returns { layout, shell }. */

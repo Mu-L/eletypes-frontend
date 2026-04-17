@@ -10,6 +10,9 @@
 
 import generic75 from "../../presets/generic75";
 import cyberboard75 from "../../presets/cyberboard75";
+import layout60 from "../../presets/layout60";
+import layout65 from "../../presets/layout65";
+import layoutTKL from "../../presets/layoutTKL";
 import { CHERRY_PROFILE, SA_PROFILE, DSA_PROFILE, XDA_PROFILE } from "../../presets/keycaps";
 import { LEGEND_PRESETS } from "../../presets/legends";
 import { DEFAULT_SHELL } from "../shellProfile";
@@ -21,6 +24,9 @@ const BUNDLED = {
   // Layouts
   "layout/generic-75-ansi@1": generic75,
   "layout/cyberboard-75-ansi@1": cyberboard75,
+  "layout/60-ansi@1": layout60,
+  "layout/65-ansi@1": layout65,
+  "layout/tkl-ansi@1": layoutTKL,
 
   // Keycap profiles
   "keycap/cherry-classic@1": CHERRY_PROFILE,
