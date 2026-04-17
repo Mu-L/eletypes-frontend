@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useLabTranslation } from "../i18n/useLabTranslation";
 
 // ─── Default profiles ───
 
@@ -63,6 +64,7 @@ const PROFILE_PRESETS = {
 };
 
 const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onExtrudeWidthChange }) => {
+  const tLab = useLabTranslation();
   const svgRef = useRef(null);
   const [points, setPoints] = useState(initialProfile?.points || PROFILE_PRESETS.wedge.points);
   const [mountEdge, setMountEdge] = useState(initialProfile?.mountEdge || PROFILE_PRESETS.wedge.mountEdge);
@@ -321,15 +323,15 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
         })}
 
         {/* Labels */}
-        <text x={padX} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>Front</text>
-        <text x={svgW - padX - 16} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>Back</text>
+        <text x={padX} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>{tLab("lab_front")}</text>
+        <text x={svgW - padX - 16} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>{tLab("lab_back")}</text>
       </svg>
 
       {/* ─── Extrusion width (always visible) ─── */}
       <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
         <label style={lbl}
-          title="Width of the extruded case. The cross-section above is extruded symmetrically in both directions along the width axis.">
-          Extrusion Width
+          title={tLab("lab_extrusion_title")}>
+          {tLab("lab_extrusion_width")}
           <input type="number" min="50" max="200" step="1"
             value={Math.round((extrudeWidth ?? 1.0) * 100)}
             onChange={(e) => {
@@ -343,15 +345,15 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
             }}
           />%
         </label>
-        <span style={{ fontSize: "11px", color: text, opacity: 0.3 }}>symmetric ←→</span>
+        <span style={{ fontSize: "11px", color: text, opacity: 0.3 }}>{tLab("lab_symmetric")}</span>
         <span style={{ flex: 1 }} />
-        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.round(p.y * 1.1) })))} style={btnStyle}>↑ Taller</button>
-        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.max(0, Math.round(p.y * 0.9)) })))} style={btnStyle}>↓ Shorter</button>
+        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.round(p.y * 1.1) })))} style={btnStyle}>{tLab("lab_taller")}</button>
+        <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.max(0, Math.round(p.y * 0.9)) })))} style={btnStyle}>{tLab("lab_shorter")}</button>
       </div>
 
       {/* ─── Points table (always visible) ─── */}
       <div style={{ display: "flex", gap: "3px", flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>Points</span>
+        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_points")}</span>
         {points.map((pt, i) => {
           const isSelected = selectedPoint === i;
           const isOnMount = mountEdge.includes(i);
@@ -367,7 +369,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
               }}>
               <span style={{ color: isOnMount ? mountColor : `${text}66`, fontWeight: 600, minWidth: "8px" }}>{i}</span>
               <span style={{ opacity: 0.5 }}>{pt.x},{pt.y}</span>
-              <span style={{ opacity: 0.3 }}>inset</span>
+              <span style={{ opacity: 0.3 }}>{tLab("lab_inset")}</span>
               <input type="number" min="0" max="20"
                 value={pt.d || 0}
                 onClick={(e) => e.stopPropagation()}
@@ -388,7 +390,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
               {points.length > 3 && (
                 <span onClick={(e) => { e.stopPropagation(); removePoint(i); }}
                   style={{ color: "#ff666688", cursor: "pointer", fontSize: "10px", lineHeight: 1 }}
-                  title="Remove point">×</span>
+                  title={tLab("lab_remove_point")}>×</span>
               )}
             </div>
           );
@@ -397,7 +399,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
 
       {/* ─── Edge accents ─── */}
       <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>Edge Accents</span>
+        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_edge_accents")}</span>
         {points.map((_, i) => {
           const j = (i + 1) % points.length;
           const ce = coloredEdges.find(e => (e.from === i && e.to === j) || (e.from === j && e.to === i));
@@ -430,7 +432,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
               {ce && (
                 <span onClick={() => setColoredEdges(prev => prev.filter(e => !((e.from === i && e.to === j) || (e.from === j && e.to === i))))}
                   style={{ color: "#ff666688", cursor: "pointer", fontSize: "12px", lineHeight: 1 }}
-                  title="Remove accent">×</span>
+                  title={tLab("lab_remove_accent")}>×</span>
               )}
             </div>
           );
@@ -438,7 +440,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
       </div>
 
       <div style={{ fontSize: "11px", color: text, opacity: 0.3, lineHeight: 1.4 }}>
-        Drag points · Double-click edge to add · Right-click to remove · Click edge to set mount · Inset narrows width at vertex (symmetric)
+        {tLab("lab_help_text")}
       </div>
     </div>
   );
