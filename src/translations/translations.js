@@ -13,6 +13,9 @@ export const translations = {
     banner_roblox: 'Eletypes is on Roblox — play {Type!} with battle modes',
     banner_roblox_full:
       'Eletypes is now on Roblox! Play "Type!" with leaderboards and battle modes.',
+    banner_keyboard_lab: "New: {Keyboard Lab} beta — design your own 3D keyboard!",
+    banner_keyboard_lab_full:
+      "Keyboard Lab is now in beta! Design custom keyboards with 3D visualization, parametric case profiles, colored edge accents, and full JSON schema editing. Try it out!",
 
     // Footer tooltips
     focus_mode: "Focus mode",
@@ -116,6 +119,8 @@ export const translations = {
     name_updated: "Name updated!",
     my_history: "My History",
     news: "News",
+    keyboard_lab: "Keyboard Lab",
+    keyboard_lab_under_dev: "Under Development",
     site: "Settings",
     no_news: "No announcements at this time.",
     profile_note:
@@ -309,6 +314,9 @@ export const translations = {
     banner_leaderboard_full: "新功能上线：排行榜、数据分析、徽章系统、本地历史记录 — 无需注册，打字即可提交成绩！",
     banner_roblox: 'Eletypes 登陆 Roblox — 体验{Type!}对战模式',
     banner_roblox_full: 'Eletypes 已登陆 Roblox！体验 "Type!" — 排行榜和对战模式。',
+    banner_keyboard_lab: "新功能：{键盘实验室} beta — 设计你的 3D 键盘！",
+    banner_keyboard_lab_full:
+      "键盘实验室 beta 版上线！支持 3D 可视化键盘设计、参数化外壳轮廓编辑、彩色边缘装饰、完整 JSON Schema 编辑。快来试试吧！",
 
     // Footer tooltips
     focus_mode: "专注模式",
@@ -407,6 +415,8 @@ export const translations = {
     name_updated: "名字已更新！",
     my_history: "我的历史",
     news: "消息",
+    keyboard_lab: "键盘实验室",
+    keyboard_lab_under_dev: "开发中",
     site: "设置",
     no_news: "暂无公告。",
     profile_note:

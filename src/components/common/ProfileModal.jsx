@@ -13,7 +13,8 @@ import BadgeDisplay from "../features/Badges/BadgeDisplay";
 import StatsPanel from "../features/Stats/StatsPanel";
 import LeaderboardPanel from "../features/Leaderboard/LeaderboardPanel";
 import { useLocale } from "../../context/LocaleContext";
-import { BANNER_KEYS } from "./Logo";
+import { ALL_NEWS_KEYS } from "./Logo";
+import { useLabTranslation } from "../features/KeyboardLab/i18n/useLabTranslation";
 
 const renderNewsHighlighted = (text, highlights, theme) => {
   const parts = [];
@@ -84,6 +85,7 @@ const renderNewsHighlighted = (text, highlights, theme) => {
 const TAB_PROFILE = "profile";
 const TAB_STATS = "stats";
 const TAB_LEADERBOARD = "leaderboard";
+const TAB_LAB = "lab";
 const TAB_NEWS = "news";
 const TAB_SITE = "site";
 
@@ -105,6 +107,7 @@ const ProfileModal = ({
   unviewedNewsCount,
 }) => {
   const { locale, setLocale, t } = useLocale();
+  const tLab = useLabTranslation();
   const [activeTab, setActiveTab] = useState(TAB_PROFILE);
 
   // Force fresh data when modal opens
@@ -211,6 +214,20 @@ const ProfileModal = ({
             onClick={() => setActiveTab(TAB_LEADERBOARD)}
           >
             {t("leaderboard")}
+          </button>
+          <button
+            style={tabStyle(activeTab === TAB_LAB)}
+            onClick={() => setActiveTab(TAB_LAB)}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              {t("keyboard_lab")}
+              <span style={{
+                fontSize: "8px", fontWeight: 700, letterSpacing: "0.5px",
+                textTransform: "uppercase", lineHeight: 1,
+                padding: "1px 4px", borderRadius: "3px",
+                background: "#4a90d9", color: "#fff",
+              }}>beta</span>
+            </span>
           </button>
           <button
             style={tabStyle(activeTab === TAB_SITE)}
@@ -429,10 +446,87 @@ const ProfileModal = ({
           </div>
         )}
 
+        {/* Keyboard Lab tab */}
+        {activeTab === TAB_LAB && (
+          <div>
+            {/* Under development banner */}
+            <div style={{
+              border: `2px dashed ${theme.stats}55`,
+              borderRadius: "8px",
+              padding: "16px 20px",
+              marginBottom: "20px",
+              textAlign: "center",
+            }}>
+              <span style={{ fontSize: "14px", color: theme.stats, fontWeight: 600, letterSpacing: "1px", textTransform: "uppercase" }}>
+                🚧 {t("keyboard_lab_under_dev")}
+              </span>
+              <div style={{ marginTop: "8px" }}>
+                <a href="/keyboardlab" style={{
+                  display: "inline-block",
+                  padding: "8px 20px", borderRadius: "6px",
+                  background: `linear-gradient(135deg, #6a4c93, #4a90d9)`,
+                  color: "#fff", fontWeight: 600, fontSize: "13px",
+                  textDecoration: "none",
+                }}>
+                  → {t("keyboard_lab")}
+                </a>
+              </div>
+            </div>
+
+            {/* Roadmap */}
+            <h3 style={{ color: theme.stats, fontSize: "15px", fontWeight: 700, margin: "0 0 12px" }}>
+              {tLab("lab_roadmap_title")}
+            </h3>
+            <p style={{ color: theme.textTypeBox, fontSize: "12px", margin: "0 0 16px" }}>
+              {tLab("lab_roadmap_subtitle")}
+            </p>
+
+            {[
+              { titleKey: "lab_roadmap_done", itemsKey: "lab_roadmap_done_items", icon: "✓", color: "#44dd88" },
+              { titleKey: "lab_roadmap_next", itemsKey: "lab_roadmap_next_items", icon: "→", color: theme.stats },
+              { titleKey: "lab_roadmap_future", itemsKey: "lab_roadmap_future_items", icon: "◇", color: theme.textTypeBox },
+            ].map(({ titleKey, itemsKey, icon, color }) => (
+              <div key={titleKey} style={{ marginBottom: "16px" }}>
+                <h4 style={{ color, fontSize: "13px", fontWeight: 700, margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "1px" }}>
+                  {tLab(titleKey)}
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                  {(tLab(itemsKey) || []).map((item, i) => (
+                    <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", fontSize: "12px", color: theme.text, lineHeight: 1.5 }}>
+                      <span style={{ color, flexShrink: 0, fontWeight: 700 }}>{icon}</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Editor's note */}
+            <div style={{ marginTop: "8px", paddingTop: "16px", borderTop: `1px solid ${theme.textTypeBox}20` }}>
+              <h4 style={{ color: theme.stats, fontSize: "13px", fontWeight: 700, margin: "0 0 8px", fontStyle: "italic" }}>
+                {tLab("lab_editors_note_title")}
+              </h4>
+              <div style={{
+                color: theme.textTypeBox, fontSize: "12px", lineHeight: 1.8,
+                whiteSpace: "pre-wrap", fontStyle: "italic",
+              }}>
+                {tLab("lab_editors_note").split(tLab("lab_editors_note_link_text")).map((part, i, arr) =>
+                  i < arr.length - 1 ? (
+                    <React.Fragment key={i}>
+                      {part}<a href={tLab("lab_editors_note_link")} target="_blank" rel="noopener noreferrer"
+                        style={{ color: theme.stats, textDecoration: "underline" }}>{tLab("lab_editors_note_link_text")}</a>
+                    </React.Fragment>
+                  ) : <React.Fragment key={i}>{part}</React.Fragment>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* News tab */}
         {activeTab === TAB_NEWS && (
           <div>
-            {BANNER_KEYS.length === 0 ? (
+            {ALL_NEWS_KEYS.length === 0 ? (
               <p style={{ color: theme.textTypeBox, fontSize: "14px" }}>
                 {t("no_news")}
               </p>
@@ -444,7 +538,7 @@ const ProfileModal = ({
                   gap: "12px",
                 }}
               >
-                {BANNER_KEYS.map((banner) => {
+                {ALL_NEWS_KEYS.map((banner) => {
                   const text = t(banner.fullTextKey);
                   return (
                     <div

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import KeyboardAltIcon from "@mui/icons-material/KeyboardAlt";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import DesignServicesIcon from "@mui/icons-material/DesignServices";
 import { Tooltip } from "@mui/material";
 import { getUserName, getUserTag } from "../../services/userIdentity";
 import { getRank, getBestEffectiveWpm } from "../../services/badges";
@@ -9,9 +10,31 @@ import { useLocale } from "../../context/LocaleContext";
 import ProfileModal from "./ProfileModal";
 
 const BANNER_DISMISS_KEY = "eletypes-banner-dismissed";
-const BANNER_VERSION = "banners-v3";
+const BANNER_VERSION = "banners-v4";
 
+// Banner items shown in the header ticker. Old items kept in NEWS_KEYS for profile modal.
 export const BANNER_KEYS = [
+  {
+    id: "keyboard-lab",
+    bannerTextKey: "banner_keyboard_lab",
+    fullTextKey: "banner_keyboard_lab_full",
+    link: "/keyboardlab",
+    highlights: [
+      {
+        placeholder: "Keyboard Lab",
+        link: "/keyboardlab",
+      },
+      {
+        placeholder: "键盘实验室",
+        link: "/keyboardlab",
+      },
+    ],
+  },
+];
+
+// All news items including old ones — used by profile modal news tab
+export const ALL_NEWS_KEYS = [
+  ...BANNER_KEYS,
   {
     id: "leaderboard",
     bannerTextKey: "banner_leaderboard",
@@ -174,6 +197,22 @@ const Logo = ({
         <>
           {/* Profile button + name card area */}
           <div className="profile-area">
+            {/* Keyboard Lab link */}
+            <Tooltip title={t("keyboard_lab") || "Keyboard Lab"} placement="bottom">
+              <a href="/keyboardlab" className="profile-btn" style={{ position: "relative", textDecoration: "none", marginRight: "12px" }}>
+                <span className="profile-bracket">[</span>
+                <DesignServicesIcon style={{ fontSize: "16px" }} />
+                <span className="profile-bracket">]</span>
+                <span style={{
+                  position: "absolute", top: "-4px", right: "-8px",
+                  fontSize: "7px", fontWeight: 700, letterSpacing: "0.5px",
+                  textTransform: "uppercase", lineHeight: 1,
+                  padding: "1px 3px", borderRadius: "3px",
+                  background: "#4a90d9", color: "#fff",
+                }}>beta</span>
+              </a>
+            </Tooltip>
+
             {/* Name card — slides in/out from the right */}
             <div className={`namecard ${cardVisible ? "namecard-visible" : "namecard-hidden"}`}>
               <div

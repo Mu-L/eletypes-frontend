@@ -25,6 +25,7 @@ import DiscordIcon from "../../assets/Icons/DiscordIcon";
 import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
 import SchoolIcon from "@mui/icons-material/School";
+import DesignServicesIcon from "@mui/icons-material/DesignServices";
 import { useLocale } from "../../context/LocaleContext";
 
 const FooterMenu = ({
@@ -116,6 +117,20 @@ const FooterMenu = ({
               <Tooltip title={t("words_card_mode")}>
                 <span className={activeCls(isWordsCardMode)}>
                   <SchoolIcon fontSize="small" />
+                </span>
+              </Tooltip>
+            </IconButton>
+            <IconButton size="small" component="a" href="/keyboardlab">
+              <Tooltip title="Keyboard Lab">
+                <span className="nav-item" style={{ position: "relative", display: "inline-flex" }}>
+                  <DesignServicesIcon fontSize="small" />
+                  <span style={{
+                    position: "absolute", top: "-6px", right: "-12px",
+                    fontSize: "7px", fontWeight: 700, letterSpacing: "0.5px",
+                    textTransform: "uppercase", lineHeight: 1,
+                    padding: "1px 3px", borderRadius: "3px",
+                    background: "#4a90d9", color: "#fff",
+                  }}>beta</span>
                 </span>
               </Tooltip>
             </IconButton>
