@@ -92,6 +92,9 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
  - Typing sound support
  - Standalone route with minimal bottom nav
 
+<img width="600" height="400" alt="image" src="https://github.com/user-attachments/assets/bf5fa8c6-26d9-439f-b284-0d1620b09fdc" />
+
+
 #### 4. Keyboard Lab (`/keyboardlab`) — *Beta*
 
  - 3D keyboard design editor — design custom keyboards in your browser
@@ -109,6 +112,9 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
  - Roadmap modal with editor's note
  - Full EN/ZH localization
  - See [KEYBOARD_LAB.md](src/components/features/KeyboardLab/KEYBOARD_LAB.md) for full documentation
+
+ <img width="800" height="400" alt="image" src="https://github.com/user-attachments/assets/612200a5-9f06-4480-95ca-636c3da03a85" />
+
 
 #### 6. QWERTY Keyboard touch-typing trainer 
 
