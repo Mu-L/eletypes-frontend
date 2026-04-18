@@ -388,6 +388,8 @@ border: none;
 color: ${({ theme }) => theme.text};
 opacity: 0.7;
 transition: all 0.2s;
+display: inline-flex;
+align-items: center;
 }
 .nav-item:hover {
 opacity: 1;
@@ -396,6 +398,8 @@ opacity: 1;
 color: ${({ theme }) => theme.stats};
 opacity: 1;
 transition: all 0.2s;
+display: inline-flex;
+align-items: center;
 }
 .nav-mode {
 color: ${({ theme }) => theme.text};
@@ -403,12 +407,16 @@ opacity: 0.65;
 font-size: 15px;
 font-weight: 500;
 transition: all 0.2s;
+display: inline-flex;
+align-items: center;
 }
 .nav-mode:hover {
 opacity: 1;
 }
 .nav-mode-active {
 color: ${({ theme }) => theme.stats};
+display: inline-flex;
+align-items: center;
 opacity: 1;
 font-size: 15px;
 font-weight: 600;
@@ -770,12 +778,14 @@ color: ${({ theme }) => theme.stats};
 background: transparent;
 }
 .novelty-container{
-width: 80%;
+width: 95%;
+max-width: 1600px;
 height: 100%;
 margin-left: auto;
 margin-right: auto;
 position: relative;
-display: block;
+display: flex;
+flex-direction: column;
 }
 .textarea{
 color: ${({ theme }) => theme.textTypeBox};
@@ -793,6 +803,15 @@ margin-right: auto;
 position: relative;
 outline: none;
 border-radius: 4px;
+border-left: 3px solid transparent;
+transition: border-color 0.2s;
+}
+.textarea:focus{
+border-left: 3px solid ${({ theme }) => theme.stats};
+}
+.textarea::placeholder{
+color: ${({ theme }) => theme.textTypeBox};
+
 @media only screen 
 and (min-device-width: 375px) 
 and (max-device-width: 812px) 
@@ -800,6 +819,109 @@ and (-webkit-min-device-pixel-ratio: 3) {
 top:200px;
 width: 60%;
 }
+}
+.md-toolbar{
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 8px;
+margin-bottom: 10px;
+flex-wrap: wrap;
+}
+.md-toolbar-group{
+display: flex;
+align-items: center;
+gap: 4px;
+border: 1px solid ${({ theme }) => theme.textTypeBox}20;
+border-radius: 6px;
+padding: 3px;
+}
+.md-toolbar-btn{
+background: transparent;
+border: none;
+border-radius: 4px;
+color: ${({ theme }) => theme.textTypeBox};
+font-family: ${({ theme }) => theme.fontFamily};
+font-size: 13px;
+padding: 5px 12px;
+cursor: pointer;
+transition: all 0.15s;
+white-space: nowrap;
+}
+.md-toolbar-btn:hover{
+background: ${({ theme }) => theme.textTypeBox}15;
+color: ${({ theme }) => theme.text};
+}
+.md-toolbar-btn-active{
+background: ${({ theme }) => theme.stats}20;
+color: ${({ theme }) => theme.stats};
+font-weight: 600;
+}
+.md-divider{
+width: 1px;
+background: ${({ theme }) => theme.textTypeBox}25;
+flex-shrink: 0;
+}
+.markdown-preview{
+color: ${({ theme }) => theme.textTypeBox};
+font-family: ${({ theme }) => theme.fontFamily};
+}
+.markdown-preview h1,.markdown-preview h2,.markdown-preview h3,
+.markdown-preview h4,.markdown-preview h5,.markdown-preview h6{
+color: ${({ theme }) => theme.text};
+margin: 0.8em 0 0.4em;
+line-height: 1.3;
+}
+.markdown-preview h1{ font-size: 1.8em; border-bottom: 1px solid ${({ theme }) => theme.textTypeBox}20; padding-bottom: 0.3em; }
+.markdown-preview h2{ font-size: 1.4em; border-bottom: 1px solid ${({ theme }) => theme.textTypeBox}15; padding-bottom: 0.2em; }
+.markdown-preview h3{ font-size: 1.2em; }
+.markdown-preview p{ margin: 0.6em 0; }
+.markdown-preview a{ color: ${({ theme }) => theme.stats}; text-decoration: underline; }
+.markdown-preview code{
+background: ${({ theme }) => theme.textTypeBox}15;
+padding: 2px 6px;
+border-radius: 3px;
+font-family: monospace;
+font-size: 0.9em;
+}
+.markdown-preview pre{
+background: ${({ theme }) => theme.textTypeBox}10;
+padding: 12px 16px;
+border-radius: 6px;
+overflow-x: auto;
+margin: 0.8em 0;
+}
+.markdown-preview pre code{
+background: none;
+padding: 0;
+font-size: 0.85em;
+}
+.markdown-preview blockquote{
+border-left: 3px solid ${({ theme }) => theme.stats}66;
+margin: 0.8em 0;
+padding: 4px 16px;
+color: ${({ theme }) => theme.textTypeBox}cc;
+}
+.markdown-preview ul,.markdown-preview ol{
+margin: 0.5em 0;
+padding-left: 1.5em;
+}
+.markdown-preview li{ margin: 0.3em 0; }
+.markdown-preview hr{
+border: none;
+border-top: 1px solid ${({ theme }) => theme.textTypeBox}20;
+margin: 1em 0;
+}
+.markdown-preview img{ max-width: 100%; border-radius: 4px; }
+.markdown-preview table{ border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+.markdown-preview th,.markdown-preview td{
+border: 1px solid ${({ theme }) => theme.textTypeBox}25;
+padding: 6px 12px;
+text-align: left;
+}
+.markdown-preview th{
+background: ${({ theme }) => theme.textTypeBox}10;
+font-weight: 600;
 }
 .active-game-mode-button{
 color: ${({ theme }) => theme.stats};

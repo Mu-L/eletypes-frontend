@@ -18,6 +18,8 @@ import { saveDesign, loadDesign, listDesigns, deleteDesign, exportDesignJSON, im
 import { getKeycapPreset } from "./presets/keycaps";
 import { getLegendPreset } from "./presets/legends";
 import { useLabTranslation } from "./i18n/useLabTranslation";
+import useSound from "use-sound";
+import { SOUND_MAP } from "../sound/sound";
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
 const LAYOUT_REFS = listBundledByType("layout");
@@ -73,8 +75,9 @@ const DEFAULTS = {
   extrudeWidth: 0.9,
 };
 
-const KeyboardLabDemo = ({ theme }) => {
+const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) => {
   const tLab = useLabTranslation();
+  const [play] = useSound(SOUND_MAP[soundType] || SOUND_MAP["keyboard"], { volume: 0.5 });
   const keyboardRef = useRef();
   const sidebarRef = useRef(null);
 
@@ -139,11 +142,11 @@ const KeyboardLabDemo = ({ theme }) => {
   // Live typing
   useEffect(() => {
     if (!liveTyping) return;
-    const down = (e) => { const k = codeMap.get(e.code); if (k) { keyboardRef.current?.triggerKey(k); setActiveKeys(p => new Set(p).add(k)); } };
+    const down = (e) => { const k = codeMap.get(e.code); if (k) { keyboardRef.current?.triggerKey(k); setActiveKeys(p => new Set(p).add(k)); if (soundMode) play(); } };
     const up = (e) => { const k = codeMap.get(e.code); if (k) setActiveKeys(p => { const n = new Set(p); n.delete(k); return n; }); };
     window.addEventListener("keydown", down); window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, [liveTyping, codeMap]);
+  }, [liveTyping, codeMap, soundMode, play]);
 
   // Stable design document — only regenerates when design inputs change
   const currentDesign = useMemo(() => {

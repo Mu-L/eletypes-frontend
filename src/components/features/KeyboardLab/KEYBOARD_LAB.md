@@ -1,6 +1,6 @@
 # Keyboard Lab — Data-Driven 3D Keyboard Design Platform
 
-## Status: Feature Branch (`feat/keyboard-lab`)
+## Status: Beta — live at `/keyboardlab`
 
 ---
 
@@ -13,7 +13,7 @@
 | `eletypes-cap/1` | Stable | Keycap: profile families, row sculpting, procedural + mesh caps |
 | `eletypes-legend/1` | Stable | Legend: font, size, weight, color, position, per-key overrides |
 | `eletypes-visual/1` | Stable | Visual: colors, materials, per-key color overrides |
-| `eletypes-shell/1` | Stable | Shell: case geometry, profile points, mount surface |
+| `eletypes-shell/1` | Stable | Shell: case geometry, padding, corner radius |
 | `eletypes-caseProfile/1` | Stable | Case profile: 2D cross-section, mount settings, colored edges |
 | `eletypes-design/1` | Stable | Composition: asset refs + overrides (orchestrator doc) |
 
@@ -40,7 +40,7 @@ eletypes-design-bundle/1
   │   ├─ refs.layout       → "layout/cyberboard-75-ansi@1"
   │   ├─ refs.keycap       → "keycap/cherry-classic@1"
   │   ├─ refs.legend       → "legend/gmk-center@1"
-  │   ├─ refs.shell        → "shell/generic-75@1"
+  │   ├─ refs.shell        → "shell/standard@1"
   │   ├─ refs.caseProfile  → "caseProfile/cyberboard-wedge@1"
   │   └─ overrides         → visual, opacity, legend, per-key
   └─ embeddedAssets (full resolved docs)
@@ -50,14 +50,14 @@ eletypes-design-bundle/1
 ### Composition Pipeline
 ```
 Design Document (eletypes-design/1)
-  ├─ refs.layout       → "layout/cyberboard-75-ansi@1"
-  ├─ refs.keycap       → "keycap/cherry-classic@1"
-  ├─ refs.legend       → "legend/gmk-center@1"
-  ├─ refs.shell        → "shell/generic-75@1"
-  ├─ refs.caseProfile  → "caseProfile/cyberboard-wedge@1"
+  ├─ refs.layout       → resolve from bundled / embedded / remote
+  ├─ refs.keycap       → ...
+  ├─ refs.legend       → ...
+  ├─ refs.shell        → ...
+  ├─ refs.caseProfile  → ...
   └─ overrides         → visual, opacity, legend tweaks
          ↓
-  Asset Resolver (bundled → local/embedded → remote)
+  Asset Resolver (bundled → embedded → remote)
          ↓
   Normalization Pipeline
          ↓
@@ -87,72 +87,105 @@ e.g., "layout/cyberboard-75-ansi@1", "caseProfile/cyberboard-wedge@1"
 ## 3. Features
 
 ### 3D Keyboard Visualization
-- 75% ANSI layouts: Generic 75%, Cyberboard R2 75%
+- 6 layouts: 60%, 65%, 75% (Generic + Cyberboard R2), TKL 80%, Full-size 100%
 - OrbitControls with zoom range 4–35
 - Spring animation on key press (critically damped, ~80ms settle)
-- Live typing bridge (DOM keydown → triggerKey → 3D animation)
+- Live key listening (DOM keydown → triggerKey → 3D animation + sound)
 
 ### Per-Group Opacity
 - 4 independent opacity controls: keycap, accent, case, legend
 - Split InstancedMesh (regular + accent) for independent transparency
 - Transparency only enabled when opacity < 1.0 (prevents z-fighting flicker)
 
+### Keycap Profiles (8)
+- Sculpted: Cherry, OEM, SA, MT3, KAT
+- Uniform: DSA, XDA, Low Profile
+- Procedural geometry: tapered walls, per-profile dish shape/depth
+- Per-row height variation from profile sculpting data
+
+### Shell Presets (5)
+- Standard, Slim, Wide Bezel, Angular, Top Heavy
+- Layout-agnostic — padding adapts to any key field size
+
 ### Parametric Case Editor
 - **2D profile editor**: SVG cross-section with draggable control points
-- **4 presets** (via asset refs): Cyberboard Wedge, Flat Box, Chamfered Wedge, Ergonomic
+- **4 case profile presets**: Cyberboard Wedge, Flat Box, Chamfered Wedge, Ergonomic
 - **Profile → 3D extrusion**: 2D profile extruded symmetrically into 3D case geometry
 - **Mount surface**: click any edge to set mount; keys auto-place with correct tilt angle
 - **Colored edge accents**: per-edge color with emissive glow (LED strip effect)
 - **Per-vertex inset**: narrow case width at specific vertices for chamfers/bevels
 - **Mount controls**: 3-axis offset, fit ratio, case scale
 - **Extrusion width**: text input with 1% precision, labeled "symmetric ←→"
-- **Points table**: always-visible inline list with inset values per point
-- **Edge accents table**: always-visible color pickers per edge
-
-### Sculpted Keycap Profiles
-- 4 profiles: Cherry (sculpted cylindrical), SA (tall spherical), DSA (uniform), XDA (wide)
-- Procedural geometry: tapered walls, per-profile dish shape/depth
-- Per-row height variation from profile sculpting data
 
 ### Key Legends (3D Text)
 - Troika SDF text rendered inside KeyboardModel
-- Labels positioned on keycap top surface, tilted with mount surface angle
-- Follow key press animation with fillOpacity for legend transparency
 - 6 legend presets: GMK, Minimal, Retro, Top Print, Cyber, Blank
 - Live editing: font size, weight, family, color
 
-### 2D Layout Editor
-- Positioned DOM divs from same JSON as 3D
-- Click-to-select key inspector
-- Color-coded by key kind
-- JSON export/copy
-- Responsive scale from container width
-
 ### Workspace Layout
-- **3D viewport** (left, resizable) + **sidebar** (right, resizable via drag handle)
-- **Toolbar**: New, Save, Saved dropdown, Reload, Delete, Export, Import, Demo, Live typing
+- **Standalone route**: `/keyboardlab` with Logo header + minimal bottom nav
+- **3D viewport** (left, 65%) + **sidebar** (right, 35%), resizable via drag handle
+- **Toolbar**: New, Save, Saved dropdown (per-item delete + Clear All), Reload, Export, Import, Roadmap, Key Animation, Key Listen
 - **Assets row**: labeled dropdowns — Layout, Shell, Keycap, Legend, Profile, Theme
 - **Legend row**: labeled — Size, Weight, Font, Color
 - **Colors row**: labeled — Keycap/Accent/Case (color + opacity), Label (opacity)
 - **Tabbed editor panel**: Case Profile / 2D Layout
-- **Tabbed Monaco JSON editor**: Design | Layout | Keycap | Legend | Shell | Case Profile
-- **Bidirectional sync**: Monaco imperatively synced with all UI state changes
-- **Viewport constrained**: fits within viewport height, no page scroll
+- **Tabbed JSON editor**: Design | Layout | Keycap | Legend | Shell | Case Profile | Doc
+- **Monaco sync**: imperatively synced with all UI state changes
+- **Category titles**: accent color, 13px, bold
 
 ### Design Persistence
 - **Bundle format**: `eletypes-design-bundle/1` wraps design doc + all embedded assets
-- **Save/Load**: full bundles to/from localStorage
+- **Save/Load**: custom dropdown with per-item delete and Clear All
 - **Reload**: restore last saved state, discard unsaved changes
 - **Export/Import**: JSON files in bundle format
-- **Read-time migration**: auto-upgrades legacy formats (v0a raw doc, v0b intermediate)
+- **Read-time migration**: auto-upgrades legacy formats
 - **Default theme**: "le smoking" (dark keycaps, purple case, green legends)
 
+### Localization (i18n)
+- Separate translation system (`i18n/labTranslations.js`) — not mixed with main app
+- `useLabTranslation()` hook reads global locale from `LocaleContext`
+- Full EN/ZH translations for all UI strings
+- ~90 translation keys
+
+### Roadmap Modal
+- Shimmer-bordered button in toolbar
+- Three sections: Shipped / Coming Next / On the Horizon
+- "From the maker" — editor's note with GitHub link
+- Also embedded in Profile Modal (Keyboard Lab tab with beta badge)
+
+### Banner & Navigation
+- Header: Keyboard Lab button with beta badge next to name card
+- Footer: DesignServicesIcon with beta badge in mode group
+- Bottom nav: shared `MiniFooter` with bracketed monospace style (Back, Sound, Theme, Language)
+- Banner announcement for beta launch
+
 ### Color Themes
-9 presets: le smoking, midnight, ocean, sakura, forest, arctic, translucent, pudding, jelly, frosted
+10 presets: le smoking, midnight, ocean, sakura, forest, arctic, translucent, pudding, jelly, frosted
 
 ---
 
-## 4. File Structure
+## 4. Markdown Editor
+
+### Route: `/markdown`
+
+Standalone markdown editor with live preview, replacing the old free typing mode.
+
+- **Split view** (default): editor + live preview side by side
+- **Editor only**: full-width with larger font
+- **Preview only**: rendered markdown view
+- **Syntax highlighting**: `react-syntax-highlighter` with oneDark theme
+- **ASCII banner**: full block-letter "ELE TYPES" on desktop, compact box on mobile
+- **Save .md**: download content as markdown file
+- **Auto-focus**: editor focused on mount with accent-colored left border
+- **Typing sounds**: plays selected sound on keypress
+- **Localized**: EN/ZH button labels
+- **Contained scroll**: editor and preview scroll within their panes, no page scroll
+- **Bottom nav**: shared `MiniFooter` with sound toggle + type selector
+
+---
+
+## 5. File Structure
 
 ```
 KeyboardLab/
@@ -160,7 +193,7 @@ KeyboardLab/
 │   ├── SCHEMA_SPEC.md                 ← Canonical V1 spec
 │   ├── KEYCAP_ARCHITECTURE.md         ← Multi-schema design rationale
 │   ├── boardLayout.js                 ← createPreset(), validatePreset()
-│   ├── shellProfile.js               ← DEFAULT_SHELL (eletypes-shell/1)
+│   ├── shellProfile.js               ← 5 shell presets (Standard, Slim, Wide, Angular, Top Heavy)
 │   ├── derive.js                      ← computeBounds, buildKeyIndex, extractKeys
 │   ├── index.js                       ← Barrel export
 │   ├── types/
@@ -182,8 +215,13 @@ KeyboardLab/
 │   └── examples/
 │       ├── layout-75-ansi.json, keycap-cherry.json, etc.
 ├── presets/
-│   ├── index.js, generic75.js, cyberboard75.js
-│   ├── keycaps.js                     ← Cherry, SA, DSA, XDA profiles
+│   ├── index.js                       ← Preset registry
+│   ├── generic75.js, cyberboard75.js  ← 75% layouts
+│   ├── layout60.js                    ← 60% ANSI (61 keys)
+│   ├── layout65.js                    ← 65% ANSI (68 keys)
+│   ├── layoutTKL.js                   ← TKL 80% ANSI (87 keys)
+│   ├── layoutFullSize.js              ← Full-size 100% ANSI (104 keys)
+│   ├── keycaps.js                     ← Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
 │   ├── legends.js                     ← GMK, Minimal, Retro, Top Print, Cyber, Blank
 │   └── profiles.js                    ← Cyberboard Wedge, Flat Box, Chamfered Wedge, Ergonomic
 ├── CaseEditor/
@@ -191,6 +229,9 @@ KeyboardLab/
 │   └── extrudeProfile.js             ← 2D→3D extrusion + mount surface + edge strips
 ├── services/
 │   └── designStorage.js              ← eletypes-design-bundle/1 persistence + migration
+├── i18n/
+│   ├── labTranslations.js            ← EN/ZH translations (~90 keys)
+│   └── useLabTranslation.js          ← Hook: reads global locale, lab-specific keys
 ├── KeyboardLab.jsx                    ← Canvas wrapper, controls, lighting
 ├── KeyboardModel.jsx                  ← Split InstancedMesh + animation + legends + edge strips
 ├── KeycapGeometry.js                  ← Procedural tapered/dished keycap generator
@@ -198,48 +239,46 @@ KeyboardLab/
 ├── KeyboardLabDemo.jsx               ← Full workspace: toolbar + 3D + sidebar + editors
 ├── KEYBOARD_LAB.md                    ← This document
 └── PLATFORM_SPEC.md                   ← Open-source platform architecture spec
+
+Pages (standalone routes):
+├── src/pages/KeyboardLabPage.jsx      ← /keyboardlab route
+├── src/pages/MarkdownPage.jsx         ← /markdown route
+
+Shared components:
+├── src/components/common/MiniFooter.jsx ← Bracketed bottom nav for standalone routes
 ```
 
 ---
 
-## 5. Roadmap
+## 6. Roadmap
 
-### Completed (this branch)
-- [x] 3D keyboard visualization with InstancedMesh
-- [x] Layout schema (eletypes-kbd/1), 2 layouts (Generic 75%, Cyberboard R2 75%)
-- [x] Keycap schema (eletypes-cap/1) with 4 profiles
-- [x] Legend schema (eletypes-legend/1) with 6 presets
-- [x] Visual schema (eletypes-visual/1)
-- [x] Shell schema (eletypes-shell/1)
-- [x] Case profile schema (eletypes-caseProfile/1) with 4 presets + colored edges
-- [x] Design composition schema (eletypes-design/1) with refs + overrides
-- [x] Design bundle schema (eletypes-design-bundle/1) for local persistence
-- [x] Asset resolver with bundled registry
-- [x] Parametric case editor with 2D profile → 3D extrusion
-- [x] Mount surface with key auto-placement and tilt
-- [x] Colored edge accent strips (emissive LED-style)
-- [x] Sculpted keycap profiles (Cherry, SA, DSA, XDA)
-- [x] 3D Text legends following keycap positions and tilt
+### Completed
+- [x] 3D keyboard visualization with InstancedMesh + spring animation
+- [x] 6 layouts: 60%, 65%, 75% (×2), TKL, Full-size (all ANSI)
+- [x] 8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
+- [x] 5 shell presets: Standard, Slim, Wide Bezel, Angular, Top Heavy
+- [x] 6 legend presets with live editing
+- [x] Parametric case profile editor (4 presets + colored edge accents)
 - [x] Per-group opacity (keycap, accent, case, legend)
-- [x] Workspace layout with labeled UI, resizable sidebar
-- [x] Tabbed Monaco JSON editor (6 tabs, bidirectional, imperatively synced)
-- [x] Local persistence with bundle format + read-time migration
-- [x] Toolbar: New, Save, Saved, Reload, Delete, Export, Import
-- [x] Spring key press animation
-- [x] "Le smoking" default theme
+- [x] Design bundle schema (eletypes-design-bundle/1) for local persistence
+- [x] 10 color themes including le smoking
+- [x] Monaco JSON editor (7 tabs, bidirectional sync, Doc tab)
+- [x] Standalone /keyboardlab route with i18n (EN/ZH)
+- [x] Roadmap modal + editor's note + GitHub link
+- [x] Banner announcement + profile modal tab (beta)
+- [x] Markdown editor at /markdown with live preview + syntax highlighting
+- [x] Shared MiniFooter with bracketed monospace style
+- [x] Key press sound support in keyboard lab
+- [x] Markdown M↓ logo in footer nav
 
-### Next priorities
-- [ ] 2D editor: drag keys to reposition
-- [ ] TypeBox integration: triggerKey on each keystroke
-- [ ] Online storage: upload/download designs (platform)
-- [ ] More profiles: OEM, MT3, KAT, low-profile
-- [ ] More layouts: 60%, 65%, TKL, ISO variants
-- [ ] Package extraction: @eletypes/keyboard-schema, @eletypes/keyboard-assets
+### Coming Next
+- [ ] [P0] Online cloud save — upload & download designs
+- [ ] [P1] Community gallery — browse, share & remix designs
+- [ ] [P2] Drag & drop 2D layout editor — reposition keys freely
+- [ ] [P3] Eletypes typing test animation integration
 
-### Long-term
-- [ ] Mesh-backed keycap import (GLB)
-- [ ] Community asset registry
-- [ ] KLE import converter
-- [ ] Design sharing (shareable URLs, OG preview images)
-- [ ] Collaborative editing
-- [ ] LED underglow visualization
+### On the Horizon
+- [ ] Stickers & decals on keycaps and case
+- [ ] More visual effects: LED underglow, RGB lighting
+- [ ] KLE / VIA layout import converter
+- [ ] Extract core engine as @eletypes/keyboard-lab npm package

@@ -24,7 +24,6 @@ import SentenceBox from "./components/features/SentenceBox/SentenceBox";
 import { parseChallengeParams, clearChallengeParams } from "./services/challengeLink";
 import { generateSeed } from "./scripts/seedUtils";
 
-const FreeTypingBox = lazy(() => import("./components/features/FreeTypingBox"));
 const DefaultKeyboard = lazy(() => import("./components/features/Keyboard/DefaultKeyboard"));
 const WordsCard = lazy(() => import("./components/features/WordsCard/WordsCard"));
 
@@ -98,9 +97,6 @@ function App() {
     localStorage.getItem("ultra-zen-mode") === "true"
   );
 
-  // coffeeMode setting
-  const [isCoffeeMode, setIsCoffeeMode] = useState(false);
-
   // trainer mode setting
   const [isTrainerMode, setIsTrainerMode] = useState(false);
 
@@ -112,12 +108,10 @@ function App() {
 
   const isWordGameMode =
     gameMode === GAME_MODE_DEFAULT &&
-    !isCoffeeMode &&
     !isTrainerMode &&
     !isWordsCardMode;
   const isSentenceGameMode =
     gameMode === GAME_MODE_SENTENCE &&
-    !isCoffeeMode &&
     !isTrainerMode &&
     !isWordsCardMode;
 
@@ -146,21 +140,13 @@ function App() {
     setIsUltraZenMode(!isUltraZenMode);
   };
 
-  const toggleCoffeeMode = () => {
-    setIsCoffeeMode(!isCoffeeMode);
-    setIsTrainerMode(false);
-    setIsWordsCardMode(false);
-  };
-
   const toggleTrainerMode = () => {
     setIsTrainerMode(!isTrainerMode);
-    setIsCoffeeMode(false);
     setIsWordsCardMode(false);
   };
 
   const toggleWordsCardMode = () => {
     setIsTrainerMode(false);
-    setIsCoffeeMode(false);
     setIsWordsCardMode(!isWordsCardMode);
   };
 
@@ -196,16 +182,11 @@ function App() {
       focusSentenceInput();
       return;
     }
-    if (isCoffeeMode) {
-      focusTextArea();
-      return;
-    }
     return;
   }, [
     theme,
     isFocusedMode,
     isMusicMode,
-    isCoffeeMode,
     isWordGameMode,
     isSentenceGameMode,
     soundMode,
@@ -255,20 +236,13 @@ function App() {
             ></SentenceBox>
           )}
           <Suspense fallback={null}>
-            {isCoffeeMode && !isTrainerMode && !isWordsCardMode && (
-              <FreeTypingBox
-                textAreaRef={textAreaRef}
-                soundMode={soundMode}
-                soundType={soundType}
-              />
-            )}
-            {isTrainerMode && !isCoffeeMode && !isWordsCardMode && (
+            {isTrainerMode && !isWordsCardMode && (
               <DefaultKeyboard
                 soundMode={soundMode}
                 soundType={soundType}
               ></DefaultKeyboard>
             )}
-            {isWordsCardMode && !isCoffeeMode && !isTrainerMode && (
+            {isWordsCardMode && !isTrainerMode && (
               <WordsCard soundMode={soundMode} soundType={soundType}></WordsCard>
             )}
           </Suspense>
@@ -286,8 +260,6 @@ function App() {
               handleThemeChange={handleThemeChange}
               toggleFocusedMode={toggleFocusedMode}
               toggleMusicMode={toggleMusicMode}
-              toggleCoffeeMode={toggleCoffeeMode}
-              isCoffeeMode={isCoffeeMode}
               isMusicMode={isMusicMode}
               isUltraZenMode={isUltraZenMode}
               isFocusedMode={isFocusedMode}

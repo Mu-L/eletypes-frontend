@@ -82,19 +82,43 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
   - Can practicing keys from the `home-row`, `top-row`, and `bottom-row`, either individually or in any combination, based on learning needs.
 
   
-#### 3. Coffee Mode
+#### 3. Markdown Editor (`/markdown`) — *New*
 
- - free typing mode for test typing anything
+ - Side-by-side markdown editor with live preview
+ - Three view modes: Editor, Split, Preview
+ - Syntax highlighting for code blocks (TypeScript, JavaScript, Python, etc.)
+ - ASCII art "ELE TYPES" banner (responsive — compact on mobile)
+ - Save as `.md` file
+ - Typing sound support
+ - Standalone route with minimal bottom nav
 
-#### 4. QWERTY Keyboard touch-typing trainer 
+#### 4. Keyboard Lab (`/keyboardlab`) — *Beta*
+
+ - 3D keyboard design editor — design custom keyboards in your browser
+ - 6 layouts: 60%, 65%, 75%, TKL, Full-size, Cyberboard R2
+ - 8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
+ - 5 shell presets: Standard, Slim, Wide Bezel, Angular, Top Heavy
+ - Parametric case profile editor with 2D → 3D extrusion
+ - Colored edge accent strips (LED-style glow)
+ - Per-group opacity: keycap, accent, case, legend
+ - 10 color themes with "le smoking" as default
+ - 6 legend presets with live font/size/weight/color editing
+ - Live key press animation with sound
+ - Bidirectional JSON schema editor with Doc reference tab
+ - Design save/load/export/import (eletypes-design-bundle/1 format)
+ - Roadmap modal with editor's note
+ - Full EN/ZH localization
+ - See [KEYBOARD_LAB.md](src/components/features/KeyboardLab/KEYBOARD_LAB.md) for full documentation
+
+#### 6. QWERTY Keyboard touch-typing trainer 
 
  - A QWERTY keyboard layout UI populating random key for touch typing with stats
 
-#### 5. Spotify player
+#### 7. Spotify player
 
  - A spotify player 
  
-#### 6. Themes Collection
+#### 8. Themes Collection
 
 - Static Themes
 
@@ -123,24 +147,24 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
 ![dynamicThemesDemo](https://github.com/gamer-ai/eletypes-frontend/assets/39578778/d716a287-6f59-4568-8276-1ee6b5f5850a)
 
   
-#### 7. LocalStorage persist for essential settings
+#### 9. LocalStorage persist for essential settings
 
   - Browser refresh will bring back to the localStorage stored settings
 
-#### 8. Focus Mode
+#### 10. Focus Mode
 
   - move header to footer. 
   - hide the setting menu. leave only timer, wpm stats. 
   - If music enabled, a compact spotify will be put in footer.
 
-#### 9. Ultra Zen Mode
+#### 11. Ultra Zen Mode
 
 ![image](https://github.com/user-attachments/assets/ab3e7c94-4f38-4607-86aa-1cd3d8296381)
 
 toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a40a-981b05e3e59d) to use the ultra zen mode when in words mode. The ultra zen mode can auto highlight and auto dim while you are typing. 
 
  
-#### 10. Typing Sound Effect
+#### 12. Typing Sound Effect
 
   - default: cherry blue switch
   - optional: keyboard (hard)
@@ -148,19 +172,19 @@ toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a4
   
   <img width="120" alt="Screen Shot 2022-09-29 at 2 01 51 AM" src="https://user-images.githubusercontent.com/39578778/192989337-637e1154-fbca-420b-babb-22846d5dbdb1.png">
   
-#### 11. [Tab] key to Fast redo/reset
+#### 13. [Tab] key to Fast redo/reset
 
   - [Tab] + [Space] for quickly redo
   - [Tab] + [Enter] / [Tab] + [Tab] for quickly reset
   - [Tab] + [Any Key] to exit the dialog
 
-#### 12. Chinese / English UI (i18n)
+#### 14. Chinese / English UI (i18n)
 
   - Toggle between Chinese and English interface via the settings or profile menu
   - All tooltips, labels, stats, leaderboard text, and banners are translated
   - Preference persisted in localStorage
 
-#### 13. Profile Menu
+#### 15. Profile Menu
 
   - Accessible via the profile button (top-right corner), always visible including in focus mode
   - **Profile** — edit display name, view rank + badges (no sign-up required)
@@ -175,7 +199,7 @@ toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a4
   - **Settings** — toggle switches for Focus Mode, Sound, Music, Ultra Zen, and Interface Language
   - **News** — view all announcements including previously dismissed banners
 
-#### 14. Badge System
+#### 16. Badge System
 
   - 33 badges across 6 categories: Speed, Effective Speed, Accuracy, Consistency, Explorer, Social
   - Speed badges based on raw WPM, Effective Speed badges based on WPM × Accuracy
@@ -183,13 +207,13 @@ toggle ![image](https://github.com/user-attachments/assets/b552b444-f411-4a1d-a4
   - Hidden badges discoverable through gameplay
   - Badge notifications on unlock
 
-#### 15. Progressive Web App (PWA)
+#### 17. Progressive Web App (PWA)
 
   - Installable on desktop and mobile — works like a native app
   - Offline support via service worker (type without internet)
   - Auto-updates when new versions are deployed
 
-#### 16. Words Card Auto-Play Audio
+#### 18. Words Card Auto-Play Audio
 
   - Auto-play pronunciation audio when navigating words in vocab mode
   - Toggle on/off next to the speaker button, persisted in localStorage

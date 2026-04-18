@@ -21,6 +21,7 @@ import SupportMe from "../features/SupportMe";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import EmojiFoodBeverageIcon from "@mui/icons-material/EmojiFoodBeverage";
+import CodeIcon from "@mui/icons-material/Code";
 import DiscordIcon from "../../assets/Icons/DiscordIcon";
 import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
@@ -41,10 +42,8 @@ const FooterMenu = ({
   toggleMusicMode,
   toggleUltraZenMode,
   isUltraZenMode,
-  toggleCoffeeMode,
   isMusicMode,
   isFocusedMode,
-  isCoffeeMode,
   gameMode,
   handleGameModeChange,
   isTrainerMode,
@@ -56,7 +55,7 @@ const FooterMenu = ({
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const { locale, setLocale, t } = useLocale();
   const isSiteInfoDisabled = isMusicMode || isFocusedMode;
-  const isSpecialMode = isCoffeeMode || isTrainerMode || isWordsCardMode;
+  const isSpecialMode = isTrainerMode || isWordsCardMode;
 
   const activeCls = (on) => (on ? "nav-item-active" : "nav-item");
   const modeCls = (currMode, buttonMode) => {
@@ -65,7 +64,6 @@ const FooterMenu = ({
   };
 
   const handleWordSentenceMode = (mode) => {
-    if (isCoffeeMode) toggleCoffeeMode();
     if (isTrainerMode) toggleTrainerMode();
     if (isWordsCardMode) toggleWordsCardMode();
     handleGameModeChange(mode);
@@ -99,10 +97,13 @@ const FooterMenu = ({
                 {SENTENCE_MODE_LABEL}
               </span>
             </IconButton>
-            <IconButton size="small" onClick={toggleCoffeeMode}>
-              <Tooltip title={t("free_mode")}>
-                <span className={activeCls(isCoffeeMode)}>
-                  <EmojiFoodBeverageIcon fontSize="small" />
+            <IconButton size="small" onClick={() => window.location.href = "/markdown"}>
+              <Tooltip title={t("markdown_mode")}>
+                <span className="nav-item">
+                  <svg width="20" height="20" viewBox="0 0 208 128" fill="none" style={{ verticalAlign: "middle" }}>
+                    <rect x="5" y="5" width="198" height="118" rx="12" stroke="currentColor" strokeWidth="10" fill="none"/>
+                    <path d="M30 98V30h20l20 25 20-25h20v68h-20V59L70 84 50 59v39H30zm125 0l-30-35h20V30h20v33h20l-30 35z" fill="currentColor"/>
+                  </svg>
                 </span>
               </Tooltip>
             </IconButton>
@@ -120,7 +121,7 @@ const FooterMenu = ({
                 </span>
               </Tooltip>
             </IconButton>
-            <IconButton size="small" component="a" href="/keyboardlab">
+            <IconButton size="small" onClick={() => window.location.href = "/keyboardlab"}>
               <Tooltip title="Keyboard Lab">
                 <span className="nav-item" style={{ position: "relative", display: "inline-flex" }}>
                   <DesignServicesIcon fontSize="small" />
