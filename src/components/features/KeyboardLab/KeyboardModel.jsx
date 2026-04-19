@@ -118,12 +118,19 @@ const KeyboardModel = forwardRef(({
   const offsets = useRef(new Float32Array(keyCount));
   const velocities = useRef(new Float32Array(keyCount));
   const activeSet = useRef(new Set());
+  // Refs to each legend's group so the press animation can translate the label
+  // along with the keycap. Without this, labels stay at their baseline Y while
+  // the keycap springs down/up, which looks like the legend detaches from the cap.
+  const labelGroupRefs = useRef([]);
+  const labelBaselineY = useRef(new Float32Array(keyCount));
 
   // Reset animation state when layout changes
   useEffect(() => {
     offsets.current = new Float32Array(keyCount);
     velocities.current = new Float32Array(keyCount);
     activeSet.current.clear();
+    labelBaselineY.current = new Float32Array(keyCount);
+    labelGroupRefs.current.length = keyCount;
   }, [keyCount]);
 
   // ─── Pre-allocated objects ───
@@ -355,6 +362,14 @@ const KeyboardModel = forwardRef(({
       } else {
         setKeyMatrix(i, offs[i]);
       }
+
+      // Move the label group so the legend stays glued to the keycap surface
+      // during the spring animation. baseline captured at render; offs[i] is
+      // the animated delta.
+      const labelGroup = labelGroupRefs.current[i];
+      if (labelGroup) {
+        labelGroup.position.y = labelBaselineY.current[i] + offs[i];
+      }
     }
 
     for (const i of toRemove) active.delete(i);
@@ -562,11 +577,14 @@ const KeyboardModel = forwardRef(({
 
               const offX = offXFrac * rest.sx;
               const offZ = offZFrac * rest.sz;
+              const baselineY = rest.y + rest.sy / 2 + 0.005;
+              labelBaselineY.current[i] = baselineY;
 
               return (
                 <group
                   key={key.id}
-                  position={[rest.x + offX, rest.y + rest.sy / 2 + 0.005, rest.z + offZ]}
+                  ref={(el) => { labelGroupRefs.current[i] = el; }}
+                  position={[rest.x + offX, baselineY, rest.z + offZ]}
                   rotation={[rest.tiltX || 0, 0, 0]}
                 >
                   <Text
