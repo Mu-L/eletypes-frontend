@@ -1,6 +1,6 @@
 # Eletypes 打字
 
-> **一款优雅、开源的打字测试工具，内置匿名排行榜、成就徽章，和 3D 键盘设计工坊。** 无需注册、无广告、所有数据仅保存在你的浏览器。
+> **一款优雅、开源的打字测试工具，内置匿名排行榜、成就徽章，和 3D 键盘设计工坊。** 无需注册、无广告；历史数据存在本地浏览器，提交排行榜是匿名的。
 
 **🌐 [English](./README.md) · [中文](./README.zh-CN.md)**
 
@@ -14,7 +14,7 @@
 
 ## 为什么选择 Eletypes？
 
-一个尊重你时间的打字工具 —— 快、干净、好看。由一个受够臃肿打字平台的键盘爱好者打造。灵感来自 [monkeytype.com](https://www.monkeytype.com/)，基于 React 18 + Vite，排行榜使用 Supabase。
+随便打几个字放松一下，或者深入设计属于自己的 3D 键盘 —— Eletypes 都能保持简洁快速。灵感来自 [monkeytype.com](https://www.monkeytype.com/)，基于 React 18 + Vite，排行榜使用 Supabase。
 
 ## 功能
 
@@ -41,7 +41,7 @@
 - **键盘快捷键** —— `Tab+Space` 重做 · `Tab+Enter` 重开
 
 ### 隐私
-无账号、无广告、无追踪。历史与设置仅存在浏览器 localStorage。排行榜仅用浏览器指纹防刷。
+无账号、无广告、无追踪。练习历史与设置仅保存在浏览器 localStorage。唯一离开你设备的是匿名排行榜记录 —— 仅用浏览器指纹（不含账号、不含任何个人信息）进行防刷与去重。
 
 ## 快速开始
 
@@ -61,6 +61,16 @@ npm run deploy   # Firebase Hosting 部署
 
 - **Discord** —— 在应用页脚点击 Discord 图标加入
 - **[问题反馈 / 需求提交](https://github.com/gamer-ai/eletype-frontend/issues)**
+
+## 鸣谢
+
+特别感谢 [@rendi12345678](https://github.com/rendi12345678) 长期以来的贡献 —— 包括打字数据可视化功能。
+
+## 赞助
+
+如果 Eletypes 帮到了你，或者只是让你会心一笑，欢迎请作者喝杯咖啡：
+
+[☕ Buy Me A Coffee](https://www.buymeacoffee.com/daguozi)
 
 ## 许可
 

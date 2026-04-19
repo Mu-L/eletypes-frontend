@@ -1,6 +1,6 @@
 # Eletypes
 
-> **An elegant, open-source typing test with anonymous leaderboards, badges, and a built-in 3D keyboard design lab.** No signup. No ads. All data stays in your browser.
+> **An elegant, open-source typing test with anonymous leaderboards, badges, and a built-in 3D keyboard design lab.** No signup. No ads. Your history is local; leaderboard submissions are anonymous.
 
 **🌐 [English](./README.md) · [中文](./README.zh-CN.md)**
 
@@ -14,7 +14,7 @@
 
 ## Why Eletypes?
 
-A typing test that respects your time — fast, private, beautiful. Built by a keyboard geek tired of bloated platforms. Inspired by [monkeytype.com](https://www.monkeytype.com/), written in React 18 + Vite, backed by Supabase.
+Warm up with a chill session, or go deep and design your own 3D keyboard — Eletypes stays clean and fast either way. Inspired by [monkeytype.com](https://www.monkeytype.com/), built on React 18 + Vite, with Supabase behind the leaderboard.
 
 ## Features
 
@@ -41,7 +41,7 @@ A typing test that respects your time — fast, private, beautiful. Built by a k
 - **Keyboard shortcuts** — `Tab+Space` redo · `Tab+Enter` restart
 
 ### Privacy
-No accounts. No ads. No tracking. History and settings live in your browser's localStorage. Leaderboard uses a fingerprint for anti-cheat only.
+No accounts. No ads. No tracking. Your practice history and settings live in your browser's localStorage. The only data that leaves your device is anonymous leaderboard submissions — tagged by a browser fingerprint (no account, no PII) purely for anti-cheat and dedup.
 
 ## Quick Start
 
@@ -61,6 +61,16 @@ npm run deploy   # Firebase Hosting
 
 - **Discord** — click the Discord icon in the app footer
 - **[Issues & feature requests](https://github.com/gamer-ai/eletype-frontend/issues)**
+
+## Credits
+
+Huge thanks to [@rendi12345678](https://github.com/rendi12345678) for continuous contributions — including the data visualization for typing stats.
+
+## Sponsor
+
+If Eletypes helps you or just makes you smile, consider supporting development:
+
+[☕ Buy Me A Coffee](https://www.buymeacoffee.com/daguozi)
 
 ## License
 
