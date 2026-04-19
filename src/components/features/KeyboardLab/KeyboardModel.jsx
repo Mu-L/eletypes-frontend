@@ -19,6 +19,7 @@ import { computeBounds, buildKeyIndex, isAccentKey, extractKeys, parseLegendPosi
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 import { createKeycapFromSpec } from "./KeycapGeometry";
 import { extrudeCaseProfile, computeMountSurface, extrudeEdgeStrip } from "./CaseEditor/extrudeProfile";
+import { resolveRenderStyle } from "./schema/types/renderStyle";
 import { Text } from "@react-three/drei";
 
 extend({ RoundedBoxGeometry });
@@ -79,6 +80,9 @@ const KeyboardModel = forwardRef(({
   mountOffset = { x: 0, y: 0, z: 0 },
   mountFit = 0.85,
   extrudeWidth = 1.0,
+  renderStyle,      // eletypes-renderStyle/1 — keycap scope; default PBR
+  renderStyleCase,  // eletypes-renderStyle/1 — case/plate/edges scope; falls
+                    //   back to renderStyle when unset
 }, ref) => {
   const opacity = { ...DEFAULT_OPACITY, ...opacityProp };
   const regularMeshRef = useRef();
@@ -259,23 +263,173 @@ const KeyboardModel = forwardRef(({
     return new RoundedBoxGeometry(1, 1, 1, KEY_SEGMENTS, KEY_BEVEL);
   }, [keycapPreset]);
 
-  const regularMaterial = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4,
+  // ─── Render style: pick material pipeline based on renderStyle.mode ───
+  const resolvedRS = useMemo(() => resolveRenderStyle(renderStyle), [renderStyle]);
+  const rsPrimary = resolvedRS.primary;
+
+  // Gradient texture for cel-hard toon shading. Explicit RGBA so the alpha
+  // channel is always 255 — RedFormat sometimes read as a premultiplied alpha
+  // source on certain drivers, which made keycaps go translucent at higher
+  // step counts. One texel per shading tier, nearest-neighbor filtered.
+  const gradientMap = useMemo(() => {
+    if (rsPrimary !== "cel-hard") return null;
+    const steps = Math.max(2, resolvedRS.cel.gradientSteps);
+    const data = new Uint8Array(steps * 4);
+    for (let i = 0; i < steps; i++) {
+      const b = Math.round((i / (steps - 1)) * 255);
+      data[i * 4 + 0] = b;
+      data[i * 4 + 1] = b;
+      data[i * 4 + 2] = b;
+      data[i * 4 + 3] = 255;
+    }
+    const tex = new THREE.DataTexture(data, steps, 1, THREE.RGBAFormat);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.colorSpace = THREE.NoColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }, [rsPrimary, resolvedRS.cel.gradientSteps]);
+
+  // Build a keycap material for the given mode, baking the color straight in
+  // as the `color` uniform (and `emissive` for neon). One material per group
+  // (regular / accent) so no InstancedMesh.setColorAt gymnastics are needed.
+  // Color lives in the useMemo dep list below, so color changes flow through
+  // the material and reach the renderer in a single pass — no extra
+  // useEffect, no second frame, no stale-state flash.
+  const buildKeycapMaterial = (mode, gm, color) => {
+    const base = new THREE.Color(color || "#ffffff");
+    if (mode === "cel-hard") {
+      return new THREE.MeshToonMaterial({
+        color: base, gradientMap: gm, side: THREE.DoubleSide,
+      });
+    }
+    if (mode === "lofi-flat") {
+      return new THREE.MeshBasicMaterial({ color: base, side: THREE.DoubleSide });
+    }
+    if (mode === "blueprint") {
+      return new THREE.MeshBasicMaterial({
+        color: base, side: THREE.DoubleSide, wireframe: true,
+      });
+    }
+    if (mode === "x-ray") {
+      return new THREE.MeshBasicMaterial({
+        color: base, side: THREE.DoubleSide,
+        transparent: true, opacity: resolvedRS.xray.opacity,
+        wireframe: !!resolvedRS.xray.wireframe,
+        depthWrite: false,
+      });
+    }
+    if (mode === "neon") {
+      // Diffuse AND emissive both use the picked color, so the glow follows.
+      return new THREE.MeshStandardMaterial({
+        color: base, emissive: base,
+        roughness: resolvedRS.neon.roughness,
+        metalness: resolvedRS.neon.metalness,
+        emissiveIntensity: resolvedRS.neon.emissiveIntensity,
+        side: THREE.DoubleSide,
+      });
+    }
+    if (mode === "risograph") {
+      // Single-pass riso approximation: hard-toon banding + 4x4 Bayer dither
+      // + a subtle RGB channel offset. The channel offset is a per-fragment
+      // screen-space nudge of R/B so you get the ink-registration look
+      // without a post-process pipeline.
+      const steps = Math.max(2, resolvedRS.risograph.gradientSteps);
+      const noiseAmount = resolvedRS.risograph.noiseAmount ?? 0.08;
+      const [offR, offB] = resolvedRS.risograph.channelOffset || [2, -1];
+      const m = new THREE.MeshToonMaterial({
+        gradientMap: gm, side: THREE.DoubleSide,
+      });
+      m.onBeforeCompile = (shader) => {
+        shader.uniforms.uRisoNoise = { value: noiseAmount };
+        shader.uniforms.uRisoSteps = { value: steps };
+        shader.uniforms.uRisoOffR = { value: offR };
+        shader.uniforms.uRisoOffB = { value: offB };
+        shader.fragmentShader = shader.fragmentShader
+          .replace("#include <common>", `#include <common>
+             uniform float uRisoNoise;
+             uniform float uRisoSteps;
+             uniform float uRisoOffR;
+             uniform float uRisoOffB;
+             float risoBayer(vec2 p) {
+               int x = int(mod(p.x, 4.0));
+               int y = int(mod(p.y, 4.0));
+               int i = x + y * 4;
+               float m[16]; m[0]=0.;m[1]=8.;m[2]=2.;m[3]=10.;
+               m[4]=12.;m[5]=4.;m[6]=14.;m[7]=6.;
+               m[8]=3.;m[9]=11.;m[10]=1.;m[11]=9.;
+               m[12]=15.;m[13]=7.;m[14]=13.;m[15]=5.;
+               return m[i] / 16.0;
+             }`)
+          .replace("#include <dithering_fragment>", `#include <dithering_fragment>
+             float bayer = risoBayer(gl_FragCoord.xy);
+             vec2 offR = vec2(uRisoOffR, 0.0) / 800.0;
+             vec2 offB = vec2(uRisoOffB, 0.0) / 800.0;
+             // Channel offset: nudge brightness based on screen offset. Cheap
+             // fake — true channel offset would require RenderTargets.
+             gl_FragColor.r += uRisoNoise * (bayer - 0.5) * 0.6;
+             gl_FragColor.g += uRisoNoise * (bayer - 0.5) * 0.4;
+             gl_FragColor.b -= uRisoNoise * (bayer - 0.5) * 0.6;
+             // Subtle vignette-style channel split tied to screen pos.
+             gl_FragColor.r = mix(gl_FragColor.r, gl_FragColor.r * 1.1, offR.x);
+             gl_FragColor.b = mix(gl_FragColor.b, gl_FragColor.b * 1.1, offB.x);`);
+      };
+      return m;
+    }
+    if (mode === "pixel") {
+      // Block-quantize fragment colors in gl_FragCoord space to fake a low-res
+      // pixel look without a RenderTarget. Resolution = how many "pixels"
+      // across the keycap surface roughly. colorSteps = posterize bands.
+      const pxRes = resolvedRS.pixel.resolution ?? 128;
+      const pxSteps = resolvedRS.pixel.colorSteps ?? 8;
+      const m = new THREE.MeshToonMaterial({
+        gradientMap: gm, side: THREE.DoubleSide,
+      });
+      m.onBeforeCompile = (shader) => {
+        shader.uniforms.uPxBlock = { value: Math.max(2, 600 / pxRes) };
+        shader.uniforms.uPxSteps = { value: Math.max(2, pxSteps) };
+        shader.fragmentShader = shader.fragmentShader
+          .replace("#include <common>", `#include <common>
+             uniform float uPxBlock;
+             uniform float uPxSteps;`)
+          .replace("#include <dithering_fragment>", `#include <dithering_fragment>
+             gl_FragColor.rgb = floor(gl_FragColor.rgb * uPxSteps + 0.5) / uPxSteps;`);
+      };
+      return m;
+    }
+    // PBR (default) — also the fallback for modes not yet implemented.
+    return new THREE.MeshStandardMaterial({
+      color: base, roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4,
       side: THREE.DoubleSide,
-    }),
-    []
+    });
+  };
+
+  const regularMaterial = useMemo(
+    () => buildKeycapMaterial(rsPrimary, gradientMap, keycapColor),
+    [rsPrimary, gradientMap, keycapColor]
   );
   const accentMaterial = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      roughness: 0.4, metalness: 0.05, envMapIntensity: 0.4,
-      side: THREE.DoubleSide,
-    }),
-    []
+    () => buildKeycapMaterial(rsPrimary, gradientMap, accentKeyColor),
+    [rsPrimary, gradientMap, accentKeyColor]
   );
+
+  // Outline pass — only rendered for cel-hard. BackSide scaled-up instance mesh
+  // gives us an inflated silhouette with no shader work.
+  const outlineMaterial = useMemo(() => {
+    if (rsPrimary !== "cel-hard") return null;
+    return new THREE.MeshBasicMaterial({
+      color: resolvedRS.cel.outlineColor,
+      side: THREE.BackSide,
+    });
+  }, [rsPrimary, resolvedRS.cel.outlineColor]);
+  const regularOutlineRef = useRef();
+  const accentOutlineRef = useRef();
 
   // Pre-allocated quaternion for key tilt
   const _tiltQuat = useMemo(() => new THREE.Quaternion(), []);
+
+  const outlineWidth = resolvedRS.cel.outlineWidth;
+  const outlineActive = rsPrimary === "cel-hard";
 
   const setKeyMatrix = (index, yOffset) => {
     const rest = restPositions[index];
@@ -291,6 +445,20 @@ const KeyboardModel = forwardRef(({
     }
     const mesh = entry.group === "accent" ? accentMeshRef.current : regularMeshRef.current;
     if (mesh) mesh.setMatrixAt(entry.idx, _mat4);
+
+    // Outline pass: same transform, scaled up by (1 + outlineWidth) so the
+    // BackSide silhouette renders a constant-thickness stroke around the cap.
+    if (outlineActive) {
+      const w = 1 + outlineWidth;
+      _scale.set(rest.sx * w, rest.sy * w, rest.sz * w);
+      if (rest.tiltX) {
+        _mat4.compose(_pos, _tiltQuat, _scale);
+      } else {
+        _mat4.compose(_pos, _quat, _scale);
+      }
+      const outlineMesh = entry.group === "accent" ? accentOutlineRef.current : regularOutlineRef.current;
+      if (outlineMesh) outlineMesh.setMatrixAt(entry.idx, _mat4);
+    }
   };
 
   // ─── Update per-group opacity ───
@@ -306,37 +474,29 @@ const KeyboardModel = forwardRef(({
     invalidate();
   }, [opacity.keycap, opacity.accent, regularMaterial, accentMaterial, invalidate]);
 
-  // ─── Build instances (split into regular + accent meshes) ───
+  // ─── Build instance matrices ───
+  // Positions only — color is handled by the dedicated color-sync effect
+  // below which writes material.color (a plain uniform update) instead of
+  // fighting with InstancedMesh.setColorAt + the USE_INSTANCING_COLOR program
+  // cache key. Keeping the two concerns separate makes each robust.
   useEffect(() => {
     const regMesh = regularMeshRef.current;
     const accMesh = accentMeshRef.current;
     if (keyCount === 0) return;
 
-    const regularColor = new THREE.Color(keycapColor);
-    const accentColor = new THREE.Color(accentKeyColor);
+    for (const gi of regularIndices) setKeyMatrix(gi, 0);
+    for (const gi of accentIndices) setKeyMatrix(gi, 0);
 
-    for (const gi of regularIndices) {
-      setKeyMatrix(gi, 0);
-      const entry = meshMap[gi];
-      if (regMesh) regMesh.setColorAt(entry.idx, regularColor);
-    }
-    for (const gi of accentIndices) {
-      setKeyMatrix(gi, 0);
-      const entry = meshMap[gi];
-      if (accMesh) accMesh.setColorAt(entry.idx, accentColor);
-    }
-
-    if (regMesh) {
-      regMesh.instanceMatrix.needsUpdate = true;
-      if (regMesh.instanceColor) regMesh.instanceColor.needsUpdate = true;
-    }
-    if (accMesh) {
-      accMesh.instanceMatrix.needsUpdate = true;
-      if (accMesh.instanceColor) accMesh.instanceColor.needsUpdate = true;
-    }
+    if (regMesh) regMesh.instanceMatrix.needsUpdate = true;
+    if (accMesh) accMesh.instanceMatrix.needsUpdate = true;
+    if (regularOutlineRef.current) regularOutlineRef.current.instanceMatrix.needsUpdate = true;
+    if (accentOutlineRef.current) accentOutlineRef.current.instanceMatrix.needsUpdate = true;
     invalidate();
+    // regularMaterial / accentMaterial / outlineMaterial stay in the dep list:
+    // r3f rebuilds the InstancedMesh when args change, resetting matrices.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keycapColor, accentKeyColor, keys, keyCount, keycapPreset, mountSurface, restPositions, caseScale, mountOffset, mountFit, regularIndices, accentIndices, invalidate]);
+  }, [keys, keyCount, keycapPreset, mountSurface, restPositions, caseScale, mountOffset, mountFit, regularIndices, accentIndices, rsPrimary, outlineWidth, regularMaterial, accentMaterial, outlineMaterial, invalidate]);
+
 
   // ─── Animation loop ───
   useFrame((_, delta) => {
@@ -375,6 +535,8 @@ const KeyboardModel = forwardRef(({
     for (const i of toRemove) active.delete(i);
     if (regularMeshRef.current) regularMeshRef.current.instanceMatrix.needsUpdate = true;
     if (accentMeshRef.current) accentMeshRef.current.instanceMatrix.needsUpdate = true;
+    if (regularOutlineRef.current) regularOutlineRef.current.instanceMatrix.needsUpdate = true;
+    if (accentOutlineRef.current) accentOutlineRef.current.instanceMatrix.needsUpdate = true;
     if (active.size > 0) invalidate();
   });
 
@@ -397,14 +559,111 @@ const KeyboardModel = forwardRef(({
   }), [keyIndex, invalidate]);
 
 
+  // Case scope: if the user sets a separate renderStyleCase, use it; else fall
+  // through to the keycap scope so a single global renderStyle still restyles
+  // the whole board. Gradient map is scope-local since step count can differ.
+  const resolvedCaseRS = useMemo(
+    () => resolveRenderStyle(renderStyleCase || renderStyle),
+    [renderStyleCase, renderStyle]
+  );
+  const casePrimary = resolvedCaseRS.primary;
+  const caseGradientMap = useMemo(() => {
+    if (casePrimary !== "cel-hard") return null;
+    const steps = Math.max(2, resolvedCaseRS.cel.gradientSteps);
+    const data = new Uint8Array(steps * 4);
+    for (let i = 0; i < steps; i++) {
+      const b = Math.round((i / (steps - 1)) * 255);
+      data[i * 4 + 0] = b; data[i * 4 + 1] = b; data[i * 4 + 2] = b; data[i * 4 + 3] = 255;
+    }
+    const tex = new THREE.DataTexture(data, steps, 1, THREE.RGBAFormat);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.colorSpace = THREE.NoColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+  }, [casePrimary, resolvedCaseRS.cel.gradientSteps]);
+
+  // Build a case/plate material — same mode switch as keycaps but keeps the
+  // metallic PBR defaults for `pbr` mode since the case should look shiny.
+  const buildCaseMaterial = (mode, gm, { roughness, metalness, envMap }) => {
+    if (mode === "cel-hard") {
+      return new THREE.MeshToonMaterial({ color: caseColor, gradientMap: gm, side: THREE.DoubleSide });
+    }
+    if (mode === "lofi-flat") {
+      return new THREE.MeshBasicMaterial({ color: caseColor, side: THREE.DoubleSide });
+    }
+    if (mode === "blueprint") {
+      return new THREE.MeshBasicMaterial({ color: caseColor, side: THREE.DoubleSide, wireframe: true });
+    }
+    if (mode === "x-ray") {
+      const opacity = resolvedCaseRS.xray.opacity;
+      return new THREE.MeshBasicMaterial({
+        color: caseColor, side: THREE.DoubleSide,
+        transparent: true, opacity,
+        wireframe: !!resolvedCaseRS.xray.wireframe,
+        depthWrite: false,
+      });
+    }
+    if (mode === "neon") {
+      return new THREE.MeshStandardMaterial({
+        color: caseColor,
+        emissive: caseColor,
+        emissiveIntensity: resolvedCaseRS.neon.emissiveIntensity,
+        roughness: resolvedCaseRS.neon.roughness,
+        metalness: resolvedCaseRS.neon.metalness,
+        side: THREE.DoubleSide,
+      });
+    }
+    return new THREE.MeshStandardMaterial({
+      color: caseColor, roughness, metalness, envMapIntensity: envMap, side: THREE.DoubleSide,
+    });
+  };
+
+  // caseProfile is in the dep list on purpose: when the user swaps profile
+  // (wedge → flat-box → chamfered etc), profileCaseGeo is a brand-new
+  // THREE.BufferGeometry. needsUpdate-style fixes keep the old material
+  // instance but apparently don't always force Three to re-link the shader
+  // program against the new geometry's attribute buffers — so we just rebuild
+  // the material from scratch. Fresh material + fresh geometry always start
+  // from a consistent state.
   const caseMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: caseColor, roughness: 0.2, metalness: 0.9, envMapIntensity: 1.0, side: THREE.DoubleSide }),
-    [caseColor]
+    () => buildCaseMaterial(casePrimary, caseGradientMap, { roughness: 0.2, metalness: 0.9, envMap: 1.0 }),
+    [casePrimary, caseGradientMap, caseColor, caseProfile]
   );
   const plateMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: caseColor, roughness: 0.35, metalness: 0.85 }),
-    [caseColor]
+    () => buildCaseMaterial(casePrimary, caseGradientMap, { roughness: 0.35, metalness: 0.85, envMap: 0.6 }),
+    [casePrimary, caseGradientMap, caseColor, caseProfile]
   );
+
+  // Case outline — for cel-hard we want a constant-thickness silhouette that
+  // doesn't blow up with the case's scale. Classic Blinn back-face trick:
+  // render the geometry again with BackSide culling and push each vertex
+  // outward along its normal by a small WORLD-space distance. Unlike a uniform
+  // matrix scale, this stays the same thickness on thin and thick parts of
+  // the case alike. onBeforeCompile patches the standard basic-material
+  // vertex shader so we don't have to ship a ShaderMaterial.
+  const caseOutlineWidth = resolvedCaseRS.cel.outlineWidth;
+  const caseOutlineActive = casePrimary === "cel-hard" && caseOutlineWidth > 0;
+  const caseOutlineMaterial = useMemo(() => {
+    if (!caseOutlineActive) return null;
+    const mat = new THREE.MeshBasicMaterial({
+      color: resolvedCaseRS.cel.outlineColor,
+      side: THREE.BackSide,
+    });
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uOutlineWidth = { value: caseOutlineWidth };
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform float uOutlineWidth;")
+        .replace(
+          "#include <begin_vertex>",
+          "#include <begin_vertex>\ntransformed += normalize(normal) * uOutlineWidth;"
+        );
+    };
+    // Tag so we can find it on re-render if we ever need to tweak the uniform
+    // without rebuilding the material.
+    mat.userData.isCaseOutline = true;
+    return mat;
+  }, [caseOutlineActive, caseOutlineWidth, resolvedCaseRS.cel.outlineColor, caseProfile]);
 
   // Update case opacity
   useEffect(() => {
@@ -419,7 +678,47 @@ const KeyboardModel = forwardRef(({
     invalidate();
   }, [opacity.case, caseMat, plateMat, invalidate]);
 
+  // ─── On geometry swap, force every material to recompile ───
+  // Two independent triggers both require the same fix:
+  //   1. Keycap layout change (75% → HHKB etc): keyCount flips, InstancedMesh
+  //      remounts with new attribute buffers.
+  //   2. Case profile change (Wedge → Flat Box etc): profileCaseGeo rebuilds,
+  //      the case mesh's geometry is swapped in-place.
+  // In both cases the cached materials stay, so their compiled WebGL programs
+  // still point at the OLD geometry/attribute layout — cel / riso / neon
+  // injections reference attributes that no longer exist at the expected
+  // slot. Flagging needsUpdate forces Three to recompile + relink each
+  // shader, and reruns onBeforeCompile so dither, outline, emissive
+  // injections realign with the current mesh.
+  useEffect(() => {
+    [regularMaterial, accentMaterial, outlineMaterial, caseMat, plateMat, caseOutlineMaterial]
+      .forEach((m) => { if (m) m.needsUpdate = true; });
+    invalidate();
+  }, [
+    keyCount, keys,
+    // Case-geometry triggers. `wedgeGeo` is declared later in the function
+    // body; watching caseProfile + profileCaseGeo + caseW/caseD is enough to
+    // catch every shape change without a TDZ reference here.
+    caseProfile, profileCaseGeo, caseW, caseD,
+    regularMaterial, accentMaterial, outlineMaterial, caseMat, plateMat, caseOutlineMaterial,
+    invalidate,
+  ]);
+
   const tilt = shellConfig.tilt || 0;
+
+  // Structural signature of the current case profile — used as a React key on
+  // the case meshes so switching profile refs fully unmounts/remounts the
+  // meshes instead of hot-swapping geometry + material via <primitive>.
+  // Material + program recompile alone wasn't enough to purge all state Three
+  // retains on a mesh (e.g. lingering compiled shader bound to the previous
+  // buffer layout, old outline pass drawing over the new profile). A key-
+  // triggered remount is the belt-and-suspenders clean room.
+  const caseProfileKey = useMemo(() => {
+    if (!caseProfile?.points) return "none";
+    const ptsSig = caseProfile.points.map((p) => `${p.x},${p.y},${p.d || 0}`).join("|");
+    const mountSig = (caseProfile.mountEdge || []).join("-");
+    return `p:${ptsSig}/m:${mountSig}`;
+  }, [caseProfile]);
   const tiltRad = (tilt * Math.PI) / 180;
 
   /*
@@ -494,22 +793,51 @@ const KeyboardModel = forwardRef(({
 
   return (
     <group>
-      {/* Case body — profile-extruded, wedge, or flat box */}
+      {/* Case body — profile-extruded, wedge, or flat box. When cel-hard is
+          active on the case scope we also render a BackSide outline pass at
+          the SAME position with the SAME geometry; the outline material
+          expands vertices along their normals, giving a constant-thickness
+          stroke on any shape. renderOrder=-1 draws it before the body so the
+          body's depth test punches out the interior. */}
       {profileCaseGeo ? (
-        <mesh position={[0, 0, caseCenterZ]}>
-          <primitive object={profileCaseGeo} attach="geometry" />
-          <primitive object={caseMat} attach="material" />
-        </mesh>
+        <React.Fragment key={`case-profile-${caseProfileKey}`}>
+          <mesh position={[0, 0, caseCenterZ]}>
+            <primitive object={profileCaseGeo} attach="geometry" />
+            <primitive object={caseMat} attach="material" />
+          </mesh>
+          {caseOutlineActive && caseOutlineMaterial && (
+            <mesh position={[0, 0, caseCenterZ]} renderOrder={-1}>
+              <primitive object={profileCaseGeo} attach="geometry" />
+              <primitive object={caseOutlineMaterial} attach="material" />
+            </mesh>
+          )}
+        </React.Fragment>
       ) : tilt > 0 && wedgeGeo ? (
-        <mesh position={[0, 0, caseCenterZ]}>
-          <primitive object={wedgeGeo} attach="geometry" />
-          <primitive object={caseMat} attach="material" />
-        </mesh>
+        <React.Fragment key={`case-wedge-${caseProfileKey}`}>
+          <mesh position={[0, 0, caseCenterZ]}>
+            <primitive object={wedgeGeo} attach="geometry" />
+            <primitive object={caseMat} attach="material" />
+          </mesh>
+          {caseOutlineActive && caseOutlineMaterial && (
+            <mesh position={[0, 0, caseCenterZ]} renderOrder={-1}>
+              <primitive object={wedgeGeo} attach="geometry" />
+              <primitive object={caseOutlineMaterial} attach="material" />
+            </mesh>
+          )}
+        </React.Fragment>
       ) : (
-        <mesh position={[0, -shellConfig.height / 2, caseCenterZ]}>
-          <roundedBoxGeometry args={[caseW, shellConfig.height, caseD, 2, shellConfig.cornerRadius]} />
-          <primitive object={caseMat} attach="material" />
-        </mesh>
+        <React.Fragment key={`case-box-${caseProfileKey}`}>
+          <mesh position={[0, -shellConfig.height / 2, caseCenterZ]}>
+            <roundedBoxGeometry args={[caseW, shellConfig.height, caseD, 2, shellConfig.cornerRadius]} />
+            <primitive object={caseMat} attach="material" />
+          </mesh>
+          {caseOutlineActive && caseOutlineMaterial && (
+            <mesh position={[0, -shellConfig.height / 2, caseCenterZ]} renderOrder={-1}>
+              <roundedBoxGeometry args={[caseW, shellConfig.height, caseD, 2, shellConfig.cornerRadius]} />
+              <primitive object={caseOutlineMaterial} attach="material" />
+            </mesh>
+          )}
+        </React.Fragment>
       )}
 
       {/* Colored edge accent strips */}
@@ -532,7 +860,7 @@ const KeyboardModel = forwardRef(({
         <instancedMesh
           ref={regularMeshRef}
           args={[geometry, regularMaterial, regularIndices.length]}
-          key={`reg-${keyCount}`}
+          key={`reg-${keyCount}-${rsPrimary}`}
           frustumCulled={false}
         />
       )}
@@ -540,8 +868,28 @@ const KeyboardModel = forwardRef(({
         <instancedMesh
           ref={accentMeshRef}
           args={[geometry, accentMaterial, accentIndices.length]}
-          key={`acc-${keyCount}`}
+          key={`acc-${keyCount}-${rsPrimary}`}
           frustumCulled={false}
+        />
+      )}
+
+      {/* Outline pass — back-face inflated silhouette, cel-hard only */}
+      {outlineActive && outlineMaterial && regularIndices.length > 0 && (
+        <instancedMesh
+          ref={regularOutlineRef}
+          args={[geometry, outlineMaterial, regularIndices.length]}
+          key={`reg-outline-${keyCount}`}
+          frustumCulled={false}
+          renderOrder={-1}
+        />
+      )}
+      {outlineActive && outlineMaterial && accentIndices.length > 0 && (
+        <instancedMesh
+          ref={accentOutlineRef}
+          args={[geometry, outlineMaterial, accentIndices.length]}
+          key={`acc-outline-${keyCount}`}
+          frustumCulled={false}
+          renderOrder={-1}
         />
       )}
 

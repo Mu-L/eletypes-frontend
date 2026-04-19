@@ -19,6 +19,7 @@ import { CHERRY_PROFILE, OEM_PROFILE, SA_PROFILE, MT3_PROFILE, KAT_PROFILE, DSA_
 import { LEGEND_PRESETS } from "../../presets/legends";
 import { DEFAULT_SHELL, SLIM_SHELL, WIDE_BEZEL_SHELL, ANGULAR_SHELL, TOP_HEAVY_SHELL } from "../shellProfile";
 import { CYBERBOARD_WEDGE_PROFILE, FLAT_BOX_PROFILE, CHAMFERED_WEDGE_PROFILE, ERGONOMIC_PROFILE } from "../../presets/profiles";
+import { RENDER_STYLE_PRESETS } from "../../presets/renderStyles";
 
 // ─── Bundled asset registry ───
 
@@ -62,6 +63,18 @@ const BUNDLED = {
   "caseProfile/flat-box@1": FLAT_BOX_PROFILE,
   "caseProfile/chamfered-wedge@1": CHAMFERED_WEDGE_PROFILE,
   "caseProfile/ergonomic@1": ERGONOMIC_PROFILE,
+
+  // Render styles — visual pipeline assets; one ref applies globally. Scope
+  // variants (renderStyle/*-keycap, etc.) can be registered here when the
+  // renderer gains per-subsystem scope in Phase 2.
+  "renderStyle/default@1":   RENDER_STYLE_PRESETS.default,
+  "renderStyle/toon@1":      RENDER_STYLE_PRESETS.toon,
+  "renderStyle/lofi@1":      RENDER_STYLE_PRESETS.lofi,
+  "renderStyle/flat@1":      RENDER_STYLE_PRESETS.flat,
+  "renderStyle/blueprint@1": RENDER_STYLE_PRESETS.blueprint,
+  "renderStyle/xray@1":      RENDER_STYLE_PRESETS.xray,
+  "renderStyle/neon@1":      RENDER_STYLE_PRESETS.neon,
+  "renderStyle/pixel@1":     RENDER_STYLE_PRESETS.pixel,
 };
 
 /**
