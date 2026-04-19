@@ -25,6 +25,7 @@ export const labTranslations = {
       "Design bundle schema for local save/export/import",
       "KLE layout import — paste raw data or drop a .json file",
       "Bento card UI — collapsible per-asset cards with Config / JSON / Doc tabs",
+      "Render-style schema (eletypes-renderStyle/1) — PBR, cel-hard toon + outline, lofi-flat; 6 named presets",
       "9 color themes including le smoking",
       "Bidirectional JSON schema editor with documentation",
       "English & Chinese localization",
@@ -35,6 +36,7 @@ export const labTranslations = {
       "[P2] Drag & drop 2D layout editor — reposition keys freely",
       "[P3] Spline & Bézier curves for case profile sculpting — smooth organic shapes, not just straight segments",
       "[P4] Eletypes typing test animation integration",
+      "[P5] More render styles — risograph (dither + channel offset), painterly, pixel, blueprint, x-ray; layer blend",
     ],
     lab_roadmap_future_items: [
       "Stickers & decals on keycaps and case",
@@ -144,6 +146,66 @@ Thanks for typing with me.`,
     lab_pos_bottom_right: "Bottom Right",
     lab_pos_top_center: "Top Center",
     lab_pos_bottom_center: "Bottom Center",
+    lab_tab_style: "Style",
+    lab_style_preset: "Preset",
+    lab_style_mode: "Mode",
+    lab_style_steps: "Steps",
+    lab_style_outline: "Outline",
+    lab_style_case_scope: "Case style",
+    lab_style_inherit: "Inherit from global",
+    lab_style_inherit_note: "This scope inherits the global style. Pick a preset above to override it.",
+    lab_style_glow: "Glow",
+    lab_scope_global: "Global",
+    lab_scope_keycap: "Keycap",
+    lab_scope_case: "Case",
+    lab_advanced: "Advanced",
+    lab_hide: "Hide",
+    lab_style_mode_note: "Overrides the preset's built-in mode. Most presets already map to a mode — leave alone unless you need a custom combo.",
+    lab_tab_viewer: "Viewer",
+    lab_viewer_bg: "Background",
+    lab_viewer_lighting: "Lighting",
+    lab_viewer_depth: "Depth",
+    lab_viewer_bg_type: "Type",
+    lab_viewer_bg_color: "Color",
+    lab_viewer_bg_top: "Top",
+    lab_viewer_bg_bottom: "Bottom",
+    lab_viewer_bg_base: "Base",
+    lab_viewer_bg_lines: "Lines",
+    lab_viewer_bg_solid: "Solid",
+    lab_viewer_bg_gradient: "Gradient",
+    lab_viewer_bg_studio: "Studio",
+    lab_viewer_bg_stars: "Stars",
+    lab_viewer_bg_grid: "Grid",
+    lab_viewer_grid_3d: "3D grid",
+    lab_viewer_grid_3d_note: "Perspective floor",
+    lab_viewer_star_count: "Star count",
+    lab_viewer_ambient: "Ambient",
+    lab_viewer_key_light: "Key light",
+    lab_viewer_fov: "FOV",
+    lab_viewer_fog: "Fog",
+    lab_viewer_shadow: "Ground shadow",
+    lab_viewer_note: "Observer-side only — not saved in the design doc.",
+    lab_doc_style: `Render Style (eletypes-renderStyle/1)
+Visual pipeline layer — orthogonal to layout / keycap / legend / shell / caseProfile.
+
+mode — Single identifier or 2-tuple for layer blend
+  pbr         Physically-based (default)
+  cel-hard    Toon shaded + back-face outline
+  lofi-flat   Unlit flat color
+  risograph   (soon) Print offset + dither
+  painterly   (soon) Brush texture
+  pixel       (soon) Resolution downsample
+  blueprint   (soon) Technical drawing
+  x-ray       (soon) Transparent wireframe
+
+cel — Toon-shading parameters
+  gradientSteps: 2–6 banded shading tiers
+  outlineWidth: 0–0.2 back-face expansion
+  outlineColor: Hex color of the outline
+  shadowColor:  Hex color of the dark band
+
+Per-key override uses _renderOverride:
+  { "id": "Space", "_renderOverride": { "cel": { "outlineColor": "#ff0000" } } }`,
 
     // JSON tabs
     lab_tab_design: "Design",
@@ -296,6 +358,7 @@ mount — Keycap placement settings:
       "设计包 Schema，支持本地保存/导出/导入",
       "KLE 布局导入 — 粘贴原始数据或拖入 .json 文件",
       "Bento 卡片 UI — 可折叠的资源卡片，各自拥有配置 / JSON / 文档 标签页",
+      "渲染风格 Schema（eletypes-renderStyle/1）—— PBR、硬切卡通 + 描边、无光照纯色；6 种预设",
       "9 种配色主题，包含 le smoking",
       "双向 JSON Schema 编辑器及文档",
       "中英文界面支持",
@@ -306,6 +369,7 @@ mount — Keycap placement settings:
       "[P2] 拖放式 2D 布局编辑器 — 自由移动按键",
       "[P3] 外壳轮廓支持样条曲线和贝塞尔曲线 — 流畅的有机造型，不再局限于直线段",
       "[P4] Eletypes 打字测试动画集成",
+      "[P5] 更多渲染风格 — Risograph（抖动 + 通道错位）、笔触、像素、工程图纸、透视线框；图层混合",
     ],
     lab_roadmap_future_items: [
       "贴纸与键帽/外壳装饰",
@@ -414,6 +478,66 @@ mount — Keycap placement settings:
     lab_pos_bottom_right: "右下",
     lab_pos_top_center: "上中",
     lab_pos_bottom_center: "下中",
+    lab_tab_style: "渲染风格",
+    lab_style_preset: "预设",
+    lab_style_mode: "模式",
+    lab_style_steps: "阶梯数",
+    lab_style_outline: "描边",
+    lab_style_case_scope: "外壳风格",
+    lab_style_inherit: "继承全局",
+    lab_style_inherit_note: "当前作用域继承全局风格。在上方选择预设以覆盖。",
+    lab_style_glow: "辉光",
+    lab_scope_global: "全局",
+    lab_scope_keycap: "键帽",
+    lab_scope_case: "外壳",
+    lab_advanced: "高级",
+    lab_hide: "隐藏",
+    lab_style_mode_note: "覆盖预设内置的模式。绝大多数预设已与模式一一对应 —— 除非需要自定义组合，否则无需调整。",
+    lab_tab_viewer: "取景器",
+    lab_viewer_bg: "背景",
+    lab_viewer_lighting: "灯光",
+    lab_viewer_depth: "景深",
+    lab_viewer_bg_type: "类型",
+    lab_viewer_bg_color: "颜色",
+    lab_viewer_bg_top: "顶色",
+    lab_viewer_bg_bottom: "底色",
+    lab_viewer_bg_base: "底色",
+    lab_viewer_bg_lines: "线色",
+    lab_viewer_bg_solid: "纯色",
+    lab_viewer_bg_gradient: "渐变",
+    lab_viewer_bg_studio: "影棚",
+    lab_viewer_bg_stars: "星空",
+    lab_viewer_bg_grid: "网格",
+    lab_viewer_grid_3d: "3D 网格",
+    lab_viewer_grid_3d_note: "透视地面",
+    lab_viewer_star_count: "星星数量",
+    lab_viewer_ambient: "环境光",
+    lab_viewer_key_light: "主光源",
+    lab_viewer_fov: "视角",
+    lab_viewer_fog: "雾",
+    lab_viewer_shadow: "接地阴影",
+    lab_viewer_note: "仅影响观察视角 —— 不会写入设计文件。",
+    lab_doc_style: `渲染风格（eletypes-renderStyle/1）
+视觉管线层 —— 与布局 / 键帽 / 字符 / 外壳 / 外壳剖面 正交。
+
+mode —— 单个标识符，或 2 元组用于图层混合
+  pbr         真实感 PBR（默认）
+  cel-hard    硬切卡通 + 背面描边
+  lofi-flat   无光照纯色
+  risograph   （即将）印刷错位 + 噪点抖动
+  painterly   （即将）笔触纹理
+  pixel       （即将）像素降采样
+  blueprint   （即将）工程图纸
+  x-ray       （即将）透视线框
+
+cel —— 卡通渲染参数
+  gradientSteps: 2–6 阶明暗分段
+  outlineWidth: 0–0.2 背面膨胀
+  outlineColor: 描边颜色（HEX）
+  shadowColor:  阴影色（HEX）
+
+按键级覆盖使用 _renderOverride：
+  { "id": "Space", "_renderOverride": { "cel": { "outlineColor": "#ff0000" } } }`,
 
     // JSON tabs
     lab_tab_design: "设计",

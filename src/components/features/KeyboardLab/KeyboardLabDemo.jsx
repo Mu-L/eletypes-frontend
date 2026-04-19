@@ -18,6 +18,8 @@ import { saveDesign, loadDesign, listDesigns, deleteDesign, exportDesignJSON, im
 import { importKleLayout } from "./services/kleImporter";
 import { getKeycapPreset } from "./presets/keycaps";
 import { getLegendPreset } from "./presets/legends";
+import { RENDER_STYLE_PRESETS } from "./presets/renderStyles";
+import { RENDER_MODES, IMPLEMENTED_MODES } from "./schema/types/renderStyle";
 import { useLabTranslation } from "./i18n/useLabTranslation";
 import useSound from "use-sound";
 import { SOUND_MAP } from "../sound/sound";
@@ -27,6 +29,7 @@ const KEYCAP_REFS = listBundledByType("keycap");
 const LEGEND_REFS = listBundledByType("legend");
 const SHELL_REFS = listBundledByType("shell");
 const CASE_PROFILE_REFS = listBundledByType("caseProfile");
+const RENDER_STYLE_REFS = listBundledByType("renderStyle");
 
 const KEYCAP_ID_TO_REF = {
   "cherry-profile": "keycap/cherry-classic@1", "oem-profile": "keycap/oem-classic@1",
@@ -62,6 +65,7 @@ const DEFAULTS = {
   legendRef: "legend/gmk-center@1",
   shellRef: "shell/standard@1",
   caseProfileRef: "caseProfile/cyberboard-wedge@1",
+  renderStyleRef: "renderStyle/default@1",
   colorPreset: "le smoking",
   mountOffset: { x: 0.1, y: 0, z: 0.7 },
   mountFit: 0.85,
@@ -95,6 +99,7 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const [cardTabs, setCardTabs] = useState({
     Design: "config", Layout: "config", Shell: "config",
     Keycap: "config", Legend: "config", CaseProfile: "config",
+    Style: "config", Viewer: "config",
   });
   const [collapsed, setCollapsed] = useState({});
   const setCardTab = useCallback((card, tab) => setCardTabs(s => ({ ...s, [card]: tab })), []);
@@ -109,6 +114,38 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const [mountOffset, setMountOffset] = useState({ x: 0.1, y: 0, z: 0.7 });
   const [mountFit, setMountFit] = useState(0.85);
   const [extrudeWidth, setExtrudeWidth] = useState(0.9);
+  // Render style follows the same flat ref + override pattern as every other
+  // asset: refs.renderStyle points at an asset in the bundled registry,
+  // overrides.renderStyle patches resolved fields. Scope-specific refs
+  // (renderStyleCase) are independent sibling keys at the same flat level —
+  // null means "inherit the global ref" at resolve time.
+  const [renderStyleRef, setRenderStyleRef] = useState("renderStyle/default@1");
+  const [renderStyleOverrides, setRenderStyleOverrides] = useState({});
+  const [resolvedRenderStyle, setResolvedRenderStyle] = useState(null);
+  const [renderStyleKeycapRef, setRenderStyleKeycapRef] = useState(null); // null = inherit global
+  const [renderStyleKeycapOverrides, setRenderStyleKeycapOverrides] = useState({});
+  const [resolvedRenderStyleKeycap, setResolvedRenderStyleKeycap] = useState(null);
+  const [renderStyleCaseRef, setRenderStyleCaseRef] = useState(null); // null = inherit global
+  const [renderStyleCaseOverrides, setRenderStyleCaseOverrides] = useState({});
+  const [resolvedRenderStyleCase, setResolvedRenderStyleCase] = useState(null);
+  const [styleScope, setStyleScope] = useState("global"); // UI-only — active sub-tab
+  const [styleAdvancedOpen, setStyleAdvancedOpen] = useState(false); // show raw mode override
+
+  // Viewer configurator — observer-side only, never persisted in the design
+  // doc. Affects how the user perceives the scene (background, light level);
+  // does NOT ship with a keyboard.
+  const [viewerBgType, setViewerBgType] = useState("solid"); // solid | gradient | studio | stars
+  const [viewerBg, setViewerBg] = useState("#111115");
+  const [viewerBg2, setViewerBg2] = useState("#1a1a2e");     // second stop for gradient/studio
+  const [viewerAmbient, setViewerAmbient] = useState(0.35);
+  const [viewerKey, setViewerKey] = useState(0.9);
+  // Depth / atmosphere controls
+  const [viewerFov, setViewerFov] = useState(40);          // 20 (long lens) – 70 (wide)
+  const [viewerFog, setViewerFog] = useState(0);           // 0 disables fog; otherwise density
+  const [viewerShadow, setViewerShadow] = useState(0.25);  // 0 disables; else opacity of ground shadow
+  // Background variant options
+  const [viewerGrid3D, setViewerGrid3D] = useState(false); // when bg type is "grid": render a 3D grid inside the scene instead of a flat CSS one
+  const [viewerStarCount, setViewerStarCount] = useState(6); // density of stars bg
   const isDragging = useRef(false);
 
   // Resolve assets
@@ -121,6 +158,39 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   useEffect(() => { bundledResolver(shellRef).then(setShell).catch(() => {}); }, [shellRef]);
   useEffect(() => { bundledResolver(keycapRef).then(setResolvedKeycap).catch(() => {}); }, [keycapRef]);
   useEffect(() => { bundledResolver(legendRef).then(setResolvedLegend).catch(() => {}); }, [legendRef]);
+
+  // Resolve renderStyle ref + merge overrides. Fields in renderStyleOverrides
+  // patch the corresponding sub-sections (cel / flat / risograph / …) on the
+  // resolved asset; `mode` at override root replaces the asset's mode.
+  const resolveRenderStyleEffect = (ref, overrides, setter) => {
+    bundledResolver(ref).then((asset) => {
+      const merged = { ...asset };
+      for (const section of ["cel", "flat", "risograph", "blueprint", "pixel", "painterly", "xray"]) {
+        if (overrides[section]) {
+          merged[section] = { ...(asset[section] || {}), ...overrides[section] };
+        }
+      }
+      if (overrides.mode) merged.mode = overrides.mode;
+      setter(merged);
+    }).catch(() => setter(null));
+  };
+  useEffect(() => {
+    resolveRenderStyleEffect(renderStyleRef, renderStyleOverrides, setResolvedRenderStyle);
+  }, [renderStyleRef, renderStyleOverrides]);
+  // Scope-specific resolvers: only run when a scoped ref is actually set.
+  // When unset we pass null and KeyboardModel / this component fall back to
+  // the global style.
+  useEffect(() => {
+    if (!renderStyleKeycapRef) { setResolvedRenderStyleKeycap(null); return; }
+    resolveRenderStyleEffect(renderStyleKeycapRef, renderStyleKeycapOverrides, setResolvedRenderStyleKeycap);
+  }, [renderStyleKeycapRef, renderStyleKeycapOverrides]);
+  useEffect(() => {
+    if (!renderStyleCaseRef) { setResolvedRenderStyleCase(null); return; }
+    resolveRenderStyleEffect(renderStyleCaseRef, renderStyleCaseOverrides, setResolvedRenderStyleCase);
+  }, [renderStyleCaseRef, renderStyleCaseOverrides]);
+  // The effective keycap style: prefer the scoped override, else inherit from
+  // the global renderStyle ref.
+  const effectiveKeycapRenderStyle = resolvedRenderStyleKeycap || resolvedRenderStyle;
   useEffect(() => {
     bundledResolver(caseProfileRef).then((p) => {
       if (p.caseProfile) setCaseProfile(p.caseProfile);
@@ -155,12 +225,14 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const currentDesign = useMemo(() => {
     const d = designFromSelections({
       name: designName, layoutRef, keycapRef, legendRef, shellRef, caseProfileRef,
+      renderStyleRef, renderStyleKeycapRef, renderStyleCaseRef,
       colorOverrides: colors, opacityOverrides: opacity, legendOverrides,
+      renderStyleOverrides, renderStyleKeycapOverrides, renderStyleCaseOverrides,
     });
     d.id = designId;
     delete d.meta.createdAt;
     return d;
-  }, [designId, designName, layoutRef, keycapRef, legendRef, shellRef, caseProfileRef, colors, opacity, legendOverrides]);
+  }, [designId, designName, layoutRef, keycapRef, legendRef, shellRef, caseProfileRef, renderStyleRef, renderStyleKeycapRef, renderStyleCaseRef, colors, opacity, legendOverrides, renderStyleOverrides, renderStyleKeycapOverrides, renderStyleCaseOverrides]);
 
   const [loadedDesignId, setLoadedDesignId] = useState("");
   const [savedMenuOpen, setSavedMenuOpen] = useState(false);
@@ -190,6 +262,12 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
     setLegendRef(refs.legend || DEFAULTS.legendRef);
     setShellRef(refs.shell || DEFAULTS.shellRef);
     setCaseProfileRef(refs.caseProfile || refs.profile || DEFAULTS.caseProfileRef);
+    setRenderStyleRef(refs.renderStyle || "renderStyle/default@1");
+    setRenderStyleOverrides(d.overrides?.renderStyle || {});
+    setRenderStyleKeycapRef(refs.renderStyleKeycap || null);
+    setRenderStyleKeycapOverrides(d.overrides?.renderStyleKeycap || {});
+    setRenderStyleCaseRef(refs.renderStyleCase || null);
+    setRenderStyleCaseOverrides(d.overrides?.renderStyleCase || {});
 
     // Visual + opacity (opacity is sibling of visual in new format, nested in old)
     setColors(d.overrides?.visual || COLOR_PRESETS.midnight);
@@ -377,6 +455,7 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const caseProfileJson = useMemo(() =>
     JSON.stringify({ caseProfile, mount: { offset: mountOffset, fit: mountFit, caseScale, extrudeWidth } }, null, 2),
   [caseProfile, mountOffset, mountFit, caseScale, extrudeWidth]);
+  const renderStyleJson = useMemo(() => resolvedRenderStyle ? JSON.stringify(resolvedRenderStyle, null, 2) : "{}", [resolvedRenderStyle]);
 
   const handleJsonChange = useCallback((value, tabType) => {
     try {
@@ -389,9 +468,15 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
         if (refs?.legend) { setLegendRef(refs.legend); setLegendOverrides({}); }
         if (refs?.shell) setShellRef(refs.shell);
         if (refs?.caseProfile) setCaseProfileRef(refs.caseProfile);
+        if (refs?.renderStyle) setRenderStyleRef(refs.renderStyle);
+        if ("renderStyleKeycap" in (refs || {})) setRenderStyleKeycapRef(refs.renderStyleKeycap || null);
+        if ("renderStyleCase" in (refs || {})) setRenderStyleCaseRef(refs.renderStyleCase || null);
         if (parsed.overrides?.visual) setColors(parsed.overrides.visual);
         if (parsed.overrides?.opacity) setOpacity(o => ({ ...o, ...parsed.overrides.opacity }));
         if (parsed.overrides?.legend) setLegendOverrides(parsed.overrides.legend);
+        if (parsed.overrides?.renderStyle) setRenderStyleOverrides(parsed.overrides.renderStyle);
+        if (parsed.overrides?.renderStyleKeycap) setRenderStyleKeycapOverrides(parsed.overrides.renderStyleKeycap);
+        if (parsed.overrides?.renderStyleCase) setRenderStyleCaseOverrides(parsed.overrides.renderStyleCase);
       } else if (tabType === "Layout") {
         if (parsed.layout?.keys) setLayout({ ...parsed });
         else if (Array.isArray(parsed.keys)) setLayout(prev => ({ ...prev, layout: { keys: parsed.keys } }));
@@ -408,6 +493,14 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
           if (parsed.mount.fit != null) setMountFit(parsed.mount.fit);
           if (parsed.mount.caseScale != null) setCaseScale(parsed.mount.caseScale);
           if (parsed.mount.extrudeWidth != null) setExtrudeWidth(parsed.mount.extrudeWidth);
+        }
+      } else if (tabType === "Style") {
+        // The Style JSON tab shows the RESOLVED asset. On edit we store the
+        // whole parsed body as the override so user tweaks survive subsequent
+        // ref changes until they explicitly pick another preset.
+        if (parsed && typeof parsed === "object") {
+          const { schema, id, meta, ...rest } = parsed;
+          setRenderStyleOverrides(rest);
         }
       }
     } catch { /* invalid JSON, ignore until valid */ }
@@ -564,7 +657,17 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
           <KeyboardLab ref={keyboardRef} layout={layout} shell={shell} keycapPreset={keycapPreset}
             keycapColor={colors.keycapColor} accentKeyColor={colors.accentKeyColor} caseColor={colors.caseColor}
             opacity={opacity} legendPreset={legendPreset} caseProfile={caseProfile} caseScale={caseScale}
-            mountOffset={mountOffset} mountFit={mountFit} extrudeWidth={extrudeWidth} />
+            mountOffset={mountOffset} mountFit={mountFit} extrudeWidth={extrudeWidth}
+            renderStyle={effectiveKeycapRenderStyle} renderStyleCase={resolvedRenderStyleCase}
+            backgroundColor={viewerBg} ambientIntensity={viewerAmbient} keyIntensity={viewerKey}
+            viewerBgType={viewerBgType} viewerBg2={viewerBg2}
+            fov={viewerFov} fogDensity={viewerFog} shadowOpacity={viewerShadow}
+            grid3D={viewerGrid3D} starCount={viewerStarCount}
+            onViewerChange={{
+              setViewerBg, setViewerBg2, setViewerBgType, setViewerAmbient, setViewerKey,
+              setViewerFov, setViewerFog, setViewerShadow,
+              setViewerGrid3D, setViewerStarCount,
+            }} />
         </div>
 
         {/* Drag handle */}
@@ -607,6 +710,7 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
                           {[
                             ["layout", layoutRef], ["shell", shellRef], ["keycap", keycapRef],
                             ["legend", legendRef], ["caseProfile", caseProfileRef],
+                            ["renderStyle", renderStyleRef],
                           ].map(([k, v]) => (
                             <React.Fragment key={k}>
                               <span style={{ color: `${text}77` }}>{k}</span>
@@ -910,6 +1014,171 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
                 </div>
               )}
             </div>
+
+            {/* ── Style card (eletypes-renderStyle/1) ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Style", tLab("lab_tab_style"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Style && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Style === "config" && (() => {
+                    // Scope sub-tabs: one consistent control surface driven by
+                    // { ref, overrides, resolved, setRef, setOverrides }.
+                    // Scoped tabs (keycap / case) accept null ref to inherit
+                    // the global style; that's expressed as "" in the <select>.
+                    const scopes = [
+                      { id: "global", label: tLab("lab_scope_global"),
+                        ref: renderStyleRef, resolved: resolvedRenderStyle, overrides: renderStyleOverrides,
+                        setRef: setRenderStyleRef, setOverrides: setRenderStyleOverrides, allowInherit: false },
+                      { id: "keycap", label: tLab("lab_scope_keycap"),
+                        ref: renderStyleKeycapRef || "", resolved: resolvedRenderStyleKeycap, overrides: renderStyleKeycapOverrides,
+                        setRef: (v) => { setRenderStyleKeycapRef(v || null); setRenderStyleKeycapOverrides({}); },
+                        setOverrides: setRenderStyleKeycapOverrides, allowInherit: true },
+                      { id: "case", label: tLab("lab_scope_case"),
+                        ref: renderStyleCaseRef || "", resolved: resolvedRenderStyleCase, overrides: renderStyleCaseOverrides,
+                        setRef: (v) => { setRenderStyleCaseRef(v || null); setRenderStyleCaseOverrides({}); },
+                        setOverrides: setRenderStyleCaseOverrides, allowInherit: true },
+                    ];
+                    const active = scopes.find((s) => s.id === styleScope) || scopes[0];
+                    const hasScope = active.id === "global" || !!active.ref;
+                    const resolved = active.resolved;
+                    const primary = resolved ? (Array.isArray(resolved.mode) ? resolved.mode[0] : resolved.mode) : null;
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div style={{ display: "flex", gap: "4px", borderBottom: `1px solid ${text}10`, paddingBottom: "4px" }}>
+                          {scopes.map((s) => {
+                            const isActive = s.id === styleScope;
+                            const inherits = s.id !== "global" && !s.ref;
+                            return (
+                              <button key={s.id} onClick={() => setStyleScope(s.id)}
+                                style={{
+                                  background: isActive ? `${accent}22` : "transparent",
+                                  border: `1px solid ${isActive ? accent : text+"22"}`,
+                                  borderRadius: "4px", color: isActive ? accent : `${text}99`,
+                                  padding: "3px 10px", cursor: "pointer", fontSize: "12px",
+                                  fontFamily: "inherit",
+                                }}>
+                                {s.label}{inherits ? " ·" : ""}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div style={fieldRowStyle}>
+                          <span style={fieldLabel}>{tLab("lab_style_preset")}</span>
+                          <select value={active.ref}
+                            onChange={(e) => active.setRef(e.target.value)}
+                            style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                            {active.allowInherit && <option value="">{tLab("lab_style_inherit")}</option>}
+                            {RENDER_STYLE_REFS.map((a) => {
+                              const preset = RENDER_STYLE_PRESETS[a.ref.split("/")[1].split("@")[0]];
+                              const p = Array.isArray(preset?.mode) ? preset.mode[0] : preset?.mode;
+                              return (
+                                <option key={a.ref} value={a.ref}>
+                                  {a.name}{p && !IMPLEMENTED_MODES.has(p) ? " — soon" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                        {hasScope && resolved && (
+                          <div style={{ ...fieldRowStyle, marginTop: "-4px" }}>
+                            <span style={fieldLabel}>{tLab("lab_style_mode")}</span>
+                            <span style={{ flex: 1, color: accent, fontFamily: "monospace", fontSize: "12px" }}>
+                              {primary || "pbr"}
+                            </span>
+                            <button onClick={() => setStyleAdvancedOpen((o) => !o)}
+                              style={{
+                                background: "transparent", border: "none",
+                                color: `${text}88`, cursor: "pointer",
+                                fontSize: "11px", padding: "2px 4px",
+                                textDecoration: "underline", fontFamily: "inherit",
+                              }}>
+                              {styleAdvancedOpen ? tLab("lab_hide") : tLab("lab_advanced")}
+                            </button>
+                          </div>
+                        )}
+                        {hasScope && resolved && styleAdvancedOpen && (
+                          <div style={fieldRowStyle}>
+                            <span style={fieldLabel}>{tLab("lab_style_mode")}</span>
+                            <select value={primary || "pbr"}
+                              onChange={(e) => active.setOverrides((o) => ({ ...o, mode: e.target.value }))}
+                              style={{ ...sel, minWidth: "160px" }}>
+                              {RENDER_MODES.map((m) => (
+                                <option key={m} value={m}>
+                                  {m}{!IMPLEMENTED_MODES.has(m) ? " — soon" : ""}
+                                </option>
+                              ))}
+                            </select>
+                            <span style={{ fontSize: "10px", color: `${text}55`, fontStyle: "italic" }}>
+                              {tLab("lab_style_mode_note")}
+                            </span>
+                          </div>
+                        )}
+                        {hasScope && resolved && primary === "cel-hard" && (
+                          <div style={fieldRowStyle}>
+                            <span style={fieldLabel}>{tLab("lab_style_steps")}</span>
+                            <input type="number" min="2" max="6" step="1"
+                              value={resolved.cel?.gradientSteps ?? 3}
+                              onChange={(e) => {
+                                const v = Math.max(2, Math.min(6, parseInt(e.target.value) || 3));
+                                active.setOverrides((o) => ({ ...o, cel: { ...(o.cel || {}), gradientSteps: v } }));
+                              }}
+                              style={numInput} />
+                            <span style={{ ...fieldLabel, minWidth: "auto" }}>{tLab("lab_style_outline")}</span>
+                            <input type="number" min="0" max="0.2" step="0.005"
+                              value={(resolved.cel?.outlineWidth ?? 0.03).toFixed(3)}
+                              onChange={(e) => {
+                                const v = Math.max(0, Math.min(0.2, parseFloat(e.target.value) || 0));
+                                active.setOverrides((o) => ({ ...o, cel: { ...(o.cel || {}), outlineWidth: v } }));
+                              }}
+                              style={numInput} />
+                            <input type="color" value={resolved.cel?.outlineColor || "#1a1a1a"}
+                              onChange={(e) => active.setOverrides((o) => ({ ...o, cel: { ...(o.cel || {}), outlineColor: e.target.value } }))}
+                              title={tLab("lab_color")}
+                              style={{ width: "28px", height: "28px", border: `1px solid ${text}33`, borderRadius: "4px", cursor: "pointer", background: "transparent", padding: 0 }} />
+                          </div>
+                        )}
+                        {hasScope && resolved && primary === "x-ray" && (
+                          <div style={fieldRowStyle}>
+                            <span style={fieldLabel}>{tLab("lab_opacity")}</span>
+                            <input type="number" min="0.05" max="0.95" step="0.05"
+                              value={(resolved.xray?.opacity ?? 0.25).toFixed(2)}
+                              onChange={(e) => {
+                                const v = Math.max(0.05, Math.min(0.95, parseFloat(e.target.value) || 0.25));
+                                active.setOverrides((o) => ({ ...o, xray: { ...(o.xray || {}), opacity: v } }));
+                              }}
+                              style={numInput} />
+                          </div>
+                        )}
+                        {hasScope && resolved && primary === "neon" && (
+                          <div style={fieldRowStyle}>
+                            <span style={fieldLabel}>{tLab("lab_style_glow")}</span>
+                            <input type="number" min="0" max="3" step="0.05"
+                              value={(resolved.neon?.emissiveIntensity ?? 1.4).toFixed(2)}
+                              onChange={(e) => {
+                                const v = Math.max(0, Math.min(3, parseFloat(e.target.value) || 1.4));
+                                active.setOverrides((o) => ({ ...o, neon: { ...(o.neon || {}), emissiveIntensity: v } }));
+                              }}
+                              style={numInput} />
+                          </div>
+                        )}
+                        {!hasScope && (
+                          <div style={{ fontSize: "12px", color: `${text}66`, fontStyle: "italic" }}>
+                            {tLab("lab_style_inherit_note")}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {cardTabs.Style === "json" && renderJsonPane(renderStyleJson, "Style", "220px")}
+                  {cardTabs.Style === "doc" && renderDocPane("lab_doc_style")}
+                </div>
+              )}
+            </div>
+
 
           </div>
         </div>

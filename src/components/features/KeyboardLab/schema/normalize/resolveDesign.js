@@ -72,9 +72,15 @@ export function designFromSelections({
   legendRef,
   shellRef,
   caseProfileRef,
+  renderStyleRef,
+  renderStyleKeycapRef,
+  renderStyleCaseRef,
   colorOverrides,
   opacityOverrides,
   legendOverrides,
+  renderStyleOverrides,
+  renderStyleKeycapOverrides,
+  renderStyleCaseOverrides,
   keyOverrides,
 }) {
   const now = new Date().toISOString();
@@ -98,6 +104,13 @@ export function designFromSelections({
   if (legendRef) design.refs.legend = legendRef;
   if (shellRef) design.refs.shell = shellRef;
   if (caseProfileRef) design.refs.caseProfile = caseProfileRef;
+  // renderStyle is a normal ref at the same flat level. Omit when it's the
+  // implicit default (renderStyle/default@1 ≡ plain PBR) to keep the JSON tidy.
+  if (renderStyleRef && renderStyleRef !== "renderStyle/default@1") design.refs.renderStyle = renderStyleRef;
+  // Scope-specific renderStyle — stays at the same flat level as the global
+  // one. Omit when empty/null (falls back to the global ref at resolve time).
+  if (renderStyleKeycapRef) design.refs.renderStyleKeycap = renderStyleKeycapRef;
+  if (renderStyleCaseRef) design.refs.renderStyleCase = renderStyleCaseRef;
 
   const overrides = {};
 
@@ -111,6 +124,9 @@ export function designFromSelections({
   if (opacityOverrides) overrides.opacity = opacityOverrides;
 
   if (legendOverrides && Object.keys(legendOverrides).length > 0) overrides.legend = legendOverrides;
+  if (renderStyleOverrides && Object.keys(renderStyleOverrides).length > 0) overrides.renderStyle = renderStyleOverrides;
+  if (renderStyleKeycapOverrides && Object.keys(renderStyleKeycapOverrides).length > 0) overrides.renderStyleKeycap = renderStyleKeycapOverrides;
+  if (renderStyleCaseOverrides && Object.keys(renderStyleCaseOverrides).length > 0) overrides.renderStyleCase = renderStyleCaseOverrides;
   if (keyOverrides && Object.keys(keyOverrides).length > 0) overrides.keys = keyOverrides;
 
   if (Object.keys(overrides).length > 0) design.overrides = overrides;

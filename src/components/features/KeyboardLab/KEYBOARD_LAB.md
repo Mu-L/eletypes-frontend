@@ -4,7 +4,7 @@
 
 ---
 
-## 1. Schemas (7 Layers)
+## 1. Schemas (8 Layers)
 
 ### Persisted Asset Schemas
 | Schema | Version | Purpose |
@@ -15,7 +15,8 @@
 | `eletypes-visual/1` | Stable | Visual: colors, materials, per-key color overrides |
 | `eletypes-shell/1` | Stable | Shell: case geometry, padding, corner radius |
 | `eletypes-caseProfile/1` | Stable | Case profile: 2D cross-section, mount settings, colored edges |
-| `eletypes-design/1` | Stable | Composition: asset refs + overrides (orchestrator doc) |
+| `eletypes-renderStyle/1` | Beta | Render style: material pipeline — PBR / cel-hard / lofi-flat / riso / … |
+| `eletypes-design/1` | Stable | Composition: asset refs + overrides + renderStyle (orchestrator) |
 
 ### Persistence Layer
 | Format | Purpose |
@@ -116,6 +117,14 @@ e.g., "layout/cyberboard-75-ansi@1", "caseProfile/cyberboard-wedge@1"
 - **Per-vertex inset**: narrow case width at specific vertices for chamfers/bevels
 - **Mount controls**: 3-axis offset, fit ratio, case scale
 - **Extrusion width**: text input with 1% precision, labeled "symmetric ←→"
+
+### Render Style *(new, beta — eletypes-renderStyle/1)*
+- **Pluggable material pipeline** — switch the whole keyboard's look without touching layout / keycaps / colors / legends
+- **Modes**: `pbr` (default), `cel-hard` (toon + outline), `lofi-flat` (unlit flat color); scaffold for `risograph`, `painterly`, `pixel`, `blueprint`, `x-ray`, and layer blend `[mode, mode]`
+- **cel-hard**: `MeshToonMaterial` with a per-step `DataTexture` gradient map; outline via BackSide scaled InstancedMesh (no shader surgery needed)
+- **Per-key override** via `_renderOverride` (follows the `_` prefix convention — skipped when exporting to KLE/QMK)
+- **Parser** (`schema/types/renderStyle.js` → `resolveRenderStyle`) clamps every parameter to safe bounds and falls back to PBR for unimplemented modes
+- **6 named presets** — `default`, `toon`, `lofi`, `flat`, `blueprint`, `pixel` — in `presets/renderStyles.js`
 
 ### Key Legends (3D Text)
 - Troika SDF text rendered inside KeyboardModel
@@ -219,6 +228,7 @@ KeyboardLab/
 │   │   ├── shell.js                   ← eletypes-shell/1
 │   │   ├── design.js                  ← eletypes-design/1 + eletypes-design-bundle/1
 │   │   ├── profile.js                 ← eletypes-caseProfile/1
+│   │   ├── renderStyle.js             ← eletypes-renderStyle/1 + resolveRenderStyle
 │   │   └── normalized.js
 │   ├── validation/
 │   │   └── validate.js
@@ -239,7 +249,8 @@ KeyboardLab/
 │   ├── layoutFullSize.js              ← Full-size 100% ANSI (104 keys)
 │   ├── keycaps.js                     ← Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
 │   ├── legends.js                     ← GMK, Minimal, Retro, Top Print, Cyber, Blank
-│   └── profiles.js                    ← Cyberboard Wedge, Flat Box, Chamfered Wedge, Ergonomic
+│   ├── profiles.js                    ← Cyberboard Wedge, Flat Box, Chamfered Wedge, Ergonomic
+│   └── renderStyles.js                ← default/toon/lofi/flat/blueprint/pixel render presets
 ├── CaseEditor/
 │   ├── CaseProfileEditor.jsx          ← SVG 2D profile editor + edge accents
 │   └── extrudeProfile.js             ← 2D→3D extrusion + mount surface + edge strips
@@ -297,6 +308,7 @@ Shared components:
 - [ ] [P2] Drag & drop 2D layout editor — reposition keys freely
 - [ ] [P3] Spline & Bézier curves for case profile sculpting — smooth organic shapes
 - [ ] [P4] Eletypes typing test animation integration
+- [ ] [P5] Render-style pipeline expansion — risograph (dither + channel offset), painterly, pixel, blueprint, x-ray; layer blend via two-pass compositor
 
 ### On the Horizon
 - [ ] Stickers & decals on keycaps and case
