@@ -116,7 +116,7 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
  - Full EN/ZH localization
  - See [KEYBOARD_LAB.md](src/components/features/KeyboardLab/KEYBOARD_LAB.md) for full documentation
 
- <img width="800" height="400" alt="image" src="https://github.com/user-attachments/assets/612200a5-9f06-4480-95ca-636c3da03a85" />
+<img width="1200" height="600" alt="image" src="https://github.com/user-attachments/assets/0ab9989a-260a-4b63-95be-b994f3a0b493" />
 
 
 #### 6. QWERTY Keyboard touch-typing trainer 
