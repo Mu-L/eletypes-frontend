@@ -717,8 +717,13 @@ const KeyboardModel = forwardRef(({
     if (!caseProfile?.points) return "none";
     const ptsSig = caseProfile.points.map((p) => `${p.x},${p.y},${p.d || 0}`).join("|");
     const mountSig = (caseProfile.mountEdge || []).join("-");
-    return `p:${ptsSig}/m:${mountSig}`;
-  }, [caseProfile]);
+    // caseW / caseD are derived from layout bounds + shell padding, so
+    // switching the keycap layout (e.g. full-size → HHKB 60%) shrinks the
+    // case even though the profile doc is unchanged. Including them in the
+    // signature forces the case Fragment to remount on layout swaps too,
+    // killing any outline/shader that was still bound to the old dimensions.
+    return `p:${ptsSig}/m:${mountSig}/w:${caseW.toFixed(2)}/d:${caseD.toFixed(2)}`;
+  }, [caseProfile, caseW, caseD]);
   const tiltRad = (tilt * Math.PI) / 180;
 
   /*
@@ -855,43 +860,46 @@ const KeyboardModel = forwardRef(({
         </mesh>
       ))}
 
-      {/* Instanced keycaps — split into regular + accent for per-group opacity */}
-      {regularIndices.length > 0 && (
-        <instancedMesh
-          ref={regularMeshRef}
-          args={[geometry, regularMaterial, regularIndices.length]}
-          key={`reg-${keyCount}-${rsPrimary}`}
-          frustumCulled={false}
-        />
-      )}
-      {accentIndices.length > 0 && (
-        <instancedMesh
-          ref={accentMeshRef}
-          args={[geometry, accentMaterial, accentIndices.length]}
-          key={`acc-${keyCount}-${rsPrimary}`}
-          frustumCulled={false}
-        />
-      )}
-
-      {/* Outline pass — back-face inflated silhouette, cel-hard only */}
-      {outlineActive && outlineMaterial && regularIndices.length > 0 && (
-        <instancedMesh
-          ref={regularOutlineRef}
-          args={[geometry, outlineMaterial, regularIndices.length]}
-          key={`reg-outline-${keyCount}`}
-          frustumCulled={false}
-          renderOrder={-1}
-        />
-      )}
-      {outlineActive && outlineMaterial && accentIndices.length > 0 && (
-        <instancedMesh
-          ref={accentOutlineRef}
-          args={[geometry, outlineMaterial, accentIndices.length]}
-          key={`acc-outline-${keyCount}`}
-          frustumCulled={false}
-          renderOrder={-1}
-        />
-      )}
+      {/* Instanced keycaps — split into regular + accent for per-group opacity.
+          All four meshes (regular, accent, regular outline, accent outline)
+          are wrapped in a single React.Fragment keyed on the layout signature
+          so they unmount/remount atomically on layout or mode swap. Relying
+          on per-child keys alone meant sibling reconciliation could leave the
+          old outline pair visible for a frame while the new keycap pair
+          mounted (or vice versa) — same class of stale-mesh bug the case
+          profile had before the Fragment-key fix. */}
+      <React.Fragment key={`keycaps-${keyCount}-${rsPrimary}`}>
+        {regularIndices.length > 0 && (
+          <instancedMesh
+            ref={regularMeshRef}
+            args={[geometry, regularMaterial, regularIndices.length]}
+            frustumCulled={false}
+          />
+        )}
+        {accentIndices.length > 0 && (
+          <instancedMesh
+            ref={accentMeshRef}
+            args={[geometry, accentMaterial, accentIndices.length]}
+            frustumCulled={false}
+          />
+        )}
+        {outlineActive && outlineMaterial && regularIndices.length > 0 && (
+          <instancedMesh
+            ref={regularOutlineRef}
+            args={[geometry, outlineMaterial, regularIndices.length]}
+            frustumCulled={false}
+            renderOrder={-1}
+          />
+        )}
+        {outlineActive && outlineMaterial && accentIndices.length > 0 && (
+          <instancedMesh
+            ref={accentOutlineRef}
+            args={[geometry, outlineMaterial, accentIndices.length]}
+            frustumCulled={false}
+            renderOrder={-1}
+          />
+        )}
+      </React.Fragment>
 
       {/* Key legends — rendered here so they have direct access to restPositions.
           Legend position ("center", "top-left", "top-right", "bottom-left",
