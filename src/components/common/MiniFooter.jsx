@@ -54,9 +54,9 @@ const MiniFooter = ({
       padding: "8px 16px",
       flexWrap: "wrap",
     }}>
-      <BracketBtn href="/" title={backLabel} theme={theme}>
+      <BracketBtn href="/" title={backLabel || t("return")} theme={theme}>
         <ArrowBackIcon style={{ fontSize: "14px" }} />
-        <span style={{ fontSize: "12px", marginLeft: "2px" }}>{backLabel || "Return"}</span>
+        <span style={{ fontSize: "12px", marginLeft: "2px" }}>{backLabel || t("return")}</span>
       </BracketBtn>
 
       <Sep theme={theme} />
