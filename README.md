@@ -1,6 +1,6 @@
 # Eletypes
 
-> **An elegant, open-source typing test with anonymous leaderboards, badges, and a built-in 3D keyboard design lab.** No signup. No ads. Your history is local; leaderboard submissions are anonymous.
+> **An elegant, open-source typing test that kept growing — now with vocab cards for English learners, a 3D keyboard design lab, a markdown editor, and a no-signup leaderboard with achievement badges.** Your practice history is local. The leaderboard asks only for a display name you pick — no email, no password, no account.
 
 **🌐 [English](./README.md) · [中文](./README.zh-CN.md)**
 
@@ -14,19 +14,19 @@
 
 ## Why Eletypes?
 
-Warm up with a chill session, or go deep and design your own 3D keyboard — Eletypes stays clean and fast either way. Inspired by [monkeytype.com](https://www.monkeytype.com/), built on React 18 + Vite, with Supabase behind the leaderboard.
+What started as a typing test inspired by [monkeytype.com](https://www.monkeytype.com/) kept growing. Today the four pillars are **typing test**, **vocab cards** (widely used by English learners), **Keyboard Lab** (a 3D keyboard design playground), and a **markdown editor** — all in one clean, open-source app. Built on React 18 + Vite, with Supabase behind the leaderboard.
 
 ## Features
 
 ### Modes
 - **Typing Test** — English & Chinese (Pinyin), words + sentence modes, 15/30/60/90s timers, +numbers / +symbols add-ons, pulse & caret pacing
-- **Vocab Cards** — GRE, TOEFL, CET4/6; learn vocabulary by typing it
-- **Markdown Editor** at `/markdown` — live preview, syntax highlighting, save as `.md`
+- **Vocab Cards** *(popular with English learners)* — GRE, TOEFL, CET4/CET6 word decks; type to learn, with a recite mode that hides the word while the phrase stays visible
 - **Keyboard Lab** at `/keyboardlab` *(beta)* — design custom 3D keyboards in your browser: 7 layouts, 8 keycap profiles, parametric case editor, KLE import, full JSON schema. → [deep dive](src/components/features/KeyboardLab/KEYBOARD_LAB.md)
+- **Markdown Editor** at `/markdown` — live preview, syntax highlighting, save as `.md`
 - **QWERTY Trainer** — touch-typing practice
 
 ### Social & Progress
-- **Anonymous leaderboard** — top 50 WPM per mode; fingerprint identity; no signup
+- **No-signup leaderboard** — top 50 WPM per mode; pick any display name; fingerprint used for anti-cheat only
 - **Badges & ranks** — 30+ achievements across speed, accuracy, consistency, exploration
 - **Stats dashboard** — activity heatmap, WPM trend, outlier detection, session history
 - **Challenge links** — deterministic seeded words; send friends the exact same test
@@ -41,7 +41,20 @@ Warm up with a chill session, or go deep and design your own 3D keyboard — Ele
 - **Keyboard shortcuts** — `Tab+Space` redo · `Tab+Enter` restart
 
 ### Privacy
-No accounts. No ads. No tracking. Your practice history and settings live in your browser's localStorage. The only data that leaves your device is anonymous leaderboard submissions — tagged by a browser fingerprint (no account, no PII) purely for anti-cheat and dedup.
+No accounts. No ads. No tracking. Your practice history and settings live in your browser's localStorage. The only data that leaves your device is opt-in leaderboard submissions — a display name you pick (no email, no password, no account) plus a browser fingerprint used purely for anti-cheat and dedup.
+
+## Gallery
+
+<table>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/0ab9989a-260a-4b63-95be-b994f3a0b493" alt="Keyboard Lab" /><br/><sub><b>Keyboard Lab</b> — design custom 3D keyboards</sub></td>
+    <td width="50%"><img src="https://github.com/gamer-ai/eletypes-frontend/assets/39578778/d716a287-6f59-4568-8276-1ee6b5f5850a" alt="Dynamic themes" /><br/><sub><b>Dynamic WebGL themes</b> — Tranquiluxe · Lumiflex · Opulento · Velustro</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/bf5fa8c6-26d9-439f-b284-0d1620b09fdc" alt="Markdown editor" /><br/><sub><b>Markdown editor</b> — live preview with syntax highlighting</sub></td>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/ab3e7c94-4f38-4607-86aa-1cd3d8296381" alt="Ultra Zen mode" /><br/><sub><b>Ultra Zen</b> — auto-highlight, auto-dim, distraction-free</sub></td>
+  </tr>
+</table>
 
 ## Quick Start
 

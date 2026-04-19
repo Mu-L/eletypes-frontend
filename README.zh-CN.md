@@ -1,6 +1,6 @@
 # Eletypes 打字
 
-> **一款优雅、开源的打字测试工具，内置匿名排行榜、成就徽章，和 3D 键盘设计工坊。** 无需注册、无广告；历史数据存在本地浏览器，提交排行榜是匿名的。
+> **一款优雅、开源的打字工具 —— 最初只是一个打字测试，后来慢慢长大：词卡（不少英语学习者在用）、3D 键盘设计工坊、Markdown 编辑器，以及免注册排行榜和成就徽章。** 练习历史数据存在本地浏览器。排行榜只需你自选一个昵称，无需邮箱、无需密码、无需账号。
 
 **🌐 [English](./README.md) · [中文](./README.zh-CN.md)**
 
@@ -14,19 +14,19 @@
 
 ## 为什么选择 Eletypes？
 
-随便打几个字放松一下，或者深入设计属于自己的 3D 键盘 —— Eletypes 都能保持简洁快速。灵感来自 [monkeytype.com](https://www.monkeytype.com/)，基于 React 18 + Vite，排行榜使用 Supabase。
+最初只是一个受 [monkeytype.com](https://www.monkeytype.com/) 启发的打字测试，后来慢慢长大。现在的四根支柱是 **打字测试**、**词卡**（英语学习者在用）、**键盘实验室**（3D 键盘设计工坊）、以及 **Markdown 编辑器** —— 全部整合在同一个干净、开源的应用里。基于 React 18 + Vite，排行榜使用 Supabase。
 
 ## 功能
 
 ### 模式
 - **打字测试** —— 支持英文与中文拼音，单词与句子模式，15/30/60/90 秒计时，可叠加数字 / 符号，脉冲与光标两种节奏样式
-- **词卡** —— GRE、TOEFL、CET4/6，边打边记
-- **Markdown 编辑器**（`/markdown`）—— 实时预览、语法高亮、导出 `.md`
+- **词卡** *（英语学习者常用）* —— GRE、TOEFL、CET4 / CET6 词书；边打边学，支持"背诵模式"（隐藏单词、显示例句）
 - **键盘实验室**（`/keyboardlab`，*Beta*）—— 在浏览器里设计 3D 键盘：7 种布局、8 种键帽轮廓、参数化外壳编辑器、KLE 导入、完整 JSON Schema 编辑。→ [详细文档](src/components/features/KeyboardLab/KEYBOARD_LAB.md)
+- **Markdown 编辑器**（`/markdown`）—— 实时预览、语法高亮、导出 `.md`
 - **QWERTY 练习** —— 盲打训练
 
 ### 社交与进阶
-- **匿名排行榜** —— 各模式前 50 名，基于浏览器指纹身份，无需注册
+- **免注册排行榜** —— 各模式前 50 名；自选昵称即可；浏览器指纹仅用于防刷
 - **徽章与段位** —— 30+ 成就，覆盖速度、准确率、稳定性、探索
 - **统计面板** —— 活动热力图、WPM 趋势、异常检测、历史会话
 - **挑战链接** —— 基于种子的确定性词序，和朋友打完全一样的测试
@@ -41,7 +41,20 @@
 - **键盘快捷键** —— `Tab+Space` 重做 · `Tab+Enter` 重开
 
 ### 隐私
-无账号、无广告、无追踪。练习历史与设置仅保存在浏览器 localStorage。唯一离开你设备的是匿名排行榜记录 —— 仅用浏览器指纹（不含账号、不含任何个人信息）进行防刷与去重。
+无账号、无广告、无追踪。练习历史与设置仅保存在浏览器 localStorage。唯一离开你设备的是你主动提交的排行榜记录 —— 包括你自选的昵称（无需邮箱、无需密码、无需账号），以及仅用于防刷/去重的浏览器指纹。
+
+## 图集
+
+<table>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/0ab9989a-260a-4b63-95be-b994f3a0b493" alt="Keyboard Lab" /><br/><sub><b>键盘实验室</b> —— 在浏览器里设计 3D 键盘</sub></td>
+    <td width="50%"><img src="https://github.com/gamer-ai/eletypes-frontend/assets/39578778/d716a287-6f59-4568-8276-1ee6b5f5850a" alt="Dynamic themes" /><br/><sub><b>WebGL 动态主题</b> —— Tranquiluxe · Lumiflex · Opulento · Velustro</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/bf5fa8c6-26d9-439f-b284-0d1620b09fdc" alt="Markdown editor" /><br/><sub><b>Markdown 编辑器</b> —— 实时预览 + 语法高亮</sub></td>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/ab3e7c94-4f38-4607-86aa-1cd3d8296381" alt="Ultra Zen mode" /><br/><sub><b>超静模式</b> —— 自动高亮、自动淡出、无干扰</sub></td>
+  </tr>
+</table>
 
 ## 快速开始
 
