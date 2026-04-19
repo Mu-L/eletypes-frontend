@@ -14,7 +14,7 @@
  * Future: drag to move keys, resize handles, property editor panel.
  */
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { computeBounds, extractKeys } from "./schema/derive";
 
 const KIND_COLORS = {
@@ -29,17 +29,41 @@ const KIND_COLORS = {
 const KeyboardLayout2D = ({
   layout,
   scale = 48,
+  maxScale = 48,
+  fitToContainer = true,
   activeKeys = null,
   onKeyClick,
   onLayoutChange,
   theme,
 }) => {
   const [selectedKeyId, setSelectedKeyId] = useState(null);
+  const containerRef = useRef(null);
+  const [autoScale, setAutoScale] = useState(scale);
   const keys = extractKeys(layout);
   const bounds = useMemo(() => computeBounds(keys), [keys]);
 
+  // Auto-scale: measure container width and pick the largest scale that fits.
+  useLayoutEffect(() => {
+    if (!fitToContainer) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const recompute = (width) => {
+      if (!bounds.width || !width) return;
+      // Reserve a few px for the key gap; round down to integer scale.
+      const fit = Math.floor((width - 4) / bounds.width);
+      setAutoScale(Math.max(8, Math.min(maxScale, fit)));
+    };
+    recompute(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver((entries) => recompute(entries[0].contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [bounds.width, maxScale, fitToContainer]);
+
+  const effectiveScale = fitToContainer ? autoScale : scale;
+
   const textColor = theme?.text || "#e0e0e0";
   const statsColor = theme?.stats || "#6ec6ff";
+  const bgColor = theme?.background || "#111115";
 
   const handleKeyClick = useCallback((key) => {
     setSelectedKeyId(key.id === selectedKeyId ? null : key.id);
@@ -66,41 +90,11 @@ const KeyboardLayout2D = ({
   const gap = 3; // pixel gap between keys
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%", minWidth: 0 }}>
       {/* Layout metadata */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: "13px", color: textColor, opacity: 0.7 }}>
-          {layout?.meta?.name} — {keys.length} keys — {layout?.meta?.layoutType} {layout?.meta?.standard}
-        </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button
-            onClick={handleCopyJson}
-            style={{
-              background: "transparent",
-              border: `1px solid ${statsColor}44`,
-              borderRadius: "4px",
-              color: statsColor,
-              padding: "4px 10px",
-              cursor: "pointer",
-              fontSize: "11px",
-            }}
-          >
-            Copy JSON
-          </button>
-          <button
-            onClick={handleExport}
-            style={{
-              background: "transparent",
-              border: `1px solid ${statsColor}44`,
-              borderRadius: "4px",
-              color: statsColor,
-              padding: "4px 10px",
-              cursor: "pointer",
-              fontSize: "11px",
-            }}
-          >
-            Export JSON
-          </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ fontSize: "12px", color: textColor, opacity: 0.7 }}>
+          {layout?.meta?.name} — {keys.length} keys
         </div>
       </div>
 
@@ -108,16 +102,16 @@ const KeyboardLayout2D = ({
       <div
         style={{
           position: "relative",
-          width: bounds.width * scale + gap,
-          height: bounds.height * scale + gap,
+          width: bounds.width * effectiveScale + gap,
+          height: bounds.height * effectiveScale + gap,
           margin: "0 auto",
         }}
       >
         {keys.map((key) => {
-          const w = key.w * scale - gap;
-          const h = (key.h || 1) * scale - gap;
-          const x = key.x * scale;
-          const y = key.y * scale;
+          const w = key.w * effectiveScale - gap;
+          const h = (key.h || 1) * effectiveScale - gap;
+          const x = key.x * effectiveScale;
+          const y = key.y * effectiveScale;
           const isSelected = key.id === selectedKeyId;
           const isActive = activeKeys?.has(key.id);
           const colors = KIND_COLORS[key.kind] || KIND_COLORS.alpha;
@@ -148,7 +142,7 @@ const KeyboardLayout2D = ({
             >
               <span
                 style={{
-                  fontSize: w < scale * 0.8 ? "9px" : key.label?.length > 3 ? "9px" : "11px",
+                  fontSize: w < effectiveScale * 0.8 ? "9px" : key.label?.length > 3 ? "9px" : "11px",
                   color: isActive ? statsColor : textColor,
                   opacity: isActive ? 1 : 0.7,
                   fontFamily: "monospace",
@@ -171,14 +165,15 @@ const KeyboardLayout2D = ({
           style={{
             fontSize: "12px",
             color: textColor,
-            background: "#1a1a1e",
+            background: bgColor,
+            border: `1px solid ${textColor}22`,
             borderRadius: "6px",
             padding: "10px 14px",
             fontFamily: "monospace",
             display: "grid",
             gridTemplateColumns: "auto 1fr",
             gap: "4px 12px",
-            maxWidth: bounds.width * scale,
+            maxWidth: bounds.width * effectiveScale,
             margin: "0 auto",
           }}
         >

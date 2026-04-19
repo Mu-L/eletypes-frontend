@@ -11,10 +11,11 @@ import React, { useRef, useState, useEffect, useCallback, useMemo, lazy, Suspens
 import KeyboardLab from "./KeyboardLab";
 import KeyboardLayout2D from "./KeyboardLayout2D";
 import CaseProfileEditor, { PROFILE_PRESETS } from "./CaseEditor/CaseProfileEditor";
-import { bundledResolver, listBundledByType } from "./schema/resolve/assetResolver";
+import { bundledResolver, listBundledByType, registerBundled } from "./schema/resolve/assetResolver";
 import { designFromSelections } from "./schema/normalize/resolveDesign";
-import { buildCodeMap, extractKeys } from "./schema/derive";
+import { buildCodeMap, extractKeys, parseLegendPosition, LEGEND_INSET_DEFAULTS, LEGEND_INSET_RANGE } from "./schema/derive";
 import { saveDesign, loadDesign, listDesigns, deleteDesign, exportDesignJSON, importDesignJSON } from "./services/designStorage";
+import { importKleLayout } from "./services/kleImporter";
 import { getKeycapPreset } from "./presets/keycaps";
 import { getLegendPreset } from "./presets/legends";
 import { useLabTranslation } from "./i18n/useLabTranslation";
@@ -22,7 +23,6 @@ import useSound from "use-sound";
 import { SOUND_MAP } from "../sound/sound";
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
-const LAYOUT_REFS = listBundledByType("layout");
 const KEYCAP_REFS = listBundledByType("keycap");
 const LEGEND_REFS = listBundledByType("legend");
 const SHELL_REFS = listBundledByType("shell");
@@ -56,12 +56,6 @@ const COLOR_PRESETS = {
   frosted:     { keycapColor: "#d0dce8", accentKeyColor: "#7eb0d5", caseColor: "#2a2a30", opacity: { keycap: 0.65, accent: 0.65, case: 1.0, legend: 1.0 } },
 };
 
-const JSON_TAB_KEYS = ["Design", "Layout", "Keycap", "Legend", "Shell", "Case Profile"];
-const JSON_TAB_I18N = {
-  "Design": "lab_tab_design", "Layout": "lab_tab_layout", "Keycap": "lab_tab_keycap",
-  "Legend": "lab_tab_legend", "Shell": "lab_tab_shell", "Case Profile": "lab_tab_case_profile_json",
-};
-
 const DEFAULTS = {
   layoutRef: "layout/cyberboard-75-ansi@1",
   keycapRef: "keycap/cherry-classic@1",
@@ -79,8 +73,8 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const tLab = useLabTranslation();
   const [play] = useSound(SOUND_MAP[soundType] || SOUND_MAP["keyboard"], { volume: 0.5 });
   const keyboardRef = useRef();
-  const sidebarRef = useRef(null);
 
+  const [layoutRefs, setLayoutRefs] = useState(() => listBundledByType("layout"));
   const [layoutRef, setLayoutRef] = useState("layout/cyberboard-75-ansi@1");
   const [keycapRef, setKeycapRef] = useState("keycap/cherry-classic@1");
   const [legendRef, setLegendRef] = useState("legend/gmk-center@1");
@@ -96,10 +90,19 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   const [savedDesigns, setSavedDesigns] = useState(() => listDesigns());
   const [saveMsg, setSaveMsg] = useState("");
   const [splitPercent, setSplitPercent] = useState(65);
-  const [jsonTab, setJsonTab] = useState("Design");
-  const [showDoc, setShowDoc] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
-  const [editorTab, setEditorTab] = useState("case"); // "case" | "layout"
+  // Per-card UI state: which tab is active inside each card, and which cards are collapsed.
+  const [cardTabs, setCardTabs] = useState({
+    Design: "config", Layout: "config", Shell: "config",
+    Keycap: "config", Legend: "config", CaseProfile: "config",
+  });
+  const [collapsed, setCollapsed] = useState({});
+  const setCardTab = useCallback((card, tab) => setCardTabs(s => ({ ...s, [card]: tab })), []);
+  const toggleCollapse = useCallback((card) => setCollapsed(s => ({ ...s, [card]: !s[card] })), []);
+  const [showKleModal, setShowKleModal] = useState(false);
+  const [kleInput, setKleInput] = useState("");
+  const [kleError, setKleError] = useState("");
+  const [kleDragOver, setKleDragOver] = useState(false);
   const [caseProfileRef, setCaseProfileRef] = useState("caseProfile/cyberboard-wedge@1");
   const [caseProfile, setCaseProfile] = useState(PROFILE_PRESETS.wedge);
   const [caseScale, setCaseScale] = useState(1.15);
@@ -308,6 +311,49 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
       } catch (err) { alert("Import failed: " + err.message); } }; r.readAsText(f); }; input.click();
   }, [applyBundle]);
 
+  const handleKleFileDrop = useCallback((e) => {
+    e.preventDefault();
+    setKleDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { setKleInput(String(ev.target.result || "")); setKleError(""); };
+    reader.onerror = () => setKleError(tLab("lab_import_kle_read_failed"));
+    reader.readAsText(file);
+  }, [tLab]);
+
+  const handleKleConvert = useCallback(() => {
+    const trimmed = (kleInput || "").trim();
+    if (!trimmed) { setKleError(tLab("lab_import_kle_empty")); return; }
+    let preset;
+    try {
+      preset = importKleLayout(trimmed);
+    } catch (err) {
+      setKleError(err.message || String(err));
+      return;
+    }
+
+    // Generate a unique ref + name so repeated imports don't collide.
+    const stamp = Date.now().toString(36);
+    const rand = Math.random().toString(36).slice(2, 6);
+    const ref = `layout/kle-${stamp}-${rand}@1`;
+    const baseName = preset.meta?.name || "KLE Import";
+    const humanTs = new Date().toLocaleString([], { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const uniqueName = `${baseName} (${humanTs})`;
+    preset.meta = { ...(preset.meta || {}), name: uniqueName };
+
+    // Sync the full schema state engine: registry → refs list → active ref → resolved layout.
+    registerBundled(ref, preset);
+    setLayoutRefs(listBundledByType("layout"));
+    setLayoutRef(ref);
+    setLayout(preset);
+    setDesignName(uniqueName);
+
+    setShowKleModal(false);
+    setKleInput("");
+    setKleError("");
+  }, [kleInput, tLab]);
+
   const triggerDemo = useCallback(() => { ["KeyH","KeyE","KeyL","KeyL","KeyO"].forEach((k,i) => setTimeout(() => keyboardRef.current?.triggerKey(k), i*120)); }, []);
   const applyColorPreset = (name) => { setColorPreset(name); setColors(COLOR_PRESETS[name]); setOpacity({ ...DEFAULT_OPACITY, ...COLOR_PRESETS[name].opacity }); };
 
@@ -322,43 +368,20 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
     document.addEventListener("mousemove", onMove); document.addEventListener("mouseup", onUp);
   }, [splitPercent]);
 
-  // JSON tab content — computed as a string, used as both editor value and sync trigger
-  const tabJson = useMemo(() => {
-    switch (jsonTab) {
-      case "Design": return JSON.stringify(currentDesign, null, 2);
-      case "Layout": return layout ? JSON.stringify(layout, null, 2) : "{}";
-      case "Keycap": return resolvedKeycap ? JSON.stringify(resolvedKeycap, null, 2) : "{}";
-      case "Legend": return legendPreset ? JSON.stringify(legendPreset, null, 2) : "{}";
-      case "Shell": return shell ? JSON.stringify(shell, null, 2) : "{}";
-      case "Case Profile": return JSON.stringify({ caseProfile, mount: { offset: mountOffset, fit: mountFit, caseScale, extrudeWidth } }, null, 2);
-      default: return "{}";
-    }
-  }, [jsonTab, currentDesign, layout, resolvedKeycap, legendPreset, shell, caseProfile, mountOffset, mountFit, caseScale, extrudeWidth]);
+  // Per-card JSON strings — each card's JSON editor binds to one of these.
+  const designJson = useMemo(() => JSON.stringify(currentDesign, null, 2), [currentDesign]);
+  const layoutJson = useMemo(() => layout ? JSON.stringify(layout, null, 2) : "{}", [layout]);
+  const shellJson = useMemo(() => shell ? JSON.stringify(shell, null, 2) : "{}", [shell]);
+  const keycapJson = useMemo(() => resolvedKeycap ? JSON.stringify(resolvedKeycap, null, 2) : "{}", [resolvedKeycap]);
+  const legendJson = useMemo(() => legendPreset ? JSON.stringify(legendPreset, null, 2) : "{}", [legendPreset]);
+  const caseProfileJson = useMemo(() =>
+    JSON.stringify({ caseProfile, mount: { offset: mountOffset, fit: mountFit, caseScale, extrudeWidth } }, null, 2),
+  [caseProfile, mountOffset, mountFit, caseScale, extrudeWidth]);
 
-  // ─── Monaco sync: imperatively push external state changes into editor ───
-  const monacoRef = useRef(null);
-  const isEditorEdit = useRef(false);
-
-  useEffect(() => {
-    if (isEditorEdit.current) {
-      isEditorEdit.current = false;
-      return;
-    }
-    const editor = monacoRef.current;
-    if (!editor) return;
-    if (editor.getValue() !== tabJson) {
-      // Preserve cursor position
-      const pos = editor.getPosition();
-      editor.setValue(tabJson);
-      if (pos) editor.setPosition(pos);
-    }
-  }, [tabJson]);
-
-  const handleJsonChange = useCallback((value) => {
-    isEditorEdit.current = true;
+  const handleJsonChange = useCallback((value, tabType) => {
     try {
       const parsed = JSON.parse(value);
-      if (jsonTab === "Design") {
+      if (tabType === "Design") {
         if (parsed.meta?.name) setDesignName(parsed.meta.name);
         const refs = parsed.refs || parsed.assets;
         if (refs?.layout) setLayoutRef(refs.layout);
@@ -369,20 +392,16 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
         if (parsed.overrides?.visual) setColors(parsed.overrides.visual);
         if (parsed.overrides?.opacity) setOpacity(o => ({ ...o, ...parsed.overrides.opacity }));
         if (parsed.overrides?.legend) setLegendOverrides(parsed.overrides.legend);
-      } else if (jsonTab === "Layout") {
-        // Hot-swap: accept full preset or just {layout:{keys:[]}}
-        if (parsed.layout?.keys) {
-          setLayout({ ...parsed });
-        } else if (Array.isArray(parsed.keys)) {
-          setLayout(prev => ({ ...prev, layout: { keys: parsed.keys } }));
-        }
-      } else if (jsonTab === "Keycap") {
+      } else if (tabType === "Layout") {
+        if (parsed.layout?.keys) setLayout({ ...parsed });
+        else if (Array.isArray(parsed.keys)) setLayout(prev => ({ ...prev, layout: { keys: parsed.keys } }));
+      } else if (tabType === "Keycap") {
         if (parsed.profile) setResolvedKeycap(parsed);
-      } else if (jsonTab === "Legend") {
+      } else if (tabType === "Legend") {
         if (parsed.style) setLegendOverrides(parsed.style);
-      } else if (jsonTab === "Shell") {
+      } else if (tabType === "Shell") {
         if (parsed.case) setShell(parsed);
-      } else if (jsonTab === "Case Profile") {
+      } else if (tabType === "Case Profile") {
         if (parsed.caseProfile) setCaseProfile(parsed.caseProfile);
         if (parsed.mount) {
           if (parsed.mount.offset) setMountOffset(parsed.mount.offset);
@@ -392,33 +411,65 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
         }
       }
     } catch { /* invalid JSON, ignore until valid */ }
-  }, [jsonTab]);
-
-  // 2D scale from sidebar width — use callback ref for reliable observer attachment
-  const [sidebarPx, setSidebarPx] = useState(600);
-  const sidebarObserver = useRef(null);
-  const sidebarRefCallback = useCallback((node) => {
-    // Cleanup previous observer
-    if (sidebarObserver.current) sidebarObserver.current.disconnect();
-    if (node) {
-      sidebarObserver.current = new ResizeObserver((entries) => {
-        setSidebarPx(entries[0].contentRect.width);
-      });
-      sidebarObserver.current.observe(node);
-      setSidebarPx(node.getBoundingClientRect().width); // Initial measurement
-    }
-    sidebarRef.current = node;
   }, []);
-  const scale2D = Math.max(12, Math.floor((sidebarPx - 40) / 17));
 
   // Styling
   const bg = theme?.background || "#111115";
   const text = theme?.text || "#e0e0e0";
   const accent = theme?.stats || "#6ec6ff";
-  const sel = { background: "#1a1a1e", color: text, border: `1px solid ${text}33`, borderRadius: "3px", padding: "2px 5px", fontSize: "12px" };
+  const sel = { background: bg, color: text, border: `1px solid ${text}33`, borderRadius: "4px", padding: "3px 6px", fontSize: "13px" };
   const btn = (active) => ({ background: "transparent", border: `1px solid ${active ? accent : accent+"44"}`, borderRadius: "4px", color: active ? accent : text, padding: "4px 10px", cursor: "pointer", fontSize: "12px", fontFamily: "inherit" });
-  const lbl = { display: "flex", alignItems: "center", gap: "4px", color: text, fontSize: "12px" };
+  const lbl = { display: "flex", alignItems: "center", gap: "6px", color: text, fontSize: "13px" };
   const sectionTitle = { fontSize: "13px", color: accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "1.2px", padding: "6px 8px 3px", fontWeight: 600 };
+  // Bento card styles — flat, subtle, eletypes accent
+  const cardStyle = { display: "flex", flexDirection: "column", border: `1px solid ${text}18`, borderRadius: "10px", background: `${text}04`, marginBottom: "14px", overflow: "hidden" };
+  const cardHeaderStyle = { display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", borderBottom: `1px solid ${text}0d` };
+  const cardTitleStyle = { color: accent, fontSize: "13px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.2px" };
+  const cardTabsStyle = { display: "flex", gap: "0", flex: 1, marginLeft: "12px" };
+  const tabBtnStyle = (active) => ({ background: "transparent", border: "none", borderBottom: active ? `2px solid ${accent}` : "2px solid transparent", color: active ? accent : `${text}77`, padding: "4px 12px", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" });
+  const cardBodyStyle = { padding: "14px 16px" };
+  const fieldRowStyle = { display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" };
+  const fieldLabel = { fontSize: "11px", color: `${text}88`, textTransform: "uppercase", letterSpacing: "1px", minWidth: "68px" };
+  const numInput = { background: bg, color: text, border: `1px solid ${text}33`, borderRadius: "4px", padding: "3px 6px", fontSize: "13px", fontFamily: "monospace", width: "64px" };
+
+  const renderCardHeader = (id, title, tabs) => (
+    <div style={cardHeaderStyle}>
+      <span style={cardTitleStyle}>{title}</span>
+      <div style={cardTabsStyle}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => { setCardTab(id, t.key); if (collapsed[id]) toggleCollapse(id); }}
+            style={tabBtnStyle(cardTabs[id] === t.key && !collapsed[id])}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => toggleCollapse(id)}
+        title={collapsed[id] ? tLab("lab_expand") : tLab("lab_collapse")}
+        style={{ background: "transparent", border: "none", color: `${text}66`, cursor: "pointer", fontSize: "14px", lineHeight: 1, padding: "0 6px" }}>
+        {collapsed[id] ? "+" : "−"}
+      </button>
+    </div>
+  );
+
+  const renderJsonPane = (value, tabType, height = "220px") => (
+    <div style={{ height, borderRadius: "4px", overflow: "hidden", border: `1px solid ${text}10` }}>
+      <Suspense fallback={<div style={{ padding: "8px", color: `${text}55`, fontSize: "11px" }}>{tLab("lab_loading")}</div>}>
+        <MonacoEditor height="100%" language="json" theme="vs-dark" value={value}
+          onChange={(v) => handleJsonChange(v || "", tabType)}
+          options={{ minimap: { enabled: false }, fontSize: 11, lineNumbers: "off", scrollBeyondLastLine: false,
+            wordWrap: "on", tabSize: 2, renderLineHighlight: "none", overviewRulerBorder: false, padding: { top: 4, bottom: 4 } }}
+        />
+      </Suspense>
+    </div>
+  );
+
+  const renderDocPane = (docKey) => (
+    <pre style={{ color: text, fontSize: "12px", lineHeight: 1.55, fontFamily: "monospace",
+      whiteSpace: "pre-wrap", margin: 0, padding: "10px 12px", borderRadius: "4px",
+      background: `${text}08`, border: `1px solid ${text}10` }}>
+      {tLab(docKey)}
+    </pre>
+  );
 
   if (!layout) return null;
 
@@ -438,7 +489,7 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
             {savedMenuOpen && (
               <div style={{
                 position: "absolute", top: "100%", left: 0, marginTop: "4px",
-                background: "#1a1a1e", border: `1px solid ${text}22`, borderRadius: "6px",
+                background: bg, border: `1px solid ${text}33`, borderRadius: "6px",
                 minWidth: "200px", maxHeight: "240px", overflowY: "auto", zIndex: 100,
                 boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
               }}>
@@ -524,179 +575,443 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
           <div style={{ width: "2px", height: "32px", borderRadius: "1px", background: `${text}25` }} />
         </div>
 
-        {/* Sidebar */}
-        <div ref={sidebarRefCallback} style={{ display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+        {/* Sidebar — scrollable card stack */}
+        <div style={{ display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "8px" }}>
 
-          {/* Asset selectors */}
-          <div style={sectionTitle}>{tLab("lab_assets")}</div>
-          <div style={{ display: "flex", gap: "4px", padding: "0 8px 4px", flexWrap: "wrap" }}>
-            <label style={lbl}>{tLab("lab_layout")}<select value={layoutRef} onChange={(e) => setLayoutRef(e.target.value)} style={sel}>
-              {LAYOUT_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
-            </select></label>
-            <label style={lbl}>{tLab("lab_shell")}<select value={shellRef} onChange={(e) => setShellRef(e.target.value)} style={sel}>
-              {SHELL_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
-            </select></label>
-            <label style={lbl}>{tLab("lab_keycap")}<select value={keycapRef} onChange={(e) => setKeycapRef(e.target.value)} style={sel}>
-              {KEYCAP_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
-            </select></label>
-            <label style={lbl}>{tLab("lab_legend")}<select value={legendRef} onChange={(e) => { setLegendRef(e.target.value); setLegendOverrides({}); }} style={sel}>
-              {LEGEND_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
-            </select></label>
-            <label style={lbl}>{tLab("lab_profile")}<select value={caseProfileRef} onChange={(e) => setCaseProfileRef(e.target.value)} style={sel}>
-              {CASE_PROFILE_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
-            </select></label>
-            <label style={lbl}>{tLab("lab_theme")}<select value={colorPreset} onChange={(e) => applyColorPreset(e.target.value)} style={sel}>
-              {Object.keys(COLOR_PRESETS).map(n => <option key={n} value={n}>{n}</option>)}
-            </select></label>
-          </div>
-
-          {/* Legend + Color/Opacity controls */}
-          <div style={{ display: "flex", gap: "4px", padding: "0 8px 4px", flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{tLab("lab_legend_section")}</span>
-            <label style={lbl}>{tLab("lab_size")}<input type="range" min="8" max="40" step="1" value={legendPreset.style.fontSize}
-              onChange={(e) => setLegendOverrides(o => ({...o, fontSize: parseInt(e.target.value)}))} style={{ width: "36px", accentColor: accent }} />{legendPreset.style.fontSize}</label>
-            <label style={lbl}>{tLab("lab_weight")}<select value={legendPreset.style.fontWeight} onChange={(e) => setLegendOverrides(o => ({...o, fontWeight: parseInt(e.target.value)}))} style={sel}>
-              <option value="400">{tLab("lab_light")}</option><option value="600">{tLab("lab_semi")}</option><option value="700">{tLab("lab_bold")}</option></select></label>
-            <label style={lbl}>{tLab("lab_font")}<select value={legendPreset.style.fontFamily} onChange={(e) => setLegendOverrides(o => ({...o, fontFamily: e.target.value}))} style={sel}>
-              <option value="Arial, sans-serif">Arial</option><option value="Courier New, monospace">Courier</option><option value="Tomorrow, monospace">Tomorrow</option></select></label>
-            <label style={lbl}>{tLab("lab_color")}<input type="color" value={legendPreset.style.color} onChange={(e) => setLegendOverrides(o => ({...o, color: e.target.value}))}
-              style={{ width: "24px", height: "24px", border: `1px solid ${text}22`, borderRadius: "3px", cursor: "pointer", background: "transparent", padding: 0 }} /></label>
-          </div>
-          <div style={{ display: "flex", gap: "4px", padding: "0 8px 6px", flexWrap: "wrap", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", color: accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{tLab("lab_colors_section")}</span>
-            {[{l:"lab_keycap_color",k:"keycapColor",ok:"keycap"},{l:"lab_accent_color",k:"accentKeyColor",ok:"accent"},{l:"lab_case_color",k:"caseColor",ok:"case"}].map(({l,k,ok}) => (
-              <label key={k} style={lbl}>{tLab(l)}<input type="color" value={colors[k]} onChange={(e) => setColors(c => ({...c,[k]:e.target.value}))}
-                style={{ width: "24px", height: "24px", border: `1px solid ${text}22`, borderRadius: "3px", cursor: "pointer", background: "transparent", padding: 0 }} />
-                <input type="range" min="0.1" max="1" step="0.05" value={opacity[ok]} onChange={(e) => setOpacity(o => ({...o,[ok]:parseFloat(e.target.value)}))}
-                  style={{ width: "28px", accentColor: accent }} /><span style={{ minWidth: "20px", fontSize: "11px" }}>{Math.round(opacity[ok]*100)}%</span>
-              </label>
-            ))}
-            <label style={lbl}>{tLab("lab_label_opacity")}<input type="range" min="0.1" max="1" step="0.05" value={opacity.legend} onChange={(e) => setOpacity(o => ({...o, legend: parseFloat(e.target.value)}))}
-              style={{ width: "28px", accentColor: accent }} /><span style={{ minWidth: "20px", fontSize: "11px" }}>{Math.round(opacity.legend*100)}%</span></label>
-          </div>
-
-          {/* Tabbed editor: Case Profile / 2D Layout */}
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
-            <div style={{ display: "flex", gap: "0", borderBottom: `1px solid ${text}08` }}>
-              <button onClick={() => setEditorTab("case")} style={{
-                background: "transparent", border: "none",
-                borderBottom: editorTab === "case" ? `2px solid ${accent}` : "2px solid transparent",
-                color: editorTab === "case" ? accent : `${text}66`,
-                padding: "5px 12px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit",
-              }}>{tLab("lab_tab_case_profile")}</button>
-              <button onClick={() => setEditorTab("layout")} style={{
-                background: "transparent", border: "none",
-                borderBottom: editorTab === "layout" ? `2px solid ${accent}` : "2px solid transparent",
-                color: editorTab === "layout" ? accent : `${text}66`,
-                padding: "5px 12px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit",
-              }}>{tLab("lab_tab_2d_layout")}</button>
-            </div>
-            <div style={{ flex: 1, overflow: "auto", padding: "6px 8px" }}>
-              {editorTab === "case" && (
-                <div>
-                  {/* Keycap mount adjustment */}
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "6px", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "13px", color: accent, opacity: 0.7, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{tLab("lab_keycap_mount")}</span>
-                    {[
-                      { axis: "x", label: "X", min: -3, max: 3, step: 0.1, color: "#ff6666" },
-                      { axis: "y", label: "Y", min: -2, max: 2, step: 0.05, color: "#66ff66" },
-                      { axis: "z", label: "Z", min: -3, max: 3, step: 0.1, color: "#6688ff" },
-                    ].map(({ axis, label, min, max, step, color }) => (
-                      <label key={axis} style={{ ...lbl, gap: "2px" }}>
-                        <span style={{ color, fontWeight: 700, minWidth: "10px" }}>{label}</span>
-                        <input type="range" min={min} max={max} step={step} value={mountOffset[axis]}
-                          onChange={(e) => setMountOffset(prev => ({ ...prev, [axis]: parseFloat(e.target.value) }))}
-                          style={{ width: "45px", accentColor: color }} />
-                        <span style={{ minWidth: "28px", fontSize: "11px" }}>{mountOffset[axis].toFixed(1)}</span>
-                      </label>
-                    ))}
-                    <label style={lbl}>
-                      {tLab("lab_fit")}
-                      <input type="range" min="0.4" max="1.5" step="0.05" value={mountFit}
-                        onChange={(e) => setMountFit(parseFloat(e.target.value))}
-                        style={{ width: "40px", accentColor: accent }} />
-                      <span style={{ minWidth: "24px", fontSize: "11px" }}>{Math.round(mountFit * 100)}%</span>
-                    </label>
-                    <label style={lbl}>
-                      {tLab("lab_scale")}
-                      <input type="range" min="0.5" max="2.0" step="0.05" value={caseScale}
-                        onChange={(e) => setCaseScale(parseFloat(e.target.value))}
-                        style={{ width: "40px", accentColor: accent }} />
-                      <span style={{ minWidth: "24px", fontSize: "11px" }}>{Math.round(caseScale * 100)}%</span>
-                    </label>
-                    <button onClick={() => { setMountOffset(DEFAULTS.mountOffset); setMountFit(DEFAULTS.mountFit); setCaseScale(DEFAULTS.caseScale); setExtrudeWidth(DEFAULTS.extrudeWidth); }} style={btn(false)}>{tLab("lab_reset")}</button>
-                  </div>
-                  <CaseProfileEditor
-                    theme={theme}
-                    initialProfile={caseProfile}
-                    onChange={setCaseProfile}
-                    extrudeWidth={extrudeWidth}
-                    onExtrudeWidthChange={setExtrudeWidth}
-                  />
+            {/* ── Design card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Design", tLab("lab_tab_design"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Design && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Design === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_name") || "Name"}</span>
+                        <input value={designName} onChange={(e) => setDesignName(e.target.value)}
+                          style={{ ...sel, flex: 1, fontWeight: 600, minWidth: "160px" }} />
+                      </div>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_theme")}</span>
+                        <select value={colorPreset} onChange={(e) => applyColorPreset(e.target.value)} style={{ ...sel, minWidth: "160px" }}>
+                          {Object.keys(COLOR_PRESETS).map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={{ ...fieldLabel, marginBottom: "6px" }}>{tLab("lab_refs")}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px", fontFamily: "monospace", fontSize: "12px" }}>
+                          {[
+                            ["layout", layoutRef], ["shell", shellRef], ["keycap", keycapRef],
+                            ["legend", legendRef], ["caseProfile", caseProfileRef],
+                          ].map(([k, v]) => (
+                            <React.Fragment key={k}>
+                              <span style={{ color: `${text}77` }}>{k}</span>
+                              <span style={{ color: accent, wordBreak: "break-all" }}>{v}</span>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {cardTabs.Design === "json" && renderJsonPane(designJson, "Design", "260px")}
+                  {cardTabs.Design === "doc" && renderDocPane("lab_doc_design")}
                 </div>
               )}
-              {editorTab === "layout" && (
-                <KeyboardLayout2D layout={layout} activeKeys={activeKeys} theme={theme} scale={scale2D} />
-              )}
             </div>
-          </div>
 
-          {/* Tabbed JSON Editor + Doc */}
-          <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", borderTop: `1px solid ${text}08` }}>
-            <div style={{ display: "flex", gap: "0", borderBottom: `1px solid ${text}08` }}>
-              {JSON_TAB_KEYS.map(tab => (
-                <button key={tab} onClick={() => { setJsonTab(tab); setShowDoc(false); }} style={{
-                  background: "transparent", border: "none",
-                  borderBottom: jsonTab === tab && !showDoc ? `2px solid ${accent}` : "2px solid transparent",
-                  color: jsonTab === tab && !showDoc ? accent : `${text}66`, padding: "5px 10px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit",
-                }}>{tLab(JSON_TAB_I18N[tab])}</button>
-              ))}
-              <button onClick={() => setShowDoc(!showDoc)} style={{
-                background: "transparent", border: "none",
-                borderBottom: showDoc ? `2px solid ${accent}` : "2px solid transparent",
-                color: showDoc ? accent : `${text}66`, padding: "5px 10px", cursor: "pointer", fontSize: "11px", fontFamily: "inherit",
-              }}>{tLab("lab_tab_doc")}</button>
-            </div>
-            <div style={{ flex: 1, minHeight: 0 }}>
-              {showDoc ? (
-                <div style={{ height: "100%", overflow: "auto", padding: "12px 16px" }}>
-                  <h3 style={{ color: accent, fontSize: "14px", margin: "0 0 12px", fontWeight: 600 }}>{tLab("lab_doc_title")}</h3>
-                  {[
-                    { key: "lab_doc_design", label: tLab("lab_tab_design") },
-                    { key: "lab_doc_layout", label: tLab("lab_tab_layout") },
-                    { key: "lab_doc_keycap", label: tLab("lab_tab_keycap") },
-                    { key: "lab_doc_legend", label: tLab("lab_tab_legend") },
-                    { key: "lab_doc_shell", label: tLab("lab_tab_shell") },
-                    { key: "lab_doc_caseProfile", label: tLab("lab_tab_case_profile_json") },
-                  ].map(({ key }) => (
-                    <pre key={key} style={{
-                      color: text, fontSize: "11px", lineHeight: 1.5, fontFamily: "monospace",
-                      whiteSpace: "pre-wrap", margin: "0 0 16px",
-                      padding: "10px 12px", borderRadius: "6px",
-                      background: `${text}08`, border: `1px solid ${text}10`,
-                    }}>{tLab(key)}</pre>
-                  ))}
+            {/* ── Layout card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Layout", tLab("lab_tab_layout"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Layout && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Layout === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_layout")}</span>
+                        <select value={layoutRef} onChange={(e) => setLayoutRef(e.target.value)} style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                          {layoutRefs.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
+                        </select>
+                        <button onClick={() => { setKleInput(""); setKleError(""); setShowKleModal(true); }}
+                          title={tLab("lab_import_kle_tooltip")} style={btn(false)}>
+                          {tLab("lab_import_kle")}
+                        </button>
+                      </div>
+                      <KeyboardLayout2D layout={layout} activeKeys={activeKeys} theme={theme} fitToContainer />
+                    </div>
+                  )}
+                  {cardTabs.Layout === "json" && renderJsonPane(layoutJson, "Layout", "260px")}
+                  {cardTabs.Layout === "doc" && renderDocPane("lab_doc_layout")}
                 </div>
-              ) : (
-                <Suspense fallback={<div style={{ padding: "8px", color: text, opacity: 0.3, fontSize: "11px" }}>{tLab("lab_loading")}</div>}>
-                  <MonacoEditor
-                    key={jsonTab}
-                    height="100%"
-                    language="json"
-                    theme="vs-dark"
-                    value={tabJson}
-                    onChange={handleJsonChange}
-                    onMount={(editor) => { monacoRef.current = editor; }}
-                    options={{ minimap: { enabled: false }, fontSize: 11, lineNumbers: "off", scrollBeyondLastLine: false,
-                      wordWrap: "on", tabSize: 2, renderLineHighlight: "none", overviewRulerBorder: false,
-                      padding: { top: 4, bottom: 4 } }}
-                  />
-                </Suspense>
               )}
             </div>
+
+            {/* ── Shell card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Shell", tLab("lab_tab_shell"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Shell && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Shell === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_shell")}</span>
+                        <select value={shellRef} onChange={(e) => setShellRef(e.target.value)} style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                          {SHELL_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
+                        </select>
+                      </div>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_case_color")}</span>
+                        <input type="color" value={colors.caseColor}
+                          onChange={(e) => setColors(c => ({ ...c, caseColor: e.target.value }))}
+                          style={{ width: "32px", height: "32px", border: `1px solid ${text}33`, borderRadius: "4px", cursor: "pointer", background: "transparent", padding: 0 }} />
+                        <span style={{ fontSize: "12px", color: `${text}77` }}>{tLab("lab_opacity")}</span>
+                        <input type="number" min="0" max="1" step="0.05" value={opacity.case.toFixed(2)}
+                          onChange={(e) => setOpacity(o => ({ ...o, case: Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)) }))}
+                          style={numInput} />
+                      </div>
+                    </div>
+                  )}
+                  {cardTabs.Shell === "json" && renderJsonPane(shellJson, "Shell", "220px")}
+                  {cardTabs.Shell === "doc" && renderDocPane("lab_doc_shell")}
+                </div>
+              )}
+            </div>
+
+            {/* ── Case Profile card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("CaseProfile", tLab("lab_tab_case_profile"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.CaseProfile && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.CaseProfile === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_profile")}</span>
+                        <select value={caseProfileRef} onChange={(e) => setCaseProfileRef(e.target.value)} style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                          {CASE_PROFILE_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
+                        </select>
+                        <button onClick={() => {
+                          // Re-fetch the selected profile so shape AND mount params reset,
+                          // not just the mount knobs. Setting state to DEFAULTS alone wouldn't
+                          // touch caseProfile's polygon points.
+                          bundledResolver(caseProfileRef).then((p) => {
+                            if (p.caseProfile) setCaseProfile(p.caseProfile);
+                            if (p.mount) {
+                              setMountOffset(p.mount.offset || DEFAULTS.mountOffset);
+                              setMountFit(p.mount.fit != null ? p.mount.fit : DEFAULTS.mountFit);
+                              setCaseScale(p.mount.caseScale != null ? p.mount.caseScale : DEFAULTS.caseScale);
+                              setExtrudeWidth(p.mount.extrudeWidth != null ? p.mount.extrudeWidth : DEFAULTS.extrudeWidth);
+                            } else {
+                              setMountOffset(DEFAULTS.mountOffset);
+                              setMountFit(DEFAULTS.mountFit);
+                              setCaseScale(DEFAULTS.caseScale);
+                              setExtrudeWidth(DEFAULTS.extrudeWidth);
+                            }
+                          }).catch(() => {});
+                        }} style={btn(false)}>{tLab("lab_reset")}</button>
+                      </div>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_keycap_mount")}</span>
+                        {[
+                          { axis: "x", label: "X", min: -3, max: 3, step: 0.1, color: "#ff6666" },
+                          { axis: "y", label: "Y", min: -2, max: 2, step: 0.05, color: "#66ff66" },
+                          { axis: "z", label: "Z", min: -3, max: 3, step: 0.1, color: "#6688ff" },
+                        ].map(({ axis, label, min, max, step, color }) => (
+                          <label key={axis} style={{ ...lbl, gap: "4px" }}>
+                            <span style={{ color, fontWeight: 700, fontSize: "12px" }}>{label}</span>
+                            <input type="number" min={min} max={max} step={step} value={mountOffset[axis]}
+                              onChange={(e) => setMountOffset(prev => ({ ...prev, [axis]: parseFloat(e.target.value) || 0 }))}
+                              style={numInput} />
+                          </label>
+                        ))}
+                      </div>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_fit")}</span>
+                        <input type="number" min="0.4" max="1.5" step="0.05" value={mountFit.toFixed(2)}
+                          onChange={(e) => setMountFit(Math.max(0.4, Math.min(1.5, parseFloat(e.target.value) || 0.4)))}
+                          style={numInput} />
+                        <span style={{ ...fieldLabel, minWidth: "auto" }}>{tLab("lab_scale")}</span>
+                        <input type="number" min="0.5" max="2.0" step="0.05" value={caseScale.toFixed(2)}
+                          onChange={(e) => setCaseScale(Math.max(0.5, Math.min(2.0, parseFloat(e.target.value) || 0.5)))}
+                          style={numInput} />
+                      </div>
+                      <CaseProfileEditor
+                        theme={theme}
+                        initialProfile={caseProfile}
+                        onChange={setCaseProfile}
+                        extrudeWidth={extrudeWidth}
+                        onExtrudeWidthChange={setExtrudeWidth}
+                      />
+                    </div>
+                  )}
+                  {cardTabs.CaseProfile === "json" && renderJsonPane(caseProfileJson, "Case Profile", "240px")}
+                  {cardTabs.CaseProfile === "doc" && renderDocPane("lab_doc_caseProfile")}
+                </div>
+              )}
+            </div>
+
+            {/* ── Keycap card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Keycap", tLab("lab_tab_keycap"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Keycap && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Keycap === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_keycap")}</span>
+                        <select value={keycapRef} onChange={(e) => setKeycapRef(e.target.value)} style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                          {KEYCAP_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
+                        </select>
+                      </div>
+                      {[
+                        { l: "lab_keycap_color", k: "keycapColor", ok: "keycap" },
+                        { l: "lab_accent_color", k: "accentKeyColor", ok: "accent" },
+                      ].map(({ l, k, ok }) => (
+                        <div key={k} style={fieldRowStyle}>
+                          <span style={fieldLabel}>{tLab(l)}</span>
+                          <input type="color" value={colors[k]} onChange={(e) => setColors(c => ({ ...c, [k]: e.target.value }))}
+                            style={{ width: "32px", height: "32px", border: `1px solid ${text}33`, borderRadius: "4px", cursor: "pointer", background: "transparent", padding: 0 }} />
+                          <span style={{ fontSize: "12px", color: `${text}77` }}>{tLab("lab_opacity")}</span>
+                          <input type="number" min="0" max="1" step="0.05" value={opacity[ok].toFixed(2)}
+                            onChange={(e) => setOpacity(o => ({ ...o, [ok]: Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)) }))}
+                            style={numInput} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {cardTabs.Keycap === "json" && renderJsonPane(keycapJson, "Keycap", "220px")}
+                  {cardTabs.Keycap === "doc" && renderDocPane("lab_doc_keycap")}
+                </div>
+              )}
+            </div>
+
+            {/* ── Legend card ── */}
+            <div style={cardStyle}>
+              {renderCardHeader("Legend", tLab("lab_tab_legend"), [
+                { key: "config", label: tLab("lab_tab_config") },
+                { key: "json", label: tLab("lab_tab_json") },
+                { key: "doc", label: tLab("lab_tab_doc") },
+              ])}
+              {!collapsed.Legend && (
+                <div style={cardBodyStyle}>
+                  {cardTabs.Legend === "config" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_legend")}</span>
+                        <select value={legendRef} onChange={(e) => { setLegendRef(e.target.value); setLegendOverrides({}); }} style={{ ...sel, flex: 1, minWidth: "160px" }}>
+                          {LEGEND_REFS.map(a => <option key={a.ref} value={a.ref}>{a.name}</option>)}
+                        </select>
+                      </div>
+                      <div style={fieldRowStyle}>
+                        <span style={fieldLabel}>{tLab("lab_font")}</span>
+                        <select value={legendPreset.style.fontFamily} onChange={(e) => setLegendOverrides(o => ({ ...o, fontFamily: e.target.value }))} style={{ ...sel, minWidth: "110px" }}>
+                          <option value="Arial, sans-serif">Arial</option>
+                          <option value="Courier New, monospace">Courier</option>
+                          <option value="Tomorrow, monospace">Tomorrow</option>
+                        </select>
+                        <input type="number" min="8" max="40" step="1" value={legendPreset.style.fontSize}
+                          onChange={(e) => setLegendOverrides(o => ({ ...o, fontSize: parseInt(e.target.value) || 0 }))}
+                          title={tLab("lab_size")} style={numInput} />
+                        <select value={legendPreset.style.fontWeight} onChange={(e) => setLegendOverrides(o => ({ ...o, fontWeight: parseInt(e.target.value) }))} title={tLab("lab_weight")} style={sel}>
+                          <option value="400">{tLab("lab_light")}</option>
+                          <option value="600">{tLab("lab_semi")}</option>
+                          <option value="700">{tLab("lab_bold")}</option>
+                        </select>
+                        <input type="color" value={legendPreset.style.color}
+                          onChange={(e) => setLegendOverrides(o => ({ ...o, color: e.target.value }))}
+                          title={tLab("lab_color")}
+                          style={{ width: "28px", height: "28px", border: `1px solid ${text}33`, borderRadius: "4px", cursor: "pointer", background: "transparent", padding: 0 }} />
+                        <span style={{ fontSize: "12px", color: `${text}77` }}>{tLab("lab_opacity")}</span>
+                        <input type="number" min="0" max="1" step="0.05" value={opacity.legend.toFixed(2)}
+                          onChange={(e) => setOpacity(o => ({ ...o, legend: Math.max(0, Math.min(1, parseFloat(e.target.value) || 0)) }))}
+                          style={{ ...numInput, width: "56px" }} />
+                      </div>
+                      {(() => {
+                        const parsed = parseLegendPosition(legendPreset?.style?.position);
+                        const updatePosition = (patch) => {
+                          setLegendOverrides(o => {
+                            const curr = typeof o.position === "object" ? o.position : { anchor: parsed.anchor };
+                            const next = { anchor: patch.anchor ?? curr.anchor ?? parsed.anchor };
+                            const currInset = curr.inset || { x: parsed.insetX, z: parsed.insetZ };
+                            if (patch.insetX != null || patch.insetZ != null) {
+                              next.inset = {
+                                x: patch.insetX != null ? patch.insetX : currInset.x,
+                                z: patch.insetZ != null ? patch.insetZ : currInset.z,
+                              };
+                            } else if (curr.inset) {
+                              next.inset = currInset;
+                            }
+                            return { ...o, position: next };
+                          });
+                        };
+                        const isCenter = parsed.anchor === "center";
+                        return (
+                          <div style={fieldRowStyle}>
+                            <span style={fieldLabel}>{tLab("lab_legend_position")}</span>
+                            <select value={parsed.anchor}
+                              onChange={(e) => updatePosition({ anchor: e.target.value })}
+                              style={{ ...sel, minWidth: "140px" }}>
+                              <option value="center">{tLab("lab_pos_center")}</option>
+                              <option value="top-left">{tLab("lab_pos_top_left")}</option>
+                              <option value="top-center">{tLab("lab_pos_top_center")}</option>
+                              <option value="top-right">{tLab("lab_pos_top_right")}</option>
+                              <option value="bottom-left">{tLab("lab_pos_bottom_left")}</option>
+                              <option value="bottom-center">{tLab("lab_pos_bottom_center")}</option>
+                              <option value="bottom-right">{tLab("lab_pos_bottom_right")}</option>
+                            </select>
+                            {!isCenter && (
+                              <>
+                                <span style={{ fontSize: "12px", color: `${text}77` }}>{tLab("lab_legend_inset")}</span>
+                                {parsed.anchorX !== "center" && (
+                                  <label style={{ ...lbl, gap: "4px" }}>
+                                    <span style={{ fontSize: "11px", color: `${text}99` }}>X</span>
+                                    <input type="number" min={LEGEND_INSET_RANGE.min} max={LEGEND_INSET_RANGE.max} step="0.01"
+                                      value={parsed.insetX.toFixed(2)}
+                                      onChange={(e) => updatePosition({ insetX: parseFloat(e.target.value) || LEGEND_INSET_DEFAULTS.x })}
+                                      style={numInput} />
+                                  </label>
+                                )}
+                                {parsed.anchorY !== "middle" && (
+                                  <label style={{ ...lbl, gap: "4px" }}>
+                                    <span style={{ fontSize: "11px", color: `${text}99` }}>Z</span>
+                                    <input type="number" min={LEGEND_INSET_RANGE.min} max={LEGEND_INSET_RANGE.max} step="0.01"
+                                      value={parsed.insetZ.toFixed(2)}
+                                      onChange={(e) => updatePosition({ insetZ: parseFloat(e.target.value) || LEGEND_INSET_DEFAULTS.z })}
+                                      style={numInput} />
+                                  </label>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  {cardTabs.Legend === "json" && renderJsonPane(legendJson, "Legend", "220px")}
+                  {cardTabs.Legend === "doc" && renderDocPane("lab_doc_legend")}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
+
+      {/* ═══ Import Modal (KLE paste or drop) ═══ */}
+      {showKleModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 2000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+        }} onClick={() => setShowKleModal(false)}>
+          <div style={{
+            background: bg, border: `1px solid ${text}20`, borderRadius: "12px",
+            width: "min(1080px, 92vw)", height: "min(720px, 86vh)",
+            padding: "20px 24px", display: "flex", flexDirection: "column", gap: "10px",
+            overflow: "hidden",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h2 style={{ color: accent, margin: 0, fontSize: "18px", fontWeight: 700 }}>{tLab("lab_import")}</h2>
+              <button onClick={() => setShowKleModal(false)} style={{
+                background: "transparent", border: "none", color: `${text}66`, cursor: "pointer", fontSize: "20px", lineHeight: 1,
+              }}>×</button>
+            </div>
+            <p style={{ color: `${text}88`, fontSize: "12px", margin: 0, lineHeight: 1.5 }}>
+              {(() => {
+                const [before, after] = tLab("lab_import_kle_hint", "\uE000").split("\uE000");
+                return (<>
+                  {before}
+                  <a href="https://www.keyboard-layout-editor.com/" target="_blank" rel="noopener noreferrer"
+                    style={{ color: accent, textDecoration: "underline" }}>
+                    {tLab("lab_import_kle_hint_link")}
+                  </a>
+                  {after}
+                </>);
+              })()}
+            </p>
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setKleDragOver(true); }}
+              onDragLeave={() => setKleDragOver(false)}
+              onDrop={handleKleFileDrop}
+              style={{
+                flex: 1, minHeight: 0, display: "flex", flexDirection: "column",
+                border: `2px ${kleDragOver ? "solid" : "dashed"} ${kleDragOver ? accent : text+"22"}`,
+                borderRadius: "6px", position: "relative", transition: "border-color 120ms, border-style 120ms",
+              }}
+            >
+              {!kleInput && (
+                <div style={{
+                  position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  color: kleDragOver ? accent : `${text}55`, fontSize: "13px", pointerEvents: "none", zIndex: 1,
+                  textAlign: "center", padding: "0 20px",
+                }}>
+                  {tLab("lab_import_kle_drop_hint")}
+                </div>
+              )}
+              <Suspense fallback={<div style={{ color: `${text}66`, fontSize: "12px", padding: "12px" }}>{tLab("lab_loading")}</div>}>
+                <MonacoEditor
+                  height="100%"
+                  defaultLanguage="json"
+                  theme="vs-dark"
+                  value={kleInput}
+                  onChange={(v) => { setKleInput(v || ""); setKleError(""); }}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 12,
+                    scrollBeyondLastLine: false,
+                    wordWrap: "on",
+                    automaticLayout: true,
+                    lineNumbers: "on",
+                  }}
+                />
+              </Suspense>
+            </div>
+
+            {kleError && (
+              <div style={{
+                background: "#3a1515", color: "#ff9999", border: `1px solid #ff666644`,
+                borderRadius: "4px", padding: "8px 10px", fontSize: "12px",
+                fontFamily: "Courier New, monospace", whiteSpace: "pre-wrap",
+              }}>
+                <strong style={{ color: "#ff6666" }}>{tLab("lab_import_kle_failed")}</strong> {kleError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", alignItems: "center" }}>
+              <span style={{ flex: 1, color: `${text}55`, fontSize: "11px" }}>
+                {kleInput ? tLab("lab_import_kle_chars", kleInput.length) : ""}
+              </span>
+              <button onClick={() => { setKleInput(""); setKleError(""); }} style={btn(false)} disabled={!kleInput}>
+                {tLab("lab_clear_all")}
+              </button>
+              <button onClick={() => setShowKleModal(false)} style={btn(false)}>{tLab("lab_cancel")}</button>
+              <button onClick={handleKleConvert} disabled={!kleInput.trim()}
+                style={{ ...btn(true), opacity: kleInput.trim() ? 1 : 0.4, cursor: kleInput.trim() ? "pointer" : "not-allowed" }}>
+                {tLab("lab_convert")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ Roadmap Modal ═══ */}
       {showRoadmap && (

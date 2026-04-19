@@ -90,6 +90,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
 
   const text = theme?.text || "#e0e0e0";
   const accent = theme?.stats || "#6ec6ff";
+  const bg = theme?.background || "#111115";
   const mountColor = "#44dd88";
 
   // SVG coordinate system: x=0 left (front), x=100 right (back), y=0 bottom, y grows up
@@ -293,21 +294,42 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
           );
         })}
 
-        {/* Mount label */}
-        <text x={(mountFrom.sx + mountTo.sx) / 2} y={(mountFrom.sy + mountTo.sy) / 2 - 5}
-          fontSize="7" fill={mountColor} textAnchor="middle" opacity={0.8} pointerEvents="none">mount</text>
 
-        {/* Control points */}
+        {/* Edge midpoint labels — show the edge key (e.g. "0→1") so users can map
+            the edge-accent row back to a specific line in the viewer. */}
+        {points.map((_, i) => {
+          const j = (i + 1) % points.length;
+          const a = toSvg(points[i]);
+          const b = toSvg(points[j]);
+          const mx = (a.sx + b.sx) / 2;
+          const my = (a.sy + b.sy) / 2;
+          const isMount = (mountEdge[0] === i && mountEdge[1] === j) || (mountEdge[0] === j && mountEdge[1] === i);
+          const ce = coloredEdges.find(e => (e.from === i && e.to === j) || (e.from === j && e.to === i));
+          return (
+            <g key={`em-${i}`} pointerEvents="none">
+              <rect x={mx - 14} y={my - 7} width={28} height={14} rx={3}
+                fill={bg} fillOpacity={0.75}
+                stroke={ce ? ce.color : isMount ? mountColor : `${text}22`} strokeWidth={0.75} />
+              <text x={mx} y={my + 4} fontSize="10" textAnchor="middle"
+                fill={ce ? ce.color : isMount ? mountColor : `${text}99`} fontWeight={600}>
+                {i}→{j}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Control points — numbered badges */}
         {points.map((pt, i) => {
           const { sx, sy } = toSvg(pt);
           const isHovered = hoveredPoint === i;
           const isSelected = selectedPoint === i;
           const isDrag = dragging === i;
           const isOnMount = mountEdge.includes(i);
+          const r = isDrag || isSelected ? 10 : isHovered ? 9 : 8;
           return (
             <g key={i}>
-              <circle cx={sx} cy={sy} r={isDrag ? 6 : isSelected ? 6 : isHovered ? 5 : 4}
-                fill={isDrag ? accent : isSelected ? accent : isHovered ? `${accent}88` : isOnMount ? `${mountColor}66` : `${accent}44`}
+              <circle cx={sx} cy={sy} r={r}
+                fill={isDrag ? accent : isSelected ? accent : isHovered ? `${accent}cc` : isOnMount ? `${mountColor}88` : `${accent}66`}
                 stroke={isOnMount ? mountColor : accent} strokeWidth={1.5}
                 style={{ cursor: "grab" }}
                 onMouseDown={(e) => handlePointMouseDown(i, e)}
@@ -315,7 +337,11 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
                 onMouseLeave={() => setHoveredPoint(null)}
                 onContextMenu={(e) => handleRightClick(i, e)}
               />
-              <text x={sx} y={sy - 8} fontSize="7" fill={text} textAnchor="middle" opacity={0.4} pointerEvents="none">
+              <text x={sx} y={sy + 4} fontSize="11" textAnchor="middle" fontWeight={700}
+                fill={isSelected || isDrag ? bg : text} pointerEvents="none">
+                {i}
+              </text>
+              <text x={sx} y={sy - 14} fontSize="10" fill={text} textAnchor="middle" opacity={0.5} pointerEvents="none">
                 {pt.x},{pt.y}
               </text>
             </g>
@@ -323,8 +349,8 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
         })}
 
         {/* Labels */}
-        <text x={padX} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>{tLab("lab_front")}</text>
-        <text x={svgW - padX - 16} y={svgH - 2} fontSize="7" fill={text} opacity={0.25}>{tLab("lab_back")}</text>
+        <text x={padX} y={svgH - 2} fontSize="10" fill={text} opacity={0.4}>{tLab("lab_front")}</text>
+        <text x={svgW - padX - 20} y={svgH - 2} fontSize="10" fill={text} opacity={0.4}>{tLab("lab_back")}</text>
       </svg>
 
       {/* ─── Extrusion width (always visible) ─── */}
@@ -339,13 +365,13 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
               onExtrudeWidthChange?.(v / 100);
             }}
             style={{
-              background: "#1a1a1e", color: text, border: `1px solid ${text}22`,
+              background: bg, color: text, border: `1px solid ${text}33`,
               borderRadius: "3px", width: "42px", padding: "1px 3px",
               fontSize: "12px", textAlign: "center",
             }}
           />%
         </label>
-        <span style={{ fontSize: "11px", color: text, opacity: 0.3 }}>{tLab("lab_symmetric")}</span>
+        <span style={{ fontSize: "12px", color: text, opacity: 0.45 }}>{tLab("lab_symmetric")}</span>
         <span style={{ flex: 1 }} />
         <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.round(p.y * 1.1) })))} style={btnStyle}>{tLab("lab_taller")}</button>
         <button onClick={() => setPoints(points.map(p => ({ ...p, y: Math.max(0, Math.round(p.y * 0.9)) })))} style={btnStyle}>{tLab("lab_shorter")}</button>
@@ -353,7 +379,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
 
       {/* ─── Points table (always visible) ─── */}
       <div style={{ display: "flex", gap: "3px", flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_points")}</span>
+        <span style={{ fontSize: "12px", color: text, opacity: 0.55, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_points")}</span>
         {points.map((pt, i) => {
           const isSelected = selectedPoint === i;
           const isOnMount = mountEdge.includes(i);
@@ -365,11 +391,11 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
                 padding: "2px 5px", borderRadius: "3px", cursor: "pointer",
                 background: isSelected ? `${accent}22` : "transparent",
                 border: `1px solid ${isSelected ? accent : isOnMount ? `${mountColor}44` : `${text}11`}`,
-                fontSize: "11px", color: text,
+                fontSize: "12px", color: text,
               }}>
-              <span style={{ color: isOnMount ? mountColor : `${text}66`, fontWeight: 600, minWidth: "8px" }}>{i}</span>
-              <span style={{ opacity: 0.5 }}>{pt.x},{pt.y}</span>
-              <span style={{ opacity: 0.3 }}>{tLab("lab_inset")}</span>
+              <span style={{ color: isOnMount ? mountColor : `${text}77`, fontWeight: 600, minWidth: "10px" }}>{i}</span>
+              <span style={{ opacity: 0.6 }}>{pt.x},{pt.y}</span>
+              <span style={{ opacity: 0.45 }}>{tLab("lab_inset")}</span>
               <input type="number" min="0" max="20"
                 value={pt.d || 0}
                 onClick={(e) => e.stopPropagation()}
@@ -382,14 +408,14 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
                   });
                 }}
                 style={{
-                  background: "#1a1a1e", color: text, border: `1px solid ${text}22`,
-                  borderRadius: "2px", width: "32px", padding: "1px 3px",
-                  fontSize: "11px", textAlign: "center",
+                  background: bg, color: text, border: `1px solid ${text}33`,
+                  borderRadius: "2px", width: "36px", padding: "1px 3px",
+                  fontSize: "12px", textAlign: "center",
                 }}
               />
               {points.length > 3 && (
                 <span onClick={(e) => { e.stopPropagation(); removePoint(i); }}
-                  style={{ color: "#ff666688", cursor: "pointer", fontSize: "10px", lineHeight: 1 }}
+                  style={{ color: "#ff666688", cursor: "pointer", fontSize: "14px", lineHeight: 1 }}
                   title={tLab("lab_remove_point")}>×</span>
               )}
             </div>
@@ -399,7 +425,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
 
       {/* ─── Edge accents ─── */}
       <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: "10px", color: text, opacity: 0.4, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_edge_accents")}</span>
+        <span style={{ fontSize: "12px", color: text, opacity: 0.55, textTransform: "uppercase", letterSpacing: "1px", marginRight: "2px" }}>{tLab("lab_edge_accents")}</span>
         {points.map((_, i) => {
           const j = (i + 1) % points.length;
           const ce = coloredEdges.find(e => (e.from === i && e.to === j) || (e.from === j && e.to === i));
@@ -409,10 +435,10 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
               display: "flex", alignItems: "center", gap: "3px",
               padding: "2px 5px", borderRadius: "3px",
               border: `1px solid ${ce ? ce.color + "66" : `${text}11`}`,
-              fontSize: "11px", color: text,
+              fontSize: "12px", color: text,
             }}>
-              <span style={{ opacity: 0.5 }}>{i}→{j}</span>
-              {isMount && <span style={{ color: mountColor, fontSize: "9px" }}>M</span>}
+              <span style={{ opacity: 0.6 }}>{i}→{j}</span>
+              {isMount && <span style={{ color: mountColor, fontSize: "11px", fontWeight: 700 }}>M</span>}
               <input type="color"
                 value={ce?.color || "#ffffff"}
                 onChange={(e) => {
@@ -439,7 +465,7 @@ const CaseProfileEditor = ({ theme, onChange, initialProfile, extrudeWidth, onEx
         })}
       </div>
 
-      <div style={{ fontSize: "11px", color: text, opacity: 0.3, lineHeight: 1.4 }}>
+      <div style={{ fontSize: "12px", color: text, opacity: 0.5, lineHeight: 1.5 }}>
         {tLab("lab_help_text")}
       </div>
     </div>

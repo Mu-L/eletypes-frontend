@@ -98,16 +98,19 @@ This word card mode has further two types **Vocab Mode** and **Selective Mode**.
 #### 4. Keyboard Lab (`/keyboardlab`) — *Beta*
 
  - 3D keyboard design editor — design custom keyboards in your browser
- - 6 layouts: 60%, 65%, 75%, TKL, Full-size, Cyberboard R2
+ - 7 layouts: 60%, 65%, HHKB 60%, 75%, TKL, Full-size, Cyberboard R2
  - 8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
  - 5 shell presets: Standard, Slim, Wide Bezel, Angular, Top Heavy
  - Parametric case profile editor with 2D → 3D extrusion
  - Colored edge accent strips (LED-style glow)
  - Per-group opacity: keycap, accent, case, legend
  - 10 color themes with "le smoking" as default
- - 6 legend presets with live font/size/weight/color editing
+ - 6 legend presets with live font/size/weight/color/opacity editing
+ - Legend position schema with safe inset — anchors never overflow the keycap
+ - **KLE layout import** — paste raw data or drop a `.json` from keyboard-layout-editor.com
+ - **Bento card UI** — per-asset collapsible cards with Config / JSON / Doc tabs; right panel scrolls within its container
  - Live key press animation with sound
- - Bidirectional JSON schema editor with Doc reference tab
+ - Bidirectional JSON schema editor (one Monaco instance per card)
  - Design save/load/export/import (eletypes-design-bundle/1 format)
  - Roadmap modal with editor's note
  - Full EN/ZH localization

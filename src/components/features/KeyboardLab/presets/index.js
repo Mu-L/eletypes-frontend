@@ -8,6 +8,7 @@ import layout60 from "./layout60";
 import layout65 from "./layout65";
 import layoutTKL from "./layoutTKL";
 import layoutFullSize from "./layoutFullSize";
+import layoutHHKB from "./layoutHHKB";
 import { DEFAULT_SHELL } from "../schema/shellProfile";
 
 const PRESETS = {
@@ -17,6 +18,7 @@ const PRESETS = {
   "65-ansi": { layout: layout65, shell: DEFAULT_SHELL },
   "tkl-ansi": { layout: layoutTKL, shell: DEFAULT_SHELL },
   "full-ansi": { layout: layoutFullSize, shell: DEFAULT_SHELL },
+  "hhkb-60-ansi": { layout: layoutHHKB, shell: DEFAULT_SHELL },
 };
 
 /** Get a preset by id. Returns { layout, shell }. */
