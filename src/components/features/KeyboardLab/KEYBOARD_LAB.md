@@ -87,7 +87,7 @@ e.g., "layout/cyberboard-75-ansi@1", "caseProfile/cyberboard-wedge@1"
 ## 3. Features
 
 ### 3D Keyboard Visualization
-- 6 layouts: 60%, 65%, 75% (Generic + Cyberboard R2), TKL 80%, Full-size 100%
+- 7 layouts: 60%, 65%, HHKB 60%, 75% (Generic + Cyberboard R2), TKL 80%, Full-size 100%
 - OrbitControls with zoom range 4–35
 - Spring animation on key press (critically damped, ~80ms settle)
 - Live key listening (DOM keydown → triggerKey → 3D animation + sound)
@@ -120,19 +120,34 @@ e.g., "layout/cyberboard-75-ansi@1", "caseProfile/cyberboard-wedge@1"
 ### Key Legends (3D Text)
 - Troika SDF text rendered inside KeyboardModel
 - 6 legend presets: GMK, Minimal, Retro, Top Print, Cyber, Blank
-- Live editing: font size, weight, family, color
+- Live editing: font size, weight, family, color, opacity
+- **Position schema** (7 anchors: center, top/bottom × left/center/right)
+  - Accepts legacy string form (`"top-left"`) or object form (`{ anchor, inset: { x, z } }`)
+  - Inset clamped to `[0.02, 0.45]` fractional — anchor always stays inside the keycap, no overflow
+  - Single `parseLegendPosition()` helper in `schema/derive.js` is the source of truth for both renderer and UI
 
-### Workspace Layout
+### Layout Import (KLE)
+- **Paste raw data** or **drop a `.json` file** from [keyboard-layout-editor.com](https://www.keyboard-layout-editor.com/)
+- Monaco-editor preview with **Convert** button (graceful error display; modal stays open on failure)
+- Parser tries strict `JSON.parse` first, then falls back to repairing raw-data-tab format (wrap brackets, quote bare keys, escape literal newlines inside strings)
+- Each import gets a unique asset ref (`layout/kle-<timestamp>-<rand>@1`) and a timestamped `meta.name` — repeat imports never collide
+- State engine sync: `registerBundled → layoutRefs list → active layoutRef → resolved layout` all update atomically
+
+### Workspace Layout (Bento Card Flow)
 - **Standalone route**: `/keyboardlab` with Logo header + minimal bottom nav
 - **3D viewport** (left, 65%) + **sidebar** (right, 35%), resizable via drag handle
 - **Toolbar**: New, Save, Saved dropdown (per-item delete + Clear All), Reload, Export, Import, Roadmap, Key Animation, Key Listen
-- **Assets row**: labeled dropdowns — Layout, Shell, Keycap, Legend, Profile, Theme
-- **Legend row**: labeled — Size, Weight, Font, Color
-- **Colors row**: labeled — Keycap/Accent/Case (color + opacity), Label (opacity)
-- **Tabbed editor panel**: Case Profile / 2D Layout
-- **Tabbed JSON editor**: Design | Layout | Keycap | Legend | Shell | Case Profile | Doc
-- **Monaco sync**: imperatively synced with all UI state changes
-- **Category titles**: accent color, 13px, bold
+- **Right panel**: scrollable vertical stack of **bento cards** — one per asset, each card owns its own state
+  - Cards: **Design | Layout | Shell | Case Profile | Keycap | Legend**
+  - Each card has a header row with title + per-card tabs (**Config / JSON / Doc**, plus Layout's 2D preview embedded in Config) + a collapse toggle
+  - Cards start expanded; collapse ad-hoc to save vertical space
+  - Clicking a tab on a collapsed card auto-expands it
+- **Per-card JSON editors**: each card mounts its own Monaco instance only when its JSON tab is active; two-way sync via `handleJsonChange(value, tabType)`
+- **Design card Refs**: two-column (key | value) display of all asset refs, color-coded to accent
+- **2D Layout preview**: embedded inside Layout card's Config tab, auto-fits container width via ResizeObserver — never overflows
+- **Number inputs** (not sliders): mount X/Y/Z, fit, scale, font size, opacities, legend inset — precise, keyboard-friendly
+- **Theme-aware surfaces**: select/input backgrounds use `theme.background` so they don't look like hard black rectangles on light themes
+- **Category titles**: accent color, 13px, bold, letter-spaced uppercase
 
 ### Design Persistence
 - **Bundle format**: `eletypes-design-bundle/1` wraps design doc + all embedded assets
@@ -219,6 +234,7 @@ KeyboardLab/
 │   ├── generic75.js, cyberboard75.js  ← 75% layouts
 │   ├── layout60.js                    ← 60% ANSI (61 keys)
 │   ├── layout65.js                    ← 65% ANSI (68 keys)
+│   ├── layoutHHKB.js                  ← HHKB 60% (60 keys, 7u spacebar, split backspace)
 │   ├── layoutTKL.js                   ← TKL 80% ANSI (87 keys)
 │   ├── layoutFullSize.js              ← Full-size 100% ANSI (104 keys)
 │   ├── keycaps.js                     ← Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
@@ -228,7 +244,8 @@ KeyboardLab/
 │   ├── CaseProfileEditor.jsx          ← SVG 2D profile editor + edge accents
 │   └── extrudeProfile.js             ← 2D→3D extrusion + mount surface + edge strips
 ├── services/
-│   └── designStorage.js              ← eletypes-design-bundle/1 persistence + migration
+│   ├── designStorage.js              ← eletypes-design-bundle/1 persistence + migration
+│   └── kleImporter.js                ← KLE JSON parser + validator (raw data tab & download file)
 ├── i18n/
 │   ├── labTranslations.js            ← EN/ZH translations (~90 keys)
 │   └── useLabTranslation.js          ← Hook: reads global locale, lab-specific keys
@@ -254,15 +271,18 @@ Shared components:
 
 ### Completed
 - [x] 3D keyboard visualization with InstancedMesh + spring animation
-- [x] 6 layouts: 60%, 65%, 75% (×2), TKL, Full-size (all ANSI)
+- [x] 7 layouts: 60%, 65%, HHKB 60%, 75% (×2), TKL, Full-size (all ANSI)
 - [x] 8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile
 - [x] 5 shell presets: Standard, Slim, Wide Bezel, Angular, Top Heavy
 - [x] 6 legend presets with live editing
+- [x] **Legend position + inset schema** — `parseLegendPosition()` clamps inset to [0.02, 0.45] so anchors never overflow the keycap
 - [x] Parametric case profile editor (4 presets + colored edge accents)
 - [x] Per-group opacity (keycap, accent, case, legend)
 - [x] Design bundle schema (eletypes-design-bundle/1) for local persistence
+- [x] **KLE layout import** — paste raw data or drop `.json`, Monaco preview + Convert, unique timestamped refs
+- [x] **Bento card UI** — per-asset collapsible cards with Config / JSON / Doc tabs; 2D preview auto-fits container
 - [x] 10 color themes including le smoking
-- [x] Monaco JSON editor (7 tabs, bidirectional sync, Doc tab)
+- [x] Monaco JSON editor (per-card, bidirectional sync, Doc tab)
 - [x] Standalone /keyboardlab route with i18n (EN/ZH)
 - [x] Roadmap modal + editor's note + GitHub link
 - [x] Banner announcement + profile modal tab (beta)
@@ -275,10 +295,11 @@ Shared components:
 - [ ] [P0] Online cloud save — upload & download designs
 - [ ] [P1] Community gallery — browse, share & remix designs
 - [ ] [P2] Drag & drop 2D layout editor — reposition keys freely
-- [ ] [P3] Eletypes typing test animation integration
+- [ ] [P3] Spline & Bézier curves for case profile sculpting — smooth organic shapes
+- [ ] [P4] Eletypes typing test animation integration
 
 ### On the Horizon
 - [ ] Stickers & decals on keycaps and case
 - [ ] More visual effects: LED underglow, RGB lighting
-- [ ] KLE / VIA layout import converter
+- [ ] VIA layout import converter
 - [ ] Extract core engine as @eletypes/keyboard-lab npm package

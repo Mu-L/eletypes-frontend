@@ -14,6 +14,7 @@ import layout60 from "../../presets/layout60";
 import layout65 from "../../presets/layout65";
 import layoutTKL from "../../presets/layoutTKL";
 import layoutFullSize from "../../presets/layoutFullSize";
+import layoutHHKB from "../../presets/layoutHHKB";
 import { CHERRY_PROFILE, OEM_PROFILE, SA_PROFILE, MT3_PROFILE, KAT_PROFILE, DSA_PROFILE, XDA_PROFILE, LOW_PROFILE } from "../../presets/keycaps";
 import { LEGEND_PRESETS } from "../../presets/legends";
 import { DEFAULT_SHELL, SLIM_SHELL, WIDE_BEZEL_SHELL, ANGULAR_SHELL, TOP_HEAVY_SHELL } from "../shellProfile";
@@ -29,6 +30,7 @@ const BUNDLED = {
   "layout/65-ansi@1": layout65,
   "layout/tkl-ansi@1": layoutTKL,
   "layout/full-ansi@1": layoutFullSize,
+  "layout/hhkb-60-ansi@1": layoutHHKB,
 
   // Keycap profiles
   "keycap/cherry-classic@1": CHERRY_PROFILE,
@@ -61,6 +63,14 @@ const BUNDLED = {
   "caseProfile/chamfered-wedge@1": CHAMFERED_WEDGE_PROFILE,
   "caseProfile/ergonomic@1": ERGONOMIC_PROFILE,
 };
+
+/**
+ * Register a runtime-imported asset (e.g., a KLE import) into the bundled registry.
+ * The asset becomes resolvable via bundledResolver and visible to listBundledByType.
+ */
+export function registerBundled(ref, doc) {
+  BUNDLED[ref] = doc;
+}
 
 /**
  * Resolve an asset reference to its document.

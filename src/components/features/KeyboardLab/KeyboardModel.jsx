@@ -15,13 +15,29 @@ import React, {
 import { useFrame, useThree, extend } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three-stdlib";
-import { computeBounds, buildKeyIndex, isAccentKey, extractKeys } from "./schema/derive";
+import { computeBounds, buildKeyIndex, isAccentKey, extractKeys, parseLegendPosition } from "./schema/derive";
 import { DEFAULT_SHELL } from "./schema/shellProfile";
 import { createKeycapFromSpec } from "./KeycapGeometry";
 import { extrudeCaseProfile, computeMountSurface, extrudeEdgeStrip } from "./CaseEditor/extrudeProfile";
 import { Text } from "@react-three/drei";
 
 extend({ RoundedBoxGeometry });
+
+// Map the CSS font-family values stored in legendPreset.style.fontFamily to
+// actual TTF URLs that troika-three-text can load. The default troika font
+// (Roboto subset) lacks arrows (↑↓←→) and Apple glyphs (⌘ ⌥ ⇧ ⌫), so layouts
+// like HHKB and any keyboard with arrow keys rendered as .notdef squares.
+// DejaVu covers Latin, arrows, box drawing, and the Apple command symbols.
+const FONT_URL_MAP = {
+  "Arial, sans-serif":          "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf",
+  "Courier New, monospace":     "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSansMono.ttf",
+  "Tomorrow, monospace":        "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSerif.ttf",
+  "Helvetica Neue, Arial, sans-serif": "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf",
+  "Courier New, Courier, monospace":   "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSansMono.ttf",
+  "Tomorrow, Consolas, monospace":     "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSerif.ttf",
+};
+const DEFAULT_FONT_URL = "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf";
+const resolveFontUrl = (family) => FONT_URL_MAP[family] || DEFAULT_FONT_URL;
 
 // ─── Animation tuning ───
 const STIFFNESS = 600;
@@ -102,12 +118,19 @@ const KeyboardModel = forwardRef(({
   const offsets = useRef(new Float32Array(keyCount));
   const velocities = useRef(new Float32Array(keyCount));
   const activeSet = useRef(new Set());
+  // Refs to each legend's group so the press animation can translate the label
+  // along with the keycap. Without this, labels stay at their baseline Y while
+  // the keycap springs down/up, which looks like the legend detaches from the cap.
+  const labelGroupRefs = useRef([]);
+  const labelBaselineY = useRef(new Float32Array(keyCount));
 
   // Reset animation state when layout changes
   useEffect(() => {
     offsets.current = new Float32Array(keyCount);
     velocities.current = new Float32Array(keyCount);
     activeSet.current.clear();
+    labelBaselineY.current = new Float32Array(keyCount);
+    labelGroupRefs.current.length = keyCount;
   }, [keyCount]);
 
   // ─── Pre-allocated objects ───
@@ -339,6 +362,14 @@ const KeyboardModel = forwardRef(({
       } else {
         setKeyMatrix(i, offs[i]);
       }
+
+      // Move the label group so the legend stays glued to the keycap surface
+      // during the spring animation. baseline captured at render; offs[i] is
+      // the animated delta.
+      const labelGroup = labelGroupRefs.current[i];
+      if (labelGroup) {
+        labelGroup.position.y = labelBaselineY.current[i] + offs[i];
+      }
     }
 
     for (const i of toRemove) active.delete(i);
@@ -514,49 +545,68 @@ const KeyboardModel = forwardRef(({
         />
       )}
 
-      {/* Key legends — rendered here so they have direct access to restPositions */}
-      {legendPreset?.style?.fontSize > 0 && legendPreset?.style?.color !== "transparent" && (
-        <group>
-          {keys.map((key, i) => {
-            const rest = restPositions[i];
-            if (!rest) return null;
-            const override = legendPreset?.keyOverrides?.[key.id];
-            const displayLabel = override?.label ?? key.label;
-            if (!displayLabel) return null;
+      {/* Key legends — rendered here so they have direct access to restPositions.
+          Legend position ("center", "top-left", "top-right", "bottom-left",
+          "bottom-right", "top-center", "bottom-center") offsets the label anchor
+          toward the matching corner/edge of the keycap top surface. Convention
+          (see KeyboardModel above): world -Z is "top" (away from user), +Z is
+          "bottom", -X is "left", +X is "right". Text is rotated -π/2 around X so
+          its local +Y axis maps to world -Z — which means anchorY="top" anchors
+          the text at the "top" (world -Z) edge, lining up with the offset. */}
+      {legendPreset?.style?.fontSize > 0 && legendPreset?.style?.color !== "transparent" && (() => {
+        const { anchorX, anchorY, offXFrac, offZFrac } = parseLegendPosition(legendPreset?.style?.position);
+        const textAlign = anchorX === "left" ? "left" : anchorX === "right" ? "right" : "center";
+        const fontUrl = resolveFontUrl(legendPreset?.style?.fontFamily);
+        return (
+          <group>
+            {keys.map((key, i) => {
+              const rest = restPositions[i];
+              if (!rest) return null;
+              const override = legendPreset?.keyOverrides?.[key.id];
+              const displayLabel = override?.label ?? key.label;
+              if (!displayLabel) return null;
 
-            const baseSize = ((legendPreset?.style?.fontSize || 28) / 28) * 0.22;
-            let fontSize = baseSize;
-            if (displayLabel.length > 4) fontSize *= 0.6;
-            else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.7;
+              const baseSize = ((legendPreset?.style?.fontSize || 28) / 28) * 0.22;
+              let fontSize = baseSize;
+              if (displayLabel.length > 4) fontSize *= 0.6;
+              else if (displayLabel.length > 2 && key.w < 1.5) fontSize *= 0.7;
 
-            const color = override?.color || legendPreset?.style?.color || "#cccccc";
-            const text = legendPreset?.style?.uppercase && displayLabel.length === 1
-              ? displayLabel.toUpperCase() : displayLabel;
+              const color = override?.color || legendPreset?.style?.color || "#cccccc";
+              const text = legendPreset?.style?.uppercase && displayLabel.length === 1
+                ? displayLabel.toUpperCase() : displayLabel;
 
-            return (
-              <group
-                key={key.id}
-                position={[rest.x, rest.y + rest.sy / 2 + 0.005, rest.z]}
-                rotation={[rest.tiltX || 0, 0, 0]}
-              >
-                <Text
-                  fontSize={fontSize}
-                  color={color}
-                  fillOpacity={opacity.legend}
-                  anchorX="center"
-                  anchorY="middle"
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  fontWeight={legendPreset?.style?.fontWeight || 700}
-                  maxWidth={key.w * 0.8}
-                  textAlign="center"
+              const offX = offXFrac * rest.sx;
+              const offZ = offZFrac * rest.sz;
+              const baselineY = rest.y + rest.sy / 2 + 0.005;
+              labelBaselineY.current[i] = baselineY;
+
+              return (
+                <group
+                  key={key.id}
+                  ref={(el) => { labelGroupRefs.current[i] = el; }}
+                  position={[rest.x + offX, baselineY, rest.z + offZ]}
+                  rotation={[rest.tiltX || 0, 0, 0]}
                 >
-                  {text}
-                </Text>
-              </group>
-            );
-          })}
-        </group>
-      )}
+                  <Text
+                    font={fontUrl}
+                    fontSize={fontSize}
+                    color={color}
+                    fillOpacity={opacity.legend}
+                    anchorX={anchorX}
+                    anchorY={anchorY}
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    fontWeight={legendPreset?.style?.fontWeight || 700}
+                    maxWidth={key.w * 0.8}
+                    textAlign={textAlign}
+                  >
+                    {text}
+                  </Text>
+                </group>
+              );
+            })}
+          </group>
+        );
+      })()}
     </group>
   );
 });
