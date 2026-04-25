@@ -13,8 +13,11 @@
 import { createPreset } from "../schema/boardLayout";
 
 const R0 = 0, R1 = 1.25, R2 = 2.25, R3 = 3.25, R4 = 4.25, R5 = 5.25;
-const RC_LEFT = 14.5;  // Delete position (shifted left 1 from generic)
-const RC = 15.5;       // Right column (Home, End, PgUp, PgDn)
+// Nav column shifted left 0.5 so Home/End/PgUp/PgDn line up with the right
+// arrow (which itself moved left 0.25 on top of the AltRight removal). Delete
+// stays one column to its left.
+const RC_LEFT = 14;    // Delete position
+const RC = 15;         // Right column (Home, End, PgUp, PgDn) — aligned with ArrowRight
 
 export default createPreset({
   name: "Cyberboard R2 75%",
@@ -99,7 +102,7 @@ export default createPreset({
     { id: "Enter",      keyName: "Enter",      label: "Enter", x: 12.75, y: R3, w: 2.25, kind: "accent", cluster: "alpha" },
     { id: "PageDown",   keyName: "PageDown",   label: "PgDn",  x: RC,    y: R3, w: 1,    kind: "nav",    cluster: "nav-col" },
 
-    // ══ Row 4: Shift row — ↑ only, no nav key beside it ══
+    // ══ Row 4: Shift row — ↑ flush with right Shift ══
     { id: "ShiftLeft",  keyName: "ShiftLeft",  label: "Shift", x: 0,     y: R4, w: 2.25, kind: "accent", cluster: "alpha" },
     { id: "KeyZ",       keyName: "KeyZ",       label: "Z",     x: 2.25,  y: R4, w: 1,    kind: "alpha",  cluster: "alpha" },
     { id: "KeyX",       keyName: "KeyX",       label: "X",     x: 3.25,  y: R4, w: 1,    kind: "alpha",  cluster: "alpha" },
@@ -112,19 +115,23 @@ export default createPreset({
     { id: "Period",     keyName: "Period",      label: ".",     x: 10.25, y: R4, w: 1,    kind: "alpha",  cluster: "alpha" },
     { id: "Slash",      keyName: "Slash",       label: "/",     x: 11.25, y: R4, w: 1,    kind: "alpha",  cluster: "alpha" },
     { id: "ShiftRight", keyName: "ShiftRight",  label: "Shift", x: 12.25, y: R4, w: 1.75, kind: "accent", cluster: "alpha" },
-    { id: "ArrowUp",    keyName: "ArrowUp",     label: "↑",     x: 14.25, y: R4, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
+    { id: "ArrowUp",    keyName: "ArrowUp",     label: "↑",     x: 14,    y: R4, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
     // No nav key at RC on this row — gap between ↑ and right edge
 
-    // ══ Row 5: Bottom row — gap before arrows, PgDn above → ══
+    // ══ Row 5: Bottom row — no AltRight; Fn + Ctrl flush with spacebar ══
     { id: "ControlLeft",  keyName: "ControlLeft",  label: "Ctrl", x: 0,     y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
     { id: "MetaLeft",     keyName: "MetaLeft",     label: "Win",  x: 1.25,  y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
     { id: "AltLeft",      keyName: "AltLeft",      label: "Alt",  x: 2.5,   y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
     { id: "Space",        keyName: "Space",        label: "",     x: 3.75,  y: R5, w: 6.25, kind: "accent", cluster: "bottom-row" },
-    { id: "AltRight",     keyName: "AltRight",     label: "Alt",  x: 10,    y: R5, w: 1,    kind: "mod",    cluster: "bottom-row" },
-    { id: "Fn",           keyName: "Fn",           label: "Fn",   x: 11,    y: R5, w: 1,    kind: "mod",    cluster: "bottom-row" },
-    { id: "ControlRight", keyName: "ControlRight", label: "Ctrl", x: 12,    y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
-    { id: "ArrowLeft",    keyName: "ArrowLeft",    label: "←",    x: 13.25, y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
-    { id: "ArrowDown",    keyName: "ArrowDown",    label: "↓",    x: 14.25, y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
-    { id: "ArrowRight",   keyName: "ArrowRight",   label: "→",    x: 15.25, y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
+    // AltRight intentionally omitted — Cyberboard R2 only has Fn + Ctrl on
+    // the right of the spacebar (mirrors AltLeft's gap=0 against the bar).
+    // Fn matches AltLeft's 1.25u width — symmetric with the left side of the
+    // spacebar. ControlRight shifts right by 0.25 to stay flush with Fn.
+    { id: "Fn",           keyName: "Fn",           label: "Fn",   x: 10,    y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
+    { id: "ControlRight", keyName: "ControlRight", label: "Ctrl", x: 11.25, y: R5, w: 1.25, kind: "mod",    cluster: "bottom-row" },
+    // Arrow cluster shifted left by 0.25 to match ArrowUp under it.
+    { id: "ArrowLeft",    keyName: "ArrowLeft",    label: "←",    x: 13,    y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
+    { id: "ArrowDown",    keyName: "ArrowDown",    label: "↓",    x: 14,    y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
+    { id: "ArrowRight",   keyName: "ArrowRight",   label: "→",    x: 15,    y: R5, w: 1,    kind: "arrow",  cluster: "arrow-cluster" },
   ],
 });

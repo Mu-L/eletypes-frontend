@@ -47,7 +47,7 @@ const LEGEND_ID_TO_REF = {
 const DEFAULT_OPACITY = { keycap: 1.0, accent: 1.0, case: 1.0, legend: 1.0 };
 
 const COLOR_PRESETS = {
-  "le smoking": { keycapColor: "#070505", accentKeyColor: "#010305", caseColor: "#7d5db6", opacity: { keycap: 0.95, accent: 1, case: 0.9, legend: 0.75 } },
+  "le smoking": { keycapColor: "#070505", accentKeyColor: "#010305", caseColor: "#7d5db6", opacity: { keycap: 0.95, accent: 1, case: 1.0, legend: 0.75 } },
   midnight:    { keycapColor: "#2a2a2e", accentKeyColor: "#3d3d42", caseColor: "#1a1a1e", opacity: { ...DEFAULT_OPACITY } },
   ocean:       { keycapColor: "#1e3a5f", accentKeyColor: "#2d6a9f", caseColor: "#0d1b2a", opacity: { ...DEFAULT_OPACITY } },
   sakura:      { keycapColor: "#f5e6e0", accentKeyColor: "#d4918b", caseColor: "#3d2b2b", opacity: { ...DEFAULT_OPACITY } },
@@ -134,15 +134,19 @@ const KeyboardLabDemo = ({ theme, soundMode = false, soundType = "keyboard" }) =
   // Viewer configurator — observer-side only, never persisted in the design
   // doc. Affects how the user perceives the scene (background, light level);
   // does NOT ship with a keyboard.
-  const [viewerBgType, setViewerBgType] = useState("solid"); // solid | gradient | studio | stars
-  const [viewerBg, setViewerBg] = useState("#111115");
-  const [viewerBg2, setViewerBg2] = useState("#1a1a2e");     // second stop for gradient/studio
-  const [viewerAmbient, setViewerAmbient] = useState(0.35);
-  const [viewerKey, setViewerKey] = useState(0.9);
-  // Depth / atmosphere controls
-  const [viewerFov, setViewerFov] = useState(40);          // 20 (long lens) – 70 (wide)
-  const [viewerFog, setViewerFog] = useState(0);           // 0 disables fog; otherwise density
-  const [viewerShadow, setViewerShadow] = useState(0.25);  // 0 disables; else opacity of ground shadow
+  // Studio backdrop by default — soft lavender center fading to near-black
+  // edges. Flatters the "le smoking" purple case and gives the keyboard a
+  // gallery-piece spotlight feel.
+  const [viewerBgType, setViewerBgType] = useState("studio");
+  const [viewerBg, setViewerBg] = useState("#c0acdc");       // lavender center
+  const [viewerBg2, setViewerBg2] = useState("#07050a");     // near-black edges
+  const [viewerAmbient, setViewerAmbient] = useState(0.4);
+  const [viewerKey, setViewerKey] = useState(1.0);
+  // Subtle atmosphere — light fog so the lavender doesn't get muddied, and
+  // a soft ground shadow for grounding.
+  const [viewerFov, setViewerFov] = useState(38);
+  const [viewerFog, setViewerFog] = useState(0.005);
+  const [viewerShadow, setViewerShadow] = useState(0.5);
   // Background variant options
   const [viewerGrid3D, setViewerGrid3D] = useState(false); // when bg type is "grid": render a 3D grid inside the scene instead of a flat CSS one
   const [viewerStarCount, setViewerStarCount] = useState(6); // density of stars bg

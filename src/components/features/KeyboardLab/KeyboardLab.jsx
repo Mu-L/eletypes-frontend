@@ -133,7 +133,7 @@ const KeyboardLab = forwardRef(({
         frameloop="demand"
         dpr={[1, 1.5]}
         gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
-        camera={{ position: [0, 9, 12], fov, near: 0.1, far: 100 }}
+        camera={{ position: [0, 10, 16], fov, near: 0.1, far: 100 }}
         // Transparent clear so the wrapper div's CSS background shows through —
         // this is how we get gradient / studio / stars for free, without any
         // skybox or RenderTarget setup.

@@ -17,15 +17,16 @@ export const labTranslations = {
       "3D keyboard visualization with spring animation",
       "8 keycap profiles: Cherry, OEM, SA, MT3, KAT, DSA, XDA, Low Profile",
       "7 layouts: 60%, 65%, HHKB 60%, 75%, TKL, Full-size, Cyberboard R2",
-      "6 legend presets with live editing",
-      "Legend position + safe inset schema — no more overflow",
+      "6 legend presets with live editing + position schema (safe inset, no overflow)",
       "Parametric case profile editor with 2D → 3D extrusion",
       "Colored edge accent strips (LED-style glow)",
       "Per-group opacity: keycap, accent, case, legend",
       "Design bundle schema for local save/export/import",
       "KLE layout import — paste raw data or drop a .json file",
       "Bento card UI — collapsible per-asset cards with Config / JSON / Doc tabs",
-      "Render-style schema (eletypes-renderStyle/1) — PBR, cel-hard toon + outline, lofi-flat; 6 named presets",
+      "Render-style schema (eletypes-renderStyle/1) — 8 modes: PBR, cel-hard toon + outline, lofi-flat, blueprint, x-ray, neon, risograph, pixel",
+      "Per-scope render styles — keycap and case can pick independent looks",
+      "Floating viewer overlay — background variants (solid / gradient / studio / stars / grid 2D & 3D), fog, FOV, ground shadow",
       "9 color themes including le smoking",
       "Bidirectional JSON schema editor with documentation",
       "English & Chinese localization",
@@ -36,7 +37,7 @@ export const labTranslations = {
       "[P2] Drag & drop 2D layout editor — reposition keys freely",
       "[P3] Spline & Bézier curves for case profile sculpting — smooth organic shapes, not just straight segments",
       "[P4] Eletypes typing test animation integration",
-      "[P5] More render styles — risograph (dither + channel offset), painterly, pixel, blueprint, x-ray; layer blend",
+      "[P5] Painterly render mode + layer blend (riso × cel etc.)",
     ],
     lab_roadmap_future_items: [
       "Stickers & decals on keycaps and case",
@@ -47,17 +48,11 @@ export const labTranslations = {
 
     // Editor's note
     lab_editors_note_title: "From the maker",
-    lab_editors_note: `Eletypes started from a simple frustration — I got tired of bloated typing platforms and just wanted a clean tool I'd actually enjoy using every day.
+    lab_editors_note: `Eletypes started as a typing tool I wanted for myself — open source, free, no signup, no ads.
 
-The philosophy has always been: open source, no sign-up, no ads, no distractions. A tool that respects your time and gets out of your way. That's why I'm careful about what goes in — every feature earns its place.
+Keyboard Lab is the wilder experiment: get the cost of designing a keyboard down to opening a browser tab — no Blender, no Fusion 360. Pick a layout, drag a few points, pick some colors, watch it come alive in 3D. The designs are rough, still beta, but we're not here to compete with CAD — we're here to play.
 
-Keyboard Lab is the most ambitious experiment yet. What if designing a keyboard was as easy as opening a browser tab? No Blender, no Fusion 360, no learning curve. Just pick a layout, sculpt the case, paint the edges, and watch it come alive in 3D — right here.
-
-No accounts. No paywalls. No heavy software. Just you, your imagination, and a keyboard that doesn't exist yet — until you make it.
-
-Yes, the designs are rough. Yes, it's beta. But we're not here to compete with professional CAD tools — we're here to play. To drag a few points around, pick some colors, and go "oh that actually looks kinda cool." Who knows where that leads?
-
-I'm building this in the open, and your feedback shapes what comes next. If you're a developer who shares this vision, you're welcome to join — find me on GitHub.
+Solo project — your feedback drives what's next. If you're up for tinkering together, find me on GitHub.
 
 Thanks for typing with me.`,
     lab_editors_note_link: "https://github.com/gamer-ai/eletype-frontend/",
@@ -350,15 +345,16 @@ mount — Keycap placement settings:
       "3D 键盘可视化，弹簧按键动画",
       "8 种键帽轮廓：Cherry、OEM、SA、MT3、KAT、DSA、XDA、矮轴",
       "7 种布局：60%、65%、HHKB 60%、75%、TKL、全尺寸、Cyberboard R2",
-      "6 种字符预设，支持实时编辑",
-      "字符位置 + 安全边距 Schema — 不再溢出键帽",
+      "6 种字符预设，支持实时编辑 + 位置 Schema（安全边距，不溢出键帽）",
       "参数化外壳轮廓编辑器，2D → 3D 挤出",
       "彩色边缘装饰条（LED 发光效果）",
       "分组透明度控制：键帽、重点键、外壳、字符",
       "设计包 Schema，支持本地保存/导出/导入",
       "KLE 布局导入 — 粘贴原始数据或拖入 .json 文件",
       "Bento 卡片 UI — 可折叠的资源卡片，各自拥有配置 / JSON / 文档 标签页",
-      "渲染风格 Schema（eletypes-renderStyle/1）—— PBR、硬切卡通 + 描边、无光照纯色；6 种预设",
+      "渲染风格 Schema（eletypes-renderStyle/1）—— 8 种模式：PBR、硬切卡通 + 描边、无光照纯色、工程图纸、透视线框、霓虹、Risograph、像素",
+      "分作用域渲染风格 — 键帽和外壳可以各选各的风格",
+      "悬浮取景器面板 — 背景样式（纯色 / 渐变 / 影棚 / 星空 / 网格 2D & 3D）、雾、视角、接地阴影",
       "9 种配色主题，包含 le smoking",
       "双向 JSON Schema 编辑器及文档",
       "中英文界面支持",
@@ -369,7 +365,7 @@ mount — Keycap placement settings:
       "[P2] 拖放式 2D 布局编辑器 — 自由移动按键",
       "[P3] 外壳轮廓支持样条曲线和贝塞尔曲线 — 流畅的有机造型，不再局限于直线段",
       "[P4] Eletypes 打字测试动画集成",
-      "[P5] 更多渲染风格 — Risograph（抖动 + 通道错位）、笔触、像素、工程图纸、透视线框；图层混合",
+      "[P5] 笔触渲染模式 + 图层混合（riso × cel 等）",
     ],
     lab_roadmap_future_items: [
       "贴纸与键帽/外壳装饰",
@@ -380,17 +376,11 @@ mount — Keycap placement settings:
 
     // Editor's note
     lab_editors_note_title: "写在前面",
-    lab_editors_note: `Eletypes 的诞生，源于一个很简单的念头 —— 有一天我实在受不了那些臃肿的打字平台，就想做一个自己每天都愿意打开的小工具。
+    lab_editors_note: `Eletypes 一开始就是个我自己想用的打字小工具 —— 开源、免费、没账号、没广告。
 
-从第一天起，这个项目的哲学就很明确：开源、无需注册、没有广告、不打扰你。尊重你的时间，用完即走。所以我一直很克制，每一个新功能都要问自己：它值得存在吗？
+键盘实验室是更野的实验：把设计一把键盘的成本压到打开一个浏览器标签页 —— 不用 Blender，不用 Fusion 360。挑布局、拖几个点、选几个颜色，看它在你面前变成 3D。设计还很糙，是 beta，但我们不是来和 CAD 较劲的，就是来玩的。
 
-键盘实验室是迄今最大胆的实验。如果设计一把键盘的门槛，低到只需要打开一个浏览器标签页呢？不需要 Blender，不需要 Fusion 360，不需要任何建模经验。选布局、雕刻外壳、给边缘上色，看着它在你面前变成 3D 实物 —— 就这么简单。
-
-不需要账号，不需要付费，不需要安装任何软件。只有你、你的想象力，和一把还不存在的键盘 —— 直到你把它做出来。
-
-是的，设计很糙。是的，还是 beta。但我们不是来和专业 CAD 工具较劲的 —— 我们是来玩的。拖几个点，选几个颜色，然后发现 "诶，这还挺好看的"。谁知道呢，说不定就玩出点什么来了。
-
-目前只有我一个人在做这件事，你的反馈决定下一步做什么。如果你也是一个有同样愿景的开发者，欢迎在 GitHub 上加入。
+一个人在维护，你的反馈决定下一步做啥。想一起折腾的话，欢迎在 GitHub 上加入。
 
 感谢你和我一起打字。`,
     lab_editors_note_link: "https://github.com/gamer-ai/eletype-frontend/",
