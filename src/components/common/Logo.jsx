@@ -118,6 +118,11 @@ const Logo = ({
   toggleFocusedMode,
   isUltraZenMode,
   toggleUltraZenMode,
+  customThemes,
+  onActivateTheme,
+  onCreateTheme,
+  onEditTheme,
+  onDeleteTheme,
 }) => {
   const { t } = useLocale();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -274,6 +279,11 @@ const Logo = ({
             initialTab={profileInitialTab}
             onNewsViewed={dismissAll}
             unviewedNewsCount={newsCount}
+            customThemes={customThemes}
+            onActivateTheme={onActivateTheme}
+            onCreateTheme={onCreateTheme}
+            onEditTheme={onEditTheme}
+            onDeleteTheme={onDeleteTheme}
           />
         </>
       )}

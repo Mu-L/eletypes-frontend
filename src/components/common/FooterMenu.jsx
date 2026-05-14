@@ -27,10 +27,13 @@ import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
 import SchoolIcon from "@mui/icons-material/School";
 import DesignServicesIcon from "@mui/icons-material/DesignServices";
+import ColorLensIcon from "@mui/icons-material/ColorLens";
+import EditIcon from "@mui/icons-material/Edit";
 import { useLocale } from "../../context/LocaleContext";
+import { buildGroupedOptions, findOptionForTheme, isCustomTheme } from "../../style/customThemes";
 
 const FooterMenu = ({
-  themesOptions,
+  customThemes,
   theme,
   soundMode,
   toggleSoundMode,
@@ -38,6 +41,8 @@ const FooterMenu = ({
   soundType,
   handleSoundTypeChange,
   handleThemeChange,
+  onCreateTheme,
+  onEditCurrentTheme,
   toggleFocusedMode,
   toggleMusicMode,
   toggleUltraZenMode,
@@ -56,6 +61,9 @@ const FooterMenu = ({
   const { locale, setLocale, t } = useLocale();
   const isSiteInfoDisabled = isMusicMode || isFocusedMode;
   const isSpecialMode = isTrainerMode || isWordsCardMode;
+  const groupedThemeOptions = buildGroupedOptions(customThemes, t);
+  const themeOptionValue = findOptionForTheme(groupedThemeOptions, theme);
+  const currentIsCustom = isCustomTheme(theme);
 
   const activeCls = (on) => (on ? "nav-item-active" : "nav-item");
   const modeCls = (currMode, buttonMode) => {
@@ -169,15 +177,31 @@ const FooterMenu = ({
           <div className="nav-group-items">
             <Select
               classNamePrefix="Select"
-              value={themesOptions.find(
-                (e) => e.value.label === theme.label
-              )}
-              options={themesOptions}
+              value={themeOptionValue}
+              options={groupedThemeOptions}
               isSearchable={false}
               isSelected={false}
               onChange={handleThemeChange}
               menuPlacement="top"
             />
+            {currentIsCustom && onEditCurrentTheme && (
+              <IconButton size="small" onClick={onEditCurrentTheme}>
+                <Tooltip title={t("theme_action_edit")}>
+                  <span className="nav-item">
+                    <EditIcon fontSize="small" />
+                  </span>
+                </Tooltip>
+              </IconButton>
+            )}
+            {onCreateTheme && (
+              <IconButton size="small" onClick={onCreateTheme}>
+                <Tooltip title={t("theme_action_new")}>
+                  <span className="nav-item">
+                    <ColorLensIcon fontSize="small" />
+                  </span>
+                </Tooltip>
+              </IconButton>
+            )}
             <IconButton size="small" onClick={toggleFocusedMode}>
               <Tooltip title={t("focus_mode")}>
                 <span className={activeCls(isFocusedMode)}>

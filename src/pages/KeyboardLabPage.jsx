@@ -2,15 +2,18 @@
  * KeyboardLabPage — standalone route at /keyboardlab.
  */
 
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import { ThemeProvider } from "styled-components";
 import { GlobalStyles } from "../style/global";
-import { defaultTheme, themesOptions } from "../style/theme";
+import { defaultTheme } from "../style/theme";
+import { loadCustomThemes, resolveTheme } from "../style/customThemes";
 import { LocaleProvider } from "../context/LocaleContext";
 import useLocalPersistState from "../hooks/useLocalPersistState";
+import useCustomThemeEditor from "../hooks/useCustomThemeEditor";
 import Logo from "../components/common/Logo";
 import DynamicBackground from "../components/common/DynamicBackground";
 import MiniFooter from "../components/common/MiniFooter";
+import CustomThemeEditor from "../components/features/CustomTheme/CustomThemeEditor";
 import { useLabTranslation } from "../components/features/KeyboardLab/i18n/useLabTranslation";
 import {
   SOUND_MODE,
@@ -23,10 +26,25 @@ const KeyboardLabDemo = lazy(() =>
   import("../components/features/KeyboardLab/KeyboardLabDemo")
 );
 
-const KeyboardLabInner = ({ theme, handleThemeChange }) => {
+const KeyboardLabInner = ({ theme, setTheme, handleThemeChange }) => {
   const [soundMode, setSoundMode] = useLocalPersistState(SOUND_MODE, "sound-mode");
   const [soundType, setSoundType] = useLocalPersistState(DEFAULT_SOUND_TYPE, DEFAULT_SOUND_TYPE_KEY);
   const tLab = useLabTranslation();
+
+  const {
+    customThemes,
+    editorOpen,
+    editorMode,
+    openEditorForNew,
+    openEditorForCurrent,
+    openEditorForId,
+    activateTheme,
+    deleteCustomThemeById,
+    handleEditorChange,
+    handleEditorSave,
+    handleEditorCancel,
+    handleEditorDelete,
+  } = useCustomThemeEditor({ theme, setTheme });
 
   return (
     <>
@@ -43,6 +61,11 @@ const KeyboardLabInner = ({ theme, handleThemeChange }) => {
           toggleFocusedMode={() => {}}
           isUltraZenMode={false}
           toggleUltraZenMode={() => {}}
+          customThemes={customThemes}
+          onActivateTheme={activateTheme}
+          onCreateTheme={openEditorForNew}
+          onEditTheme={openEditorForId}
+          onDeleteTheme={deleteCustomThemeById}
         />
         <Suspense
           fallback={
@@ -62,8 +85,10 @@ const KeyboardLabInner = ({ theme, handleThemeChange }) => {
         <div className="bottomBar">
           <MiniFooter
             theme={theme}
-            themesOptions={themesOptions}
+            customThemes={customThemes}
             handleThemeChange={handleThemeChange}
+            onCreateTheme={openEditorForNew}
+            onEditCurrentTheme={openEditorForCurrent}
             soundMode={soundMode}
             toggleSoundMode={() => setSoundMode(!soundMode)}
             soundOptions={soundOptions}
@@ -72,13 +97,30 @@ const KeyboardLabInner = ({ theme, handleThemeChange }) => {
             backLabel={tLab("lab_return")}
           />
         </div>
+        <CustomThemeEditor
+          open={editorOpen}
+          workingTheme={editorOpen ? theme : null}
+          onChange={handleEditorChange}
+          onSave={handleEditorSave}
+          onCancel={handleEditorCancel}
+          onDelete={handleEditorDelete}
+          isExistingCustom={editorMode === "edit"}
+          existingNames={customThemes
+            .filter((t) => editorMode !== "edit" || t.id !== theme?.id)
+            .map((t) => t.label)}
+        />
       </div>
     </>
   );
 };
 
 const KeyboardLabPage = () => {
-  const [theme, setTheme] = useLocalPersistState(defaultTheme, "theme");
+  const [theme, setTheme] = useState(() => {
+    const raw = window.localStorage.getItem("theme");
+    if (raw == null) return defaultTheme;
+    try { return resolveTheme(JSON.parse(raw), loadCustomThemes()); }
+    catch { return defaultTheme; }
+  });
 
   const handleThemeChange = (e) => {
     window.localStorage.setItem("theme", JSON.stringify(e.value));
@@ -88,7 +130,7 @@ const KeyboardLabPage = () => {
   return (
     <LocaleProvider>
       <ThemeProvider theme={theme}>
-        <KeyboardLabInner theme={theme} handleThemeChange={handleThemeChange} />
+        <KeyboardLabInner theme={theme} setTheme={setTheme} handleThemeChange={handleThemeChange} />
       </ThemeProvider>
     </LocaleProvider>
   );

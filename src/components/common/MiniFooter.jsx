@@ -11,9 +11,12 @@ import TranslateIcon from "@mui/icons-material/Translate";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
+import ColorLensIcon from "@mui/icons-material/ColorLens";
+import EditIcon from "@mui/icons-material/Edit";
 import { Tooltip } from "@mui/material";
 import Select from "../utils/Select";
 import { useLocale } from "../../context/LocaleContext";
+import { buildGroupedOptions, findOptionForTheme, isCustomTheme } from "../../style/customThemes";
 
 const Sep = ({ theme }) => (
   <span style={{ color: theme?.stats || "#6ec6ff", opacity: 0.25, fontSize: "14px", fontFamily: "monospace", userSelect: "none" }}>│</span>
@@ -35,8 +38,10 @@ const BracketBtn = ({ children, onClick, href, title, theme }) => {
 
 const MiniFooter = ({
   theme,
-  themesOptions,
+  customThemes,
   handleThemeChange,
+  onCreateTheme,
+  onEditCurrentTheme,
   soundMode,
   toggleSoundMode,
   soundOptions,
@@ -45,6 +50,9 @@ const MiniFooter = ({
   backLabel,
 }) => {
   const { locale, setLocale, t } = useLocale();
+  const groupedThemeOptions = buildGroupedOptions(customThemes, t);
+  const themeOptionValue = findOptionForTheme(groupedThemeOptions, theme);
+  const currentIsCustom = isCustomTheme(theme);
 
   return (
     <div style={{
@@ -86,13 +94,23 @@ const MiniFooter = ({
       </BracketBtn>
       <Select
         classNamePrefix="Select"
-        value={themesOptions.find((e) => e.value.label === theme.label)}
-        options={themesOptions}
+        value={themeOptionValue}
+        options={groupedThemeOptions}
         isSearchable={false}
         isSelected={false}
         onChange={handleThemeChange}
         menuPlacement="top"
       />
+      {currentIsCustom && onEditCurrentTheme && (
+        <BracketBtn title={t("theme_action_edit")} onClick={onEditCurrentTheme} theme={theme}>
+          <EditIcon style={{ fontSize: "14px" }} />
+        </BracketBtn>
+      )}
+      {onCreateTheme && (
+        <BracketBtn title={t("theme_action_new")} onClick={onCreateTheme} theme={theme}>
+          <ColorLensIcon style={{ fontSize: "14px" }} />
+        </BracketBtn>
+      )}
 
       <Sep theme={theme} />
 

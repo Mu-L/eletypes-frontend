@@ -34,6 +34,7 @@ What started as a typing test inspired by [monkeytype.com](https://www.monkeytyp
 
 ### Experience
 - **18 themes** including dynamic WebGL backgrounds (Tranquiluxe, Lumiflex, Opulento, Velustro)
+- **Custom theme editor** — build your own theme with live preview; colors, gradients, font, text shadow all editable; saved locally and listed under "My Themes" alongside the built-ins. Open it from the theme selector in the bottom nav, or from the **Themes** tab in the Profile center.
 - **Typing sounds** — Cherry Blue, mechanical, typewriter
 - **Focus / Ultra Zen** modes for distraction-free sessions
 - **PWA** — installable, works offline
@@ -61,9 +62,11 @@ No accounts. No ads. No tracking. Your practice history and settings live in you
 ```bash
 npm install
 npm run dev      # localhost:3000
-npm run build    # production bundle
-npm run deploy   # Firebase Hosting
+npm run build    # production bundle to build/
+npm run preview  # serve the production bundle locally
 ```
+
+Deploying is wherever you want to host static files — push the contents of `build/` to your hosting of choice. (`npm run deploy` is just an alias for `npm run build` and does **not** ship anywhere on its own.)
 
 ## Documentation
 

@@ -1,11 +1,17 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { ThemeProvider } from "styled-components";
-import { defaultTheme, themesOptions } from "./style/theme";
+import { defaultTheme } from "./style/theme";
+import {
+  loadCustomThemes,
+  resolveTheme,
+} from "./style/customThemes";
 import { GlobalStyles } from "./style/global";
 import { LocaleProvider } from "./context/LocaleContext";
 import Logo from "./components/common/Logo";
 import MusicPlayerSnackbar from "./components/features/MusicPlayer/MusicPlayerSnackbar";
 import FooterMenu from "./components/common/FooterMenu";
+import CustomThemeEditor from "./components/features/CustomTheme/CustomThemeEditor";
+import useCustomThemeEditor from "./hooks/useCustomThemeEditor";
 import {
   GAME_MODE,
   GAME_MODE_DEFAULT,
@@ -51,20 +57,33 @@ function App() {
     () => initialChallenge?.seed || generateSeed()
   );
 
-  // localStorage persist theme setting
+  // Active theme. Resolved against built-in + custom so both kinds round-trip.
   const [theme, setTheme] = useState(() => {
-    const stickyTheme = window.localStorage.getItem("theme");
-    if (stickyTheme !== null) {
-      const localTheme = JSON.parse(stickyTheme);
-      const upstreamTheme = themesOptions.find(
-        (e) => e.label === localTheme.label
-      ).value;
-      // we will do a deep equal here. In case we want to support customized local theme.
-      const isDeepEqual = localTheme === upstreamTheme;
-      return isDeepEqual ? localTheme : upstreamTheme;
+    const raw = window.localStorage.getItem("theme");
+    if (raw == null) return defaultTheme;
+    try {
+      return resolveTheme(JSON.parse(raw), loadCustomThemes());
+    } catch {
+      return defaultTheme;
     }
-    return defaultTheme;
   });
+
+  // While the editor is open, `theme` doubles as the in-progress edit so the
+  // page previews live; cancel restores the previous theme.
+  const {
+    customThemes,
+    editorOpen,
+    editorMode,
+    openEditorForNew,
+    openEditorForCurrent,
+    openEditorForId,
+    activateTheme,
+    deleteCustomThemeById,
+    handleEditorChange,
+    handleEditorSave,
+    handleEditorCancel,
+    handleEditorDelete,
+  } = useCustomThemeEditor({ theme, setTheme });
 
   // local persist game mode setting
   const [soundMode, setSoundMode] = useLocalPersistState(false, SOUND_MODE);
@@ -174,6 +193,9 @@ function App() {
   };
 
   useEffect(() => {
+    // Don't steal focus from the custom-theme editor while the user is typing
+    // in it (live-preview theme changes would otherwise re-fire this effect).
+    if (editorOpen) return;
     if (isWordGameMode) {
       focusTextInput();
       return;
@@ -191,6 +213,7 @@ function App() {
     isSentenceGameMode,
     soundMode,
     soundType,
+    editorOpen,
   ]);
 
   return (
@@ -210,6 +233,11 @@ function App() {
             toggleFocusedMode={toggleFocusedMode}
             isUltraZenMode={isUltraZenMode}
             toggleUltraZenMode={toggleUltraZenMode}
+            customThemes={customThemes}
+            onActivateTheme={activateTheme}
+            onCreateTheme={openEditorForNew}
+            onEditTheme={openEditorForId}
+            onDeleteTheme={deleteCustomThemeById}
           ></Logo>
           {isWordGameMode && (
             <TypeBox
@@ -249,7 +277,7 @@ function App() {
           <div className="bottomBar">
             <FooterMenu
               isWordGameMode={isWordGameMode}
-              themesOptions={themesOptions}
+              customThemes={customThemes}
               theme={theme}
               soundMode={soundMode}
               toggleSoundMode={toggleSoundMode}
@@ -258,6 +286,8 @@ function App() {
               toggleUltraZenMode={toggleUltraZenMode}
               handleSoundTypeChange={handleSoundTypeChange}
               handleThemeChange={handleThemeChange}
+              onCreateTheme={openEditorForNew}
+              onEditCurrentTheme={openEditorForCurrent}
               toggleFocusedMode={toggleFocusedMode}
               toggleMusicMode={toggleMusicMode}
               isMusicMode={isMusicMode}
@@ -271,6 +301,18 @@ function App() {
               toggleWordsCardMode={toggleWordsCardMode}
             ></FooterMenu>
           </div>
+          <CustomThemeEditor
+            open={editorOpen}
+            workingTheme={editorOpen ? theme : null}
+            onChange={handleEditorChange}
+            onSave={handleEditorSave}
+            onCancel={handleEditorCancel}
+            onDelete={handleEditorDelete}
+            isExistingCustom={editorMode === "edit"}
+            existingNames={customThemes
+              .filter((t) => editorMode !== "edit" || t.id !== theme?.id)
+              .map((t) => t.label)}
+          />
           <MusicPlayerSnackbar
             isMusicMode={isMusicMode}
             isFocusedMode={isFocusedMode}

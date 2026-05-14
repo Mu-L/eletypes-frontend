@@ -34,6 +34,7 @@
 
 ### 体验
 - **18 种主题**，包含 WebGL 动态背景（Tranquiluxe、Lumiflex、Opulento、Velustro）
+- **自定义主题编辑器** —— 实时预览，可调颜色、渐变、字体、文字阴影；本地保存并在主题选择器中的"我的主题"分组里出现。可从底部主题选择器旁的调色盘按钮打开，或从**个人中心 → 主题**标签页进入。
 - **打字音效** —— 樱桃青轴、机械键盘、打字机
 - **专注 / 超静 模式** —— 无干扰界面
 - **PWA** —— 可安装、可离线
@@ -61,9 +62,11 @@
 ```bash
 npm install
 npm run dev      # localhost:3000
-npm run build    # 生产构建
-npm run deploy   # Firebase Hosting 部署
+npm run build    # 生产构建，输出到 build/
+npm run preview  # 本地预览生产构建
 ```
+
+部署：把 `build/` 目录里的内容推送到任何静态托管即可。`npm run deploy` 只是 `npm run build` 的别名，**本身并不会部署到任何地方**。
 
 ## 文档
 

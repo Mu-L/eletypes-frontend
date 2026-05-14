@@ -8,6 +8,8 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import ColorLensIcon from "@mui/icons-material/ColorLens";
 import { getUserName, setUserName, getUserTag } from "../../services/userIdentity";
 import BadgeDisplay from "../features/Badges/BadgeDisplay";
 import StatsPanel from "../features/Stats/StatsPanel";
@@ -88,6 +90,7 @@ const TAB_LEADERBOARD = "leaderboard";
 const TAB_LAB = "lab";
 const TAB_NEWS = "news";
 const TAB_SITE = "site";
+const TAB_THEMES = "themes";
 
 const ProfileModal = ({
   open,
@@ -105,6 +108,11 @@ const ProfileModal = ({
   initialTab,
   onNewsViewed,
   unviewedNewsCount,
+  customThemes = [],
+  onActivateTheme,
+  onCreateTheme,
+  onEditTheme,
+  onDeleteTheme,
 }) => {
   const { locale, setLocale, t } = useLocale();
   const tLab = useLabTranslation();
@@ -228,6 +236,12 @@ const ProfileModal = ({
                 background: "#4a90d9", color: "#fff",
               }}>beta</span>
             </span>
+          </button>
+          <button
+            style={tabStyle(activeTab === TAB_THEMES)}
+            onClick={() => setActiveTab(TAB_THEMES)}
+          >
+            {t("tab_themes")}
           </button>
           <button
             style={tabStyle(activeTab === TAB_SITE)}
@@ -520,6 +534,130 @@ const ProfileModal = ({
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Themes tab */}
+        {activeTab === TAB_THEMES && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <h4 className="profile-section-label" style={{ color: theme.textTypeBox, margin: 0 }}>
+                {t("theme_group_mine")}
+              </h4>
+              <button
+                onClick={() => {
+                  if (onCreateTheme) {
+                    onClose && onClose();
+                    onCreateTheme();
+                  }
+                }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: "transparent",
+                  border: `1px solid ${theme.stats}`,
+                  color: theme.stats,
+                  padding: "6px 12px",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: theme.fontFamily,
+                }}
+              >
+                <ColorLensIcon style={{ fontSize: 14 }} />
+                {t("theme_action_new")}
+              </button>
+            </div>
+
+            {(!customThemes || customThemes.length === 0) ? (
+              <p style={{ color: theme.textTypeBox, fontSize: 13, opacity: 0.7 }}>
+                {t("theme_manager_no_themes")}
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {customThemes.map((ct) => {
+                  const isActive = theme && theme.id === ct.id;
+                  return (
+                    <div
+                      key={ct.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "8px 10px",
+                        border: `1px solid ${isActive ? theme.stats : theme.textTypeBox}40`,
+                        borderRadius: 6,
+                        background: isActive ? `${theme.stats}10` : "transparent",
+                      }}
+                    >
+                      {/* Swatch row: text, title, accent, untyped */}
+                      <div style={{ display: "flex", gap: 3 }}>
+                        {[ct.text, ct.title, ct.stats, ct.textTypeBox].map((c, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              width: 12, height: 12, borderRadius: 3,
+                              background: c,
+                              border: `1px solid ${theme.textTypeBox}55`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span
+                        onClick={() => {
+                          if (!isActive && onActivateTheme) onActivateTheme(ct);
+                        }}
+                        style={{
+                          flex: 1,
+                          color: theme.text,
+                          fontSize: 14,
+                          cursor: isActive ? "default" : "pointer",
+                          fontWeight: isActive ? 600 : 400,
+                        }}
+                        title={isActive ? "" : t("theme_manager_use_this")}
+                      >
+                        {ct.label}
+                        {isActive && (
+                          <span style={{
+                            marginLeft: 8, fontSize: 10,
+                            color: theme.stats, opacity: 0.85,
+                            letterSpacing: 1, textTransform: "uppercase",
+                          }}>
+                            {t("theme_manager_active")}
+                          </span>
+                        )}
+                      </span>
+                      <MuiIconButton
+                        size="small"
+                        onClick={() => {
+                          if (onEditTheme) {
+                            onClose && onClose();
+                            onEditTheme(ct.id);
+                          }
+                        }}
+                        style={{ color: theme.textTypeBox }}
+                        title={t("theme_action_edit")}
+                      >
+                        <EditIcon fontSize="small" />
+                      </MuiIconButton>
+                      <MuiIconButton
+                        size="small"
+                        onClick={() => {
+                          if (window.confirm(t("theme_confirm_delete")) && onDeleteTheme) {
+                            onDeleteTheme(ct.id);
+                          }
+                        }}
+                        style={{ color: theme.textTypeBox }}
+                        title={t("theme_action_delete")}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </MuiIconButton>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <p style={{ color: theme.textTypeBox, fontSize: 11, opacity: 0.6, marginTop: 18, marginBottom: 0 }}>
+              {t("theme_manager_note")}
+            </p>
           </div>
         )}
 
