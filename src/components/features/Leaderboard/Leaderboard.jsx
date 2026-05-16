@@ -304,20 +304,26 @@ const Leaderboard = ({
           )}
 
           {/* Share/challenge row shown after submit, without supabase, or in
-              custom-words mode (submission isn't available there). */}
+              custom-words mode (submission isn't available there). Challenge
+              button is suppressed in custom-words mode because challenge
+              URLs no longer carry the custom list — the recipient would run
+              the built-in random words for the same seed, which doesn't
+              match what the sender actually typed and would be misleading. */}
           {(isCustomMode || submitted || !supabase) && (
             <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
               <ShareButton targetRef={statsRef} theme={theme} />
-              <ChallengeBtn
-                language={language}
-                difficulty={difficulty}
-                duration={duration}
-                numberAddon={numberAddon}
-                symbolAddon={symbolAddon}
-                sessionSeed={sessionSeed}
-                theme={theme}
-                t={t}
-              />
+              {!isCustomMode && (
+                <ChallengeBtn
+                  language={language}
+                  difficulty={difficulty}
+                  duration={duration}
+                  numberAddon={numberAddon}
+                  symbolAddon={symbolAddon}
+                  sessionSeed={sessionSeed}
+                  theme={theme}
+                  t={t}
+                />
+              )}
             </div>
           )}
 

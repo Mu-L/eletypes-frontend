@@ -8,10 +8,6 @@ import {
 import {
   parseCustomWordsText,
   resolveActiveCustomList,
-  loadCustomWordLists,
-  saveCustomWordLists,
-  setActiveCustomListId,
-  newCustomWordList,
 } from "./scripts/customWords";
 import { GlobalStyles } from "./style/global";
 import { LocaleProvider } from "./context/LocaleContext";
@@ -57,42 +53,6 @@ const initialChallenge = (() => {
     // Force word mode
     window.localStorage.setItem("game-mode", JSON.stringify(GAME_MODE_DEFAULT));
     window.localStorage.setItem("IsInWordsCardMode", JSON.stringify(false));
-
-    // Shared custom word list — append to the user's lists (de-duped) and
-    // activate it so the test boots with the exact words the sender saw.
-    if (params.wordList) {
-      try {
-        const existing = loadCustomWordLists();
-        const dup = existing.find(
-          (l) =>
-            l.language === params.wordList.language &&
-            (l.text || "") === (params.wordList.text || "")
-        );
-        let activeId;
-        if (dup) {
-          activeId = dup.id;
-        } else {
-          const baseName = params.wordList.name || "Shared list";
-          const names = new Set(existing.map((l) => l.name));
-          let name = baseName;
-          let i = 2;
-          while (names.has(name)) name = `${baseName} (${i++})`;
-          const item = newCustomWordList({
-            name,
-            language: params.wordList.language,
-            text: params.wordList.text,
-          });
-          if (Array.isArray(params.wordList.resolved)) {
-            item.resolved = params.wordList.resolved;
-          }
-          saveCustomWordLists([...existing, item]);
-          activeId = item.id;
-        }
-        setActiveCustomListId(activeId);
-      } catch {
-        // Non-fatal: if anything goes wrong we just skip the custom list.
-      }
-    }
   }
   return params;
 })();
