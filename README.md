@@ -34,12 +34,16 @@ What started as a typing test inspired by [monkeytype.com](https://www.monkeytyp
 
 ### Experience
 - **18 themes** including dynamic WebGL backgrounds (Tranquiluxe, Lumiflex, Opulento, Velustro)
-- **Custom theme editor** — build your own theme with live preview; colors, gradients, font, text shadow all editable; saved locally and listed under "My Themes" alongside the built-ins. Open it from the theme selector in the bottom nav, or from the **Themes** tab in the Profile center.
+- **Custom themes** — build your own with live preview: colors, gradients, font, text shadow all editable, saved locally, listed under "My Themes" alongside the built-ins. Open from the theme selector in the bottom nav or from **Profile → Themes**.
+- **Custom word lists** — bring your own vocabulary into timed tests (English or Chinese pinyin). Lists run in the order you wrote them and loop to fill the timer; export/import as JSON or share via challenge link so viewers run the exact same words. Built-in mechanical-keyboard sample list included. Open from **Profile → Word Lists** or the *custom words* button above the test.
 - **Typing sounds** — Cherry Blue, mechanical, typewriter
 - **Focus / Ultra Zen** modes for distraction-free sessions
 - **PWA** — installable, works offline
 - **i18n** — full English & 中文 UI
 - **Keyboard shortcuts** — `Tab+Space` redo · `Tab+Enter` restart
+
+### Make it yours
+From the colors to the words on screen — now yours to shape. If you happen to make keyboard videos, **Custom themes** and **Custom words** are one more way for them to feel a little more like yours: pick a palette that suits your channel, then choose exactly which words appear on screen (model name, signature switches, your own phrasing) in the order you wrote them. Or maybe, like me, you just love pretty colors.
 
 ### Privacy
 No accounts. No ads. No tracking. Your practice history and settings live in your browser's localStorage. The only data that leaves your device is opt-in leaderboard submissions — a display name you pick (no email, no password, no account) plus a browser fingerprint used purely for anti-cheat and dedup.

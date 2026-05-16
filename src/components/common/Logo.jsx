@@ -10,10 +10,29 @@ import { useLocale } from "../../context/LocaleContext";
 import ProfileModal from "./ProfileModal";
 
 const BANNER_DISMISS_KEY = "eletypes-banner-dismissed";
-const BANNER_VERSION = "banners-v4";
+// Bump when the active banner set changes so previously-dismissed users see
+// the new headline.
+const BANNER_VERSION = "banners-v5";
 
-// Banner items shown in the header ticker. Old items kept in NEWS_KEYS for profile modal.
+// Banner items shown in the header ticker. Old items kept in ALL_NEWS_KEYS
+// for the profile modal so the news log doesn't lose history.
 export const BANNER_KEYS = [
+  {
+    id: "customization",
+    bannerTextKey: "banner_customization",
+    fullTextKey: "banner_customization_full",
+    highlights: [
+      { placeholder: "Custom Themes" },
+      { placeholder: "Custom Words" },
+      { placeholder: "自定义主题" },
+      { placeholder: "自定义词组" },
+    ],
+  },
+];
+
+// All news items including old ones — used by profile modal news tab
+export const ALL_NEWS_KEYS = [
+  ...BANNER_KEYS,
   {
     id: "keyboard-lab",
     bannerTextKey: "banner_keyboard_lab",
@@ -30,11 +49,6 @@ export const BANNER_KEYS = [
       },
     ],
   },
-];
-
-// All news items including old ones — used by profile modal news tab
-export const ALL_NEWS_KEYS = [
-  ...BANNER_KEYS,
   {
     id: "leaderboard",
     bannerTextKey: "banner_leaderboard",
@@ -123,6 +137,14 @@ const Logo = ({
   onCreateTheme,
   onEditTheme,
   onDeleteTheme,
+  customWordLists,
+  activeWordListId,
+  onActivateWordList,
+  onDeactivateWordList,
+  onCreateWordList,
+  onEditWordList,
+  onDeleteWordList,
+  onImportWordLists,
 }) => {
   const { t } = useLocale();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -157,6 +179,14 @@ const Logo = ({
     setProfileOpen(true);
     if (tab === "news") dismissAll();
   };
+
+  // Allow other components to request the profile modal open on a specific
+  // tab without prop-drilling. Mirrors the score-updated event pattern.
+  useEffect(() => {
+    const handler = (e) => openProfile(e?.detail?.tab || "profile");
+    window.addEventListener("eletypes-open-profile", handler);
+    return () => window.removeEventListener("eletypes-open-profile", handler);
+  }, []);
 
   const toggleCard = () => {
     setCardVisible(!cardVisible);
@@ -284,6 +314,14 @@ const Logo = ({
             onCreateTheme={onCreateTheme}
             onEditTheme={onEditTheme}
             onDeleteTheme={onDeleteTheme}
+            customWordLists={customWordLists}
+            activeWordListId={activeWordListId}
+            onActivateWordList={onActivateWordList}
+            onDeactivateWordList={onDeactivateWordList}
+            onCreateWordList={onCreateWordList}
+            onEditWordList={onEditWordList}
+            onDeleteWordList={onDeleteWordList}
+            onImportWordLists={onImportWordLists}
           />
         </>
       )}

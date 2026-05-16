@@ -382,7 +382,12 @@ min-height: 40px;
 margin-left: auto;
 }
 .nav-group-links .nav-group-items {
-border: none;
+/* Transparent border keeps the box geometry identical to labeled groups
+   so icons align across the row; border:none collapses the box by ~2px. */
+border: 1px solid transparent;
+/* Nudge the links cluster a little lower than the labeled groups so it sits
+   closer to the visual baseline of the footer bar without clipping. */
+transform: translateY(6px);
 }
 .nav-item {
 color: ${({ theme }) => theme.text};

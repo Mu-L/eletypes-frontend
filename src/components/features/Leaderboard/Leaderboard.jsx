@@ -61,6 +61,8 @@ const Leaderboard = ({
   theme,
   statsRef,
   sessionSeed,
+  isCustomMode,
+  customListName,
 }) => {
   const { t } = useLocale();
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -83,10 +85,16 @@ const Leaderboard = ({
   const loadLeaderboard = useCallback(async () => {
     const data = await fetchLeaderboard(modeParams);
     setLeaderboardData(data);
-    const rank = await fetchPlayerRank({ wpm, accuracy, ...modeParams });
-    setPlayerRank(rank);
+    // Skip rank fetch in custom mode — the user's score doesn't belong on
+    // the normal-mode leaderboard so any rank shown would be misleading.
+    if (!isCustomMode) {
+      const rank = await fetchPlayerRank({ wpm, accuracy, ...modeParams });
+      setPlayerRank(rank);
+    } else {
+      setPlayerRank(null);
+    }
     setLoading(false);
-  }, [wpm, language, difficulty, duration, numberAddon, symbolAddon]);
+  }, [wpm, language, difficulty, duration, numberAddon, symbolAddon, isCustomMode]);
 
   const handleSubmit = async () => {
     if (submitted) return;
@@ -141,6 +149,12 @@ const Leaderboard = ({
 
   const getModeLabel = () => {
     const lang = language === "ENGLISH_MODE" ? "eng" : "chn";
+    // In custom mode show [lang · custom: <name> · 15s] instead of the
+    // random-mode difficulty/addons (those don't apply to custom runs).
+    if (isCustomMode) {
+      const parts = [lang, `custom: ${customListName || "—"}`, `${duration}s`];
+      return parts.join(" · ");
+    }
     const parts = [lang, difficulty, `${duration}s`];
     if (numberAddon) parts.push("+num");
     if (symbolAddon) parts.push("+sym");
@@ -199,7 +213,25 @@ const Leaderboard = ({
       {/* Leaderboard tab */}
       {activeTab === TAB_LEADERBOARD && (
         <>
-          {!submitted && supabase && (
+          {/* Custom-words run: leaderboard submission is disabled because the
+              user picked their own words, so scores aren't comparable. Share +
+              challenge still work — challenge URL encodes the word list. */}
+          {isCustomMode && (
+            <div
+              style={{
+                marginBottom: "12px",
+                padding: "8px 12px",
+                border: `1px solid ${theme.textTypeBox}40`,
+                borderRadius: "4px",
+                color: theme.textTypeBox,
+                fontSize: "13px",
+                lineHeight: 1.5,
+              }}
+            >
+              {t("leaderboard_custom_notice", customListName || "")}
+            </div>
+          )}
+          {!isCustomMode && !submitted && supabase && (
             <div
               style={{
                 display: "flex",
@@ -271,8 +303,9 @@ const Leaderboard = ({
             </div>
           )}
 
-          {/* Always show share/challenge, even after submit or without supabase */}
-          {(submitted || !supabase) && (
+          {/* Share/challenge row shown after submit, without supabase, or in
+              custom-words mode (submission isn't available there). */}
+          {(isCustomMode || submitted || !supabase) && (
             <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
               <ShareButton targetRef={statsRef} theme={theme} />
               <ChallengeBtn
@@ -381,14 +414,31 @@ const Leaderboard = ({
 
       {/* History tab */}
       {activeTab === TAB_HISTORY && (
-        <ScoreHistoryPanel
-          language={language}
-          difficulty={difficulty}
-          duration={duration}
-          numberAddon={numberAddon}
-          symbolAddon={symbolAddon}
-          theme={theme}
-        />
+        isCustomMode ? (
+          // Custom-words runs aren't recorded — showing random-mode history
+          // here would be misleading next to a custom result.
+          <div
+            style={{
+              padding: "8px 12px",
+              border: `1px solid ${theme.textTypeBox}40`,
+              borderRadius: "4px",
+              color: theme.textTypeBox,
+              fontSize: "13px",
+              lineHeight: 1.5,
+            }}
+          >
+            {t("history_custom_notice", customListName || "")}
+          </div>
+        ) : (
+          <ScoreHistoryPanel
+            language={language}
+            difficulty={difficulty}
+            duration={duration}
+            numberAddon={numberAddon}
+            symbolAddon={symbolAddon}
+            theme={theme}
+          />
+        )
       )}
     </div>
   );

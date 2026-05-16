@@ -1,17 +1,27 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
+import React, { useState, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { ThemeProvider } from "styled-components";
 import { defaultTheme } from "./style/theme";
 import {
   loadCustomThemes,
   resolveTheme,
 } from "./style/customThemes";
+import {
+  parseCustomWordsText,
+  resolveActiveCustomList,
+  loadCustomWordLists,
+  saveCustomWordLists,
+  setActiveCustomListId,
+  newCustomWordList,
+} from "./scripts/customWords";
 import { GlobalStyles } from "./style/global";
 import { LocaleProvider } from "./context/LocaleContext";
 import Logo from "./components/common/Logo";
 import MusicPlayerSnackbar from "./components/features/MusicPlayer/MusicPlayerSnackbar";
 import FooterMenu from "./components/common/FooterMenu";
 import CustomThemeEditor from "./components/features/CustomTheme/CustomThemeEditor";
+import CustomWordsEditor from "./components/features/CustomWords/CustomWordsEditor";
 import useCustomThemeEditor from "./hooks/useCustomThemeEditor";
+import useCustomWordsEditor from "./hooks/useCustomWordsEditor";
 import {
   GAME_MODE,
   GAME_MODE_DEFAULT,
@@ -47,6 +57,42 @@ const initialChallenge = (() => {
     // Force word mode
     window.localStorage.setItem("game-mode", JSON.stringify(GAME_MODE_DEFAULT));
     window.localStorage.setItem("IsInWordsCardMode", JSON.stringify(false));
+
+    // Shared custom word list — append to the user's lists (de-duped) and
+    // activate it so the test boots with the exact words the sender saw.
+    if (params.wordList) {
+      try {
+        const existing = loadCustomWordLists();
+        const dup = existing.find(
+          (l) =>
+            l.language === params.wordList.language &&
+            (l.text || "") === (params.wordList.text || "")
+        );
+        let activeId;
+        if (dup) {
+          activeId = dup.id;
+        } else {
+          const baseName = params.wordList.name || "Shared list";
+          const names = new Set(existing.map((l) => l.name));
+          let name = baseName;
+          let i = 2;
+          while (names.has(name)) name = `${baseName} (${i++})`;
+          const item = newCustomWordList({
+            name,
+            language: params.wordList.language,
+            text: params.wordList.text,
+          });
+          if (Array.isArray(params.wordList.resolved)) {
+            item.resolved = params.wordList.resolved;
+          }
+          saveCustomWordLists([...existing, item]);
+          activeId = item.id;
+        }
+        setActiveCustomListId(activeId);
+      } catch {
+        // Non-fatal: if anything goes wrong we just skip the custom list.
+      }
+    }
   }
   return params;
 })();
@@ -84,6 +130,42 @@ function App() {
     handleEditorCancel,
     handleEditorDelete,
   } = useCustomThemeEditor({ theme, setTheme });
+
+  // Custom word lists (blogger-friendly: define your own demo words so the test
+  // doesn't surface random vocab during a recording).
+  const {
+    customWordLists,
+    activeListId,
+    editorOpen: wordsEditorOpen,
+    editorMode: wordsEditorMode,
+    draft: wordsDraft,
+    openEditorForNew: openWordsEditorForNew,
+    openEditorForId: openWordsEditorForId,
+    activateList: activateWordsList,
+    deactivateList: deactivateWordsList,
+    deleteCustomListById: deleteWordsListById,
+    handleEditorChange: handleWordsEditorChange,
+    handleEditorSave: handleWordsEditorSave,
+    handleEditorCancel: handleWordsEditorCancel,
+    handleEditorDelete: handleWordsEditorDelete,
+    importLists: importWordLists,
+  } = useCustomWordsEditor();
+
+  const activeCustomList = useMemo(
+    () => resolveActiveCustomList(customWordLists, activeListId),
+    [customWordLists, activeListId]
+  );
+
+  const customWordsOverride = useMemo(() => {
+    if (!activeCustomList) return null;
+    const parsed = parseCustomWordsText(activeCustomList);
+    if (parsed.length === 0) return null;
+    return {
+      language: activeCustomList.language,
+      parsed,
+      listName: activeCustomList.name,
+    };
+  }, [activeCustomList]);
 
   // local persist game mode setting
   const [soundMode, setSoundMode] = useLocalPersistState(false, SOUND_MODE);
@@ -238,19 +320,37 @@ function App() {
             onCreateTheme={openEditorForNew}
             onEditTheme={openEditorForId}
             onDeleteTheme={deleteCustomThemeById}
+            customWordLists={customWordLists}
+            activeWordListId={activeListId}
+            onActivateWordList={activateWordsList}
+            onDeactivateWordList={deactivateWordsList}
+            onCreateWordList={openWordsEditorForNew}
+            onEditWordList={openWordsEditorForId}
+            onDeleteWordList={deleteWordsListById}
+            onImportWordLists={importWordLists}
           ></Logo>
           {isWordGameMode && (
             <TypeBox
               isUltraZenMode={isUltraZenMode}
+              toggleUltraZenMode={toggleUltraZenMode}
               textInputRef={textInputRef}
               isFocusedMode={isFocusedMode}
               soundMode={soundMode}
               theme={theme}
               soundType={soundType}
-              key="type-box"
+              // Re-mount TypeBox when the active custom list changes so it
+              // re-initialises wordsDict from the new source on first render.
+              key={`type-box-${activeListId || "default"}`}
               handleInputFocus={() => focusTextInput()}
               sessionSeed={sessionSeed}
               setSessionSeed={setSessionSeed}
+              customWordsOverride={customWordsOverride}
+              onClearCustomWords={deactivateWordsList}
+              onCreateWordList={openWordsEditorForNew}
+              hasActiveWordList={!!activeListId}
+              customWordLists={customWordLists}
+              activeWordListId={activeListId}
+              onActivateWordList={activateWordsList}
             ></TypeBox>
           )}
           {isSentenceGameMode && (
@@ -312,6 +412,18 @@ function App() {
             existingNames={customThemes
               .filter((t) => editorMode !== "edit" || t.id !== theme?.id)
               .map((t) => t.label)}
+          />
+          <CustomWordsEditor
+            open={wordsEditorOpen}
+            draft={wordsDraft}
+            onChange={handleWordsEditorChange}
+            onSave={handleWordsEditorSave}
+            onCancel={handleWordsEditorCancel}
+            onDelete={handleWordsEditorDelete}
+            isExisting={wordsEditorMode === "edit"}
+            existingNames={customWordLists
+              .filter((l) => wordsEditorMode !== "edit" || l.id !== wordsDraft?.id)
+              .map((l) => l.name)}
           />
           <MusicPlayerSnackbar
             isMusicMode={isMusicMode}

@@ -4,13 +4,27 @@ import {
   wordsGenerator,
   chineseWordsGenerator,
 } from "../../../scripts/wordsGenerator";
+import { customWordsGenerator } from "../../../scripts/customWords";
 import { createRng, generateSeed } from "../../../scripts/seedUtils";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import UndoIcon from "@mui/icons-material/Undo";
+import ZoomInMapIcon from "@mui/icons-material/ZoomInMap";
+import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import IconButton from "../../utils/IconButton";
+import LeaderboardModal from "../Leaderboard/LeaderboardModal";
 import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import Divider from "@mui/material/Divider";
+import CheckIcon from "@mui/icons-material/Check";
+import AddIcon from "@mui/icons-material/Add";
+import ClearIcon from "@mui/icons-material/Clear";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
+import SettingsIcon from "@mui/icons-material/Settings";
 import useLocalPersistState from "../../../hooks/useLocalPersistState";
 import CapsLockSnackbar from "../CapsLockSnackbar";
 import Stats from "./Stats";
@@ -50,6 +64,14 @@ const TypeBox = ({
   theme,
   sessionSeed,
   setSessionSeed,
+  customWordsOverride,
+  onClearCustomWords,
+  toggleUltraZenMode,
+  onCreateWordList,
+  hasActiveWordList,
+  customWordLists,
+  activeWordListId,
+  onActivateWordList,
 }) => {
   const { t } = useLocale();
   const [play] = useSound(SOUND_MAP[soundType], { volume: 0.5 });
@@ -97,6 +119,19 @@ const TypeBox = ({
   // tab-enter restart dialog
   const [openRestart, setOpenRestart] = useState(false);
 
+  // Leaderboard modal moved out of FooterMenu — its trigger lives in the
+  // quick-tools strip above the type box now (more discoverable).
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+
+  // Anchor for the custom-words quick-pick menu. Clicking the toolbar's
+  // "custom words" icon opens a menu listing saved lists for one-click
+  // activation, plus shortcuts to create / clear. Beats forcing the user to
+  // dig through Profile → Word Lists every time.
+  const [wordListMenuAnchor, setWordListMenuAnchor] = useState(null);
+  const wordListMenuOpen = Boolean(wordListMenuAnchor);
+  const openWordListMenu = (e) => setWordListMenuAnchor(e.currentTarget);
+  const closeWordListMenu = () => setWordListMenuAnchor(null);
+
   const EnterkeyPressReset = (e) => {
     // press enter/or tab to reset;
     if (e.keyCode === 13 || e.keyCode === 9) {
@@ -131,10 +166,23 @@ const TypeBox = ({
     setOpenRestart(true);
   };
 
+  // When a custom word list is active, it preempts the persisted language
+  // setting for this test. The list's own language drives both word generation
+  // and rendering. Built-in difficulty/number/symbol add-ons are skipped — the
+  // user already curated the exact words they want.
+  const effectiveLanguage = customWordsOverride?.language ?? language;
+
   // set up words state
   const [wordsDict, setWordsDict] = useState(() => {
     const rng = sessionSeed ? createRng(sessionSeed) : undefined;
-    if (language === ENGLISH_MODE) {
+    if (customWordsOverride?.parsed?.length) {
+      return customWordsGenerator(
+        customWordsOverride.parsed,
+        DEFAULT_WORDS_COUNT,
+        rng
+      );
+    }
+    if (effectiveLanguage === ENGLISH_MODE) {
       return wordsGenerator(
         DEFAULT_WORDS_COUNT,
         difficulty,
@@ -144,7 +192,7 @@ const TypeBox = ({
         rng
       );
     }
-    if (language === CHINESE_MODE) {
+    if (effectiveLanguage === CHINESE_MODE) {
       return chineseWordsGenerator(
         difficulty,
         CHINESE_MODE,
@@ -207,7 +255,13 @@ const TypeBox = ({
 
   useEffect(() => {
     if (currWordIndex === DEFAULT_WORDS_COUNT - 1) {
-      if (language === ENGLISH_MODE) {
+      if (customWordsOverride?.parsed?.length) {
+        const generatedCustom = customWordsGenerator(
+          customWordsOverride.parsed,
+          DEFAULT_WORDS_COUNT
+        );
+        setWordsDict((currentArray) => [...currentArray, ...generatedCustom]);
+      } else if (effectiveLanguage === ENGLISH_MODE) {
         const generatedEng = wordsGenerator(
           DEFAULT_WORDS_COUNT,
           difficulty,
@@ -216,8 +270,7 @@ const TypeBox = ({
           symbolAddOn
         );
         setWordsDict((currentArray) => [...currentArray, ...generatedEng]);
-      }
-      if (language === CHINESE_MODE) {
+      } else if (effectiveLanguage === CHINESE_MODE) {
         const generatedChinese = chineseWordsGenerator(
           difficulty,
           CHINESE_MODE,
@@ -234,7 +287,7 @@ const TypeBox = ({
         const typeBox = scrollElement.closest(".type-box") || scrollElement.closest(".type-box-chinese");
         if (typeBox) {
           // Calculate the row height from the word element
-          const wordWrapper = language === CHINESE_MODE
+          const wordWrapper = effectiveLanguage === CHINESE_MODE
             ? scrollElement.parentElement // div wrapping pinyin + chars
             : scrollElement;
           const rowHeight = wordWrapper ? wordWrapper.offsetHeight +
@@ -260,8 +313,10 @@ const TypeBox = ({
     wordSpanRefs,
     difficulty,
     language,
+    effectiveLanguage,
     numberAddOn,
     symbolAddOn,
+    customWordsOverride,
   ]);
 
   const reset = (
@@ -277,23 +332,32 @@ const TypeBox = ({
       const newSeed = generateSeed();
       setSessionSeed(newSeed);
       const rng = createRng(newSeed);
-      if (language === CHINESE_MODE) {
+      // Custom list locks the language for this test — see effectiveLanguage.
+      const resetLanguage = customWordsOverride?.language ?? language;
+      if (customWordsOverride?.parsed?.length) {
+        setWordsDict(
+          customWordsGenerator(
+            customWordsOverride.parsed,
+            DEFAULT_WORDS_COUNT,
+            rng
+          )
+        );
+      } else if (resetLanguage === CHINESE_MODE) {
         setWordsDict(
           chineseWordsGenerator(
             difficulty,
-            language,
+            resetLanguage,
             newNumberAddOn,
             newSymbolAddOn,
             rng
           )
         );
-      }
-      if (language === ENGLISH_MODE) {
+      } else if (resetLanguage === ENGLISH_MODE) {
         setWordsDict(
           wordsGenerator(
             DEFAULT_WORDS_COUNT,
             difficulty,
-            language,
+            resetLanguage,
             newNumberAddOn,
             newSymbolAddOn,
             rng
@@ -767,7 +831,7 @@ const TypeBox = ({
   };
 
   const getLanguageButtonClassName = (buttonLanguage) => {
-    if (language === buttonLanguage) {
+    if (effectiveLanguage === buttonLanguage) {
       return "active-button";
     }
     return "inactive-button";
@@ -886,143 +950,226 @@ const TypeBox = ({
             )}
           </Box>
           {menuEnabled && (
-            <Box display="flex" flexDirection="row">
+            <Box
+              display="flex"
+              flexDirection="row"
+              alignItems="center"
+              sx={{ "& .MuiIconButton-root": { padding: "6px" } }}
+            >
+              {/* Word-source mode buttons: Random ⇄ Custom. Behave like a
+                  two-way toggle — the active one is highlighted, the other
+                  is clickable to switch. Sub-options for the active mode
+                  (normal/hard for random; just the list name for custom)
+                  appear after the | separator. */}
               <IconButton
                 onClick={() => {
-                  reset(
-                    countDownConstant,
-                    DEFAULT_DIFFICULTY,
-                    language,
-                    numberAddOn,
-                    symbolAddOn,
-                    false
-                  );
+                  // No-op if already random; otherwise exit custom mode.
+                  if (hasActiveWordList && onClearCustomWords) onClearCustomWords();
                 }}
               >
-                <Tooltip
-                  title={
-                    language === ENGLISH_MODE
-                      ? t("default_difficulty_tooltip")
-                      : t("default_difficulty_tooltip_chinese")
-                  }
-                >
+                <Tooltip title={t("word_source_random_tooltip")}>
                   <span
-                    className={getDifficultyButtonClassName(DEFAULT_DIFFICULTY)}
+                    className={!hasActiveWordList ? "active-button" : "inactive-button"}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
                   >
-                    {DEFAULT_DIFFICULTY}
+                    <ShuffleIcon sx={{ fontSize: 16 }} />
+                    {t("word_source_random_label")}
                   </span>
                 </Tooltip>
               </IconButton>
-              <IconButton
-                onClick={() => {
-                  reset(
-                    countDownConstant,
-                    HARD_DIFFICULTY,
-                    language,
-                    numberAddOn,
-                    symbolAddOn,
-                    false
-                  );
-                }}
-              >
-                <Tooltip
-                  title={
-                    language === ENGLISH_MODE
-                      ? t("hard_difficulty_tooltip")
-                      : t("hard_difficulty_tooltip_chinese")
-                  }
-                >
+              {onCreateWordList && (
+                <IconButton onClick={openWordListMenu}>
+                  <Tooltip
+                    title={
+                      hasActiveWordList
+                        ? t("custom_words_active_clear_tooltip", customWordsOverride?.listName || "")
+                        : t("custom_words_create_tooltip")
+                    }
+                  >
+                    <span
+                      className={hasActiveWordList ? "active-button" : "inactive-button"}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
+                    >
+                      <FormatListBulletedIcon sx={{ fontSize: 16 }} />
+                      {hasActiveWordList && customWordsOverride?.listName
+                        ? customWordsOverride.listName
+                        : t("custom_words_button_label")}
+                    </span>
+                  </Tooltip>
+                </IconButton>
+              )}
+              {!hasActiveWordList && (
+                <>
                   <span
-                    className={getDifficultyButtonClassName(HARD_DIFFICULTY)}
+                    className="menu-separator"
+                    style={{
+                      margin: "0 8px",
+                      opacity: 0.45,
+                      fontSize: 13,
+                      userSelect: "none",
+                      pointerEvents: "none",
+                    }}
                   >
-                    {HARD_DIFFICULTY}
+                    |
                   </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton>
-                {" "}
-                <span className="menu-separator"> | </span>{" "}
-              </IconButton>
-              <IconButton
-                onClick={() => {
-                  reset(
-                    countDownConstant,
-                    difficulty,
-                    language,
-                    !numberAddOn,
-                    symbolAddOn,
-                    false
-                  );
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        DEFAULT_DIFFICULTY,
+                        language,
+                        numberAddOn,
+                        symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip
+                      title={
+                        language === ENGLISH_MODE
+                          ? t("default_difficulty_tooltip")
+                          : t("default_difficulty_tooltip_chinese")
+                      }
+                    >
+                      <span className={getDifficultyButtonClassName(DEFAULT_DIFFICULTY)}>
+                        {DEFAULT_DIFFICULTY}
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        HARD_DIFFICULTY,
+                        language,
+                        numberAddOn,
+                        symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip
+                      title={
+                        language === ENGLISH_MODE
+                          ? t("hard_difficulty_tooltip")
+                          : t("hard_difficulty_tooltip_chinese")
+                      }
+                    >
+                      <span className={getDifficultyButtonClassName(HARD_DIFFICULTY)}>
+                        {HARD_DIFFICULTY}
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                  <span
+                    className="menu-separator"
+                    style={{
+                      margin: "0 8px",
+                      opacity: 0.45,
+                      fontSize: 13,
+                      userSelect: "none",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    |
+                  </span>
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        difficulty,
+                        language,
+                        !numberAddOn,
+                        symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip title={t("number_addon_tooltip")}>
+                      <span className={getAddOnButtonClassName(numberAddOn)}>
+                        {NUMBER_ADDON}
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        difficulty,
+                        language,
+                        numberAddOn,
+                        !symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip title={t("symbol_addon_tooltip")}>
+                      <span className={getAddOnButtonClassName(symbolAddOn)}>
+                        {SYMBOL_ADDON}
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                  <span
+                    className="menu-separator"
+                    style={{
+                      margin: "0 8px",
+                      opacity: 0.45,
+                      fontSize: 13,
+                      userSelect: "none",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    |
+                  </span>
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        difficulty,
+                        ENGLISH_MODE,
+                        numberAddOn,
+                        symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip title={t("english_mode_tooltip")}>
+                      <span className={getLanguageButtonClassName(ENGLISH_MODE)}>
+                        eng
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton
+                    onClick={() => {
+                      reset(
+                        countDownConstant,
+                        difficulty,
+                        CHINESE_MODE,
+                        numberAddOn,
+                        symbolAddOn,
+                        false
+                      );
+                    }}
+                  >
+                    <Tooltip title={t("chinese_mode_tooltip")}>
+                      <span className={getLanguageButtonClassName(CHINESE_MODE)}>
+                        chn
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                </>
+              )}
+              <span
+                className="menu-separator"
+                style={{
+                  margin: "0 6px",
+                  opacity: 0.45,
+                  fontSize: 13,
+                  userSelect: "none",
+                  pointerEvents: "none",
                 }}
               >
-                <Tooltip title={t("number_addon_tooltip")}>
-                  <span className={getAddOnButtonClassName(numberAddOn)}>
-                    {NUMBER_ADDON}
-                  </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton
-                onClick={() => {
-                  reset(
-                    countDownConstant,
-                    difficulty,
-                    language,
-                    numberAddOn,
-                    !symbolAddOn,
-                    false
-                  );
-                }}
-              >
-                <Tooltip title={t("symbol_addon_tooltip")}>
-                  <span className={getAddOnButtonClassName(symbolAddOn)}>
-                    {SYMBOL_ADDON}
-                  </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton>
-                {" "}
-                <span className="menu-separator"> | </span>{" "}
-              </IconButton>
-              <IconButton
-                onClick={() => {
-                  reset(
-                    countDownConstant,
-                    difficulty,
-                    ENGLISH_MODE,
-                    numberAddOn,
-                    symbolAddOn,
-                    false
-                  );
-                }}
-              >
-                <Tooltip title={t("english_mode_tooltip")}>
-                  <span className={getLanguageButtonClassName(ENGLISH_MODE)}>
-                    eng
-                  </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton
-                onClick={() => {
-                  reset(
-                    countDownConstant,
-                    difficulty,
-                    CHINESE_MODE,
-                    numberAddOn,
-                    symbolAddOn,
-                    false
-                  );
-                }}
-              >
-                <Tooltip title={t("chinese_mode_tooltip")}>
-                  <span className={getLanguageButtonClassName(CHINESE_MODE)}>
-                    chn
-                  </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton>
-                {" "}
-                <span className="menu-separator"> | </span>{" "}
-              </IconButton>
+                |
+              </span>
               <IconButton
                 onClick={() => {
                   setPacingStyle(PACING_PULSE);
@@ -1042,6 +1189,40 @@ const TypeBox = ({
                 <Tooltip title={t("pacing_caret_tooltip")}>
                   <span className={getPacingStyleButtonClassName(PACING_CARET)}>
                     {PACING_CARET}
+                  </span>
+                </Tooltip>
+              </IconButton>
+              <span
+                className="menu-separator"
+                style={{
+                  margin: "0 6px",
+                  opacity: 0.45,
+                  fontSize: 13,
+                  userSelect: "none",
+                  pointerEvents: "none",
+                }}
+              >
+                |
+              </span>
+              {toggleUltraZenMode && (
+                <IconButton onClick={toggleUltraZenMode}>
+                  <Tooltip title={t("ultra_zen_mode")}>
+                    <span
+                      className={isUltraZenMode ? "active-button" : "inactive-button"}
+                      style={{ display: "inline-flex", alignItems: "center" }}
+                    >
+                      <ZoomInMapIcon sx={{ fontSize: 16 }} />
+                    </span>
+                  </Tooltip>
+                </IconButton>
+              )}
+              <IconButton onClick={() => setLeaderboardOpen(true)}>
+                <Tooltip title={t("stats_tooltip")}>
+                  <span
+                    className="inactive-button"
+                    style={{ display: "inline-flex", alignItems: "center" }}
+                  >
+                    <LeaderboardIcon sx={{ fontSize: 16 }} />
                   </span>
                 </Tooltip>
               </IconButton>
@@ -1100,7 +1281,7 @@ const TypeBox = ({
       {/* <SocialLinksModal status={status} /> */}
       <div onClick={handleInputFocus}>
         <CapsLockSnackbar open={capsLocked}></CapsLockSnackbar>
-        {language === ENGLISH_MODE && (
+        {effectiveLanguage === ENGLISH_MODE && (
           <EnglishModeWords
             currentWords={currentWords}
             currWordIndex={currWordIndex}
@@ -1116,7 +1297,7 @@ const TypeBox = ({
             theme={theme}
           />
         )}
-        {language === CHINESE_MODE && (
+        {effectiveLanguage === CHINESE_MODE && (
           <ChineseModeWords
             currentWords={currentWords}
             currWordIndex={currWordIndex}
@@ -1151,6 +1332,8 @@ const TypeBox = ({
             numberAddon={numberAddOn}
             symbolAddon={symbolAddOn}
             sessionSeed={sessionSeed}
+            isCustomMode={!!customWordsOverride}
+            customListName={customWordsOverride?.listName}
           ></Stats>
           {status !== "finished" && renderResetButton()}
         </div>
@@ -1192,6 +1375,116 @@ const TypeBox = ({
             <span className="key-note">{t("to_exit")}</span>
           </DialogTitle>
         </Dialog>
+        <LeaderboardModal
+          open={leaderboardOpen}
+          onClose={() => setLeaderboardOpen(false)}
+          theme={theme}
+        />
+        <Menu
+          anchorEl={wordListMenuAnchor}
+          open={wordListMenuOpen}
+          onClose={closeWordListMenu}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+          transformOrigin={{ vertical: "bottom", horizontal: "center" }}
+          // MUI 5.6 doesn't support `slotProps.paper` — use PaperProps. The
+          // explicit `background` + `backgroundImage: none` is needed because
+          // MUI Paper applies its own elevation gradient that would otherwise
+          // wash out dark themes.
+          PaperProps={{
+            sx: {
+              background: theme.background,
+              backgroundImage: "none",
+              color: theme.text,
+              fontFamily: theme.fontFamily,
+              border: `1px solid ${theme.textTypeBox}40`,
+              minWidth: 220,
+              "& .MuiMenuItem-root:hover": {
+                background: `${theme.textTypeBox}1f`,
+              },
+              "& .MuiMenuItem-root.Mui-selected": {
+                background: `${theme.stats}22`,
+              },
+              "& .MuiDivider-root": {
+                borderColor: `${theme.textTypeBox}30`,
+              },
+            },
+          }}
+        >
+          {(customWordLists || []).length === 0 && (
+            <MenuItem disabled sx={{ fontSize: 12, opacity: 0.7, color: theme.textTypeBox }}>
+              {t("custom_words_menu_empty")}
+            </MenuItem>
+          )}
+          {(customWordLists || []).map((wl) => {
+            const isActive = wl.id === activeWordListId;
+            return (
+              <MenuItem
+                key={wl.id}
+                onClick={() => {
+                  closeWordListMenu();
+                  if (!isActive && onActivateWordList) onActivateWordList(wl.id);
+                }}
+                sx={{
+                  fontSize: 13,
+                  color: isActive ? theme.stats : theme.text,
+                  fontWeight: isActive ? 600 : 400,
+                  fontFamily: theme.fontFamily,
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 24, color: theme.stats }}>
+                  {isActive ? <CheckIcon sx={{ fontSize: 16 }} /> : null}
+                </ListItemIcon>
+                <span style={{ flex: 1 }}>{wl.name}</span>
+                <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 8, color: theme.textTypeBox }}>
+                  {wl.language === CHINESE_MODE ? "中" : "EN"}
+                </span>
+              </MenuItem>
+            );
+          })}
+          {(customWordLists || []).length > 0 && <Divider sx={{ borderColor: `${theme.textTypeBox}30` }} />}
+          {hasActiveWordList && (
+            <MenuItem
+              onClick={() => {
+                closeWordListMenu();
+                if (onClearCustomWords) onClearCustomWords();
+              }}
+              sx={{ fontSize: 13, color: theme.text, fontFamily: theme.fontFamily }}
+            >
+              <ListItemIcon sx={{ minWidth: 24, color: theme.textTypeBox }}>
+                <ClearIcon sx={{ fontSize: 16 }} />
+              </ListItemIcon>
+              {t("custom_words_menu_clear")}
+            </MenuItem>
+          )}
+          <MenuItem
+            onClick={() => {
+              closeWordListMenu();
+              if (onCreateWordList) onCreateWordList();
+            }}
+            sx={{ fontSize: 13, color: theme.stats, fontFamily: theme.fontFamily }}
+          >
+            <ListItemIcon sx={{ minWidth: 24, color: theme.stats }}>
+              <AddIcon sx={{ fontSize: 16 }} />
+            </ListItemIcon>
+            {t("custom_words_menu_new")}
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              closeWordListMenu();
+              // Logo listens for this and opens Profile on the Word Lists tab —
+              // gives users a direct path to rename/delete/import/export.
+              window.dispatchEvent(
+                new CustomEvent("eletypes-open-profile", { detail: { tab: "wordlists" } })
+              );
+            }}
+            sx={{ fontSize: 13, color: theme.text, fontFamily: theme.fontFamily }}
+          >
+            <ListItemIcon sx={{ minWidth: 24, color: theme.textTypeBox }}>
+              <SettingsIcon sx={{ fontSize: 16 }} />
+            </ListItemIcon>
+            {t("custom_words_menu_manage")}
+          </MenuItem>
+        </Menu>
       </div>
     </>
   );

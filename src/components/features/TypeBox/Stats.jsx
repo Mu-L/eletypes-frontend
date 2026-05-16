@@ -31,6 +31,8 @@ const Stats = ({
   numberAddon,
   symbolAddon,
   sessionSeed,
+  isCustomMode,
+  customListName,
 }) => {
   const { t } = useLocale();
   const statsRef = useRef(null);
@@ -130,7 +132,10 @@ const Stats = ({
     if (status === "finished" && !historySaved) {
       const totalWpm = data.map((e) => e.wpm).reduce((a, b) => a + b, 0);
       const avgWpm = data.length > 1 ? totalWpm / (data.length - 1) : 0;
-      if (avgWpm > 0) {
+      // Custom-words runs aren't recorded: scores depend on the user's chosen
+      // words so they aren't comparable to random-mode history/badges/etc.
+      // Leaderboard submission is also blocked downstream in Leaderboard.jsx.
+      if (avgWpm > 0 && !isCustomMode) {
         addScore({ wpm: avgWpm, accuracy, ...modeParams });
         const earned = evaluateBadges({ wpm: avgWpm, accuracy, ...modeParams });
         if (earned.length > 0) {
@@ -372,6 +377,8 @@ const Stats = ({
               theme={theme}
               statsRef={statsRef}
               sessionSeed={sessionSeed}
+              isCustomMode={isCustomMode}
+              customListName={customListName}
             />
           </section>
         </div>

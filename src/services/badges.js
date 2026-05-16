@@ -7,6 +7,9 @@ const BEST_EFFECTIVE_KEY = "eletypes-best-effective-wpm";
 const SUBMITTED_KEY = "eletypes-has-submitted";
 
 // --- Rank tiers ---
+// Tiers are derived live from bestWpm via getRank(); they aren't stored, so
+// adding new tiers automatically upgrades existing users who already meet the
+// threshold the next time they open the app — no migration needed.
 const RANKS = [
   { tier: 0, minWpm: 0, nameKey: "rank_membrane", icon: "_", color: "#888888" },
   { tier: 1, minWpm: 20, nameKey: "rank_rubber_dome", icon: "o", color: "#6B8DAE" },
@@ -15,6 +18,13 @@ const RANKS = [
   { tier: 4, minWpm: 80, nameKey: "rank_topre", icon: "~", color: "#00BCD4" },
   { tier: 5, minWpm: 100, nameKey: "rank_hall_effect", icon: "↑", color: "#AB47BC" },
   { tier: 6, minWpm: 120, nameKey: "rank_custom_build", icon: "◆", color: "#FFD700" },
+  // Post-120 tiers: rarefied air for keyboard hobbyists who've climbed past
+  // "Custom Build" — naming pivots from generic switch tech to enthusiast
+  // milestones (tuning, boutique scene, mythical builds, eldritch lore).
+  { tier: 7, minWpm: 140, nameKey: "rank_switch_sommelier", icon: "✦", color: "#E91E63" },
+  { tier: 8, minWpm: 160, nameKey: "rank_boutique_legend", icon: "❖", color: "#B0BEC5" },
+  { tier: 9, minWpm: 180, nameKey: "rank_mythical_build", icon: "✪", color: "#FF00FF" },
+  { tier: 10, minWpm: 200, nameKey: "rank_eldritch_switch", icon: "⛧", color: "#6A0DAD" },
 ];
 
 export const getRank = (bestWpm) => {

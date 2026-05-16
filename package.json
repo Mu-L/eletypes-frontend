@@ -16,6 +16,7 @@
     "@testing-library/react": "^13.0.1",
     "@testing-library/user-event": "^13.5.0",
     "html2canvas": "^1.4.1",
+    "pinyin-pro": "^3.28.1",
     "random-words": "^1.1.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

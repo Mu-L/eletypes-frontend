@@ -1,6 +1,4 @@
-import React, { useState } from "react";
-import ZoomInMapIcon from "@mui/icons-material/ZoomInMap";
-import LeaderboardIcon from "@mui/icons-material/Leaderboard";
+import React from "react";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { AppBar } from "@mui/material";
 import { Tooltip } from "@mui/material";
@@ -8,7 +6,6 @@ import IconButton from "@mui/material/IconButton";
 import SelfImprovementIcon from "@mui/icons-material/SelfImprovement";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import LeaderboardModal from "../features/Leaderboard/LeaderboardModal";
 import Select from "../utils/Select";
 import {
   WORD_MODE_LABEL,
@@ -20,8 +17,6 @@ import { Link } from "@mui/material";
 import SupportMe from "../features/SupportMe";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
-import EmojiFoodBeverageIcon from "@mui/icons-material/EmojiFoodBeverage";
-import CodeIcon from "@mui/icons-material/Code";
 import DiscordIcon from "../../assets/Icons/DiscordIcon";
 import { SvgIcon } from "@mui/material";
 import KeyboardAltOutlinedIcon from "@mui/icons-material/KeyboardAltOutlined";
@@ -57,7 +52,6 @@ const FooterMenu = ({
   isWordGameMode,
   toggleWordsCardMode,
 }) => {
-  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const { locale, setLocale, t } = useLocale();
   const isSiteInfoDisabled = isMusicMode || isFocusedMode;
   const isSpecialMode = isTrainerMode || isWordsCardMode;
@@ -146,30 +140,9 @@ const FooterMenu = ({
           </div>
         </div>
 
-        {/* Group 2: Word mode tools (no label) */}
-        {isWordGameMode && (
-          <div className="nav-group">
-            <div className="nav-group-items">
-              <IconButton size="small" onClick={toggleUltraZenMode}>
-                <Tooltip title={t("ultra_zen_mode")}>
-                  <span className={activeCls(isUltraZenMode)}>
-                    <ZoomInMapIcon fontSize="small" />
-                  </span>
-                </Tooltip>
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => setLeaderboardOpen(true)}
-              >
-                <Tooltip title={t("stats_tooltip")}>
-                  <span className="nav-item">
-                    <LeaderboardIcon fontSize="small" />
-                  </span>
-                </Tooltip>
-              </IconButton>
-            </div>
-          </div>
-        )}
+        {/* Group 2 (ultra zen / custom words / leaderboard) was moved to a
+            strip above the TypeBox words area — see TypeBoxQuickTools — so
+            new features get a more discoverable home. */}
 
         {/* Group 3: Settings */}
         <div className="nav-group">
@@ -254,6 +227,15 @@ const FooterMenu = ({
         {/* Group 4: Links */}
         {!isSiteInfoDisabled && (
           <div className="nav-group nav-group-links">
+            {/* Hidden spacer keeps the column the same height as the other
+                groups (label + items) so items align across the row. */}
+            <span
+              className="nav-group-label"
+              aria-hidden="true"
+              style={{ visibility: "hidden" }}
+            >
+              ·
+            </span>
             <div className="nav-group-items">
               <SupportMe />
               <Tooltip
@@ -319,11 +301,6 @@ const FooterMenu = ({
         )}
       </div>
 
-      <LeaderboardModal
-        open={leaderboardOpen}
-        onClose={() => setLeaderboardOpen(false)}
-        theme={theme}
-      />
     </AppBar>
   );
 };

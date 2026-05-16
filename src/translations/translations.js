@@ -16,6 +16,9 @@ export const translations = {
     banner_keyboard_lab: "New: {Keyboard Lab} beta — design your own 3D keyboard!",
     banner_keyboard_lab_full:
       "Keyboard Lab is now in beta! Design custom keyboards with 3D visualization, parametric case profiles, colored edge accents, and full JSON schema editing. Try it out!",
+    banner_customization: "New: {Custom Themes} & {Custom Words} — make typing feel like yours.",
+    banner_customization_full:
+      "From the colors to the words on screen — now yours to shape. {Custom Themes} and {Custom Words}, and if you happen to make keyboard videos, one more way to make them feel a little more like yours. Or maybe, like me, you just love pretty colors.",
 
     // Footer tooltips
     focus_mode: "Focus mode",
@@ -87,6 +90,10 @@ export const translations = {
     new_personal_best: "New personal best! (previous: {0} WPM)",
     your_best_is: "Your best is {0} WPM — keep going!",
     leaderboard_unavailable: "Leaderboard unavailable.",
+    leaderboard_custom_notice:
+      "Custom-words run ({0}). Leaderboard submission and local history are skipped for custom lists so they stay comparable across random-mode players. You can still share the result image and copy a challenge link.",
+    history_custom_notice:
+      "Custom-words runs ({0}) aren't tracked in the random-mode history. The result is still on screen — feel free to share or send as a challenge.",
     loading_leaderboard: "Loading leaderboard...",
     loading: "Loading...",
     no_scores_yet: "No scores yet. Be the first!",
@@ -156,6 +163,10 @@ export const translations = {
     rank_topre: "Topre",
     rank_hall_effect: "Hall Effect",
     rank_custom_build: "Custom Build",
+    rank_switch_sommelier: "Switch Sommelier",
+    rank_boutique_legend: "Boutique Legend",
+    rank_mythical_build: "Mythical Build",
+    rank_eldritch_switch: "Eldritch Switch",
     rank_max_reached: "Max rank reached!",
 
     // Badge categories
@@ -357,6 +368,73 @@ export const translations = {
     theme_manager_active: "Active",
     theme_manager_use_this: "Use this theme",
     theme_manager_note: "Themes are saved locally in your browser.",
+
+    // Custom Words
+    tab_word_lists: "Word Lists",
+    custom_words_editor_title: "Custom Word List",
+    custom_words_editor_subtitle:
+      "Define your own words for timed word-mode tests. The list loops to fill the timer.",
+    custom_words_field_name: "Name",
+    custom_words_field_name_placeholder: "e.g. Keyboard Review Demo",
+    custom_words_field_language: "Language",
+    custom_words_field_words: "Words",
+    custom_words_lang_en: "English",
+    custom_words_lang_zh: "Chinese pinyin",
+    custom_words_placeholder_en:
+      "mechanical keyboard switch keycap\nlinear tactile clicky\nhotswap gasket plate (click Insert sample to fill)",
+    custom_words_placeholder_zh:
+      "机械键盘\n客制化\n轴体\n键帽\n汉字 mypinyin   (← 仅在需要覆盖时填)",
+    custom_words_format_hint_en:
+      "Words separated by spaces or new lines. The list loops if it's shorter than the timer.",
+    custom_words_format_hint_zh:
+      'One entry per line. Type the hanzi only — pinyin is auto-generated. Override with "<hanzi> <pinyin>" if you want a different reading.',
+    custom_words_parsed_count: "{0} parsed",
+    custom_words_resolving: "Generating pinyin…",
+    custom_words_preview_label: "Preview (what you'll type)",
+    custom_words_action_save: "Save",
+    custom_words_action_save_activate: "Save & activate",
+    custom_words_action_cancel: "Cancel",
+    custom_words_action_delete: "Delete",
+    custom_words_action_new: "New word list",
+    custom_words_action_edit: "Edit",
+    custom_words_action_activate: "Activate",
+    custom_words_action_deactivate: "Deactivate",
+    custom_words_confirm_delete: "Delete this word list? This cannot be undone.",
+    custom_words_name_required: "Please enter a name.",
+    custom_words_name_duplicate: "Another list already uses this name.",
+    custom_words_empty_warning: "Add at least one word before saving.",
+    custom_words_manager_no_lists: "No custom word lists yet. Click below to create one.",
+    custom_words_manager_active: "Active",
+    custom_words_manager_use_this: "Activate this list",
+    custom_words_manager_note:
+      "Lists are saved locally in your browser. Activate one to use it in word mode.",
+    custom_words_manager_lang_en: "English",
+    custom_words_manager_lang_zh: "Chinese",
+    custom_words_manager_word_count: "{0} words",
+    custom_words_create_tooltip: "Custom word list",
+    custom_words_active_clear_tooltip: "Active: {0} — click for options",
+    custom_words_button_label: "custom words",
+    custom_words_active_button_label: "clear words",
+    custom_words_active_label: "Using custom: {0}",
+    word_source_random_label: "random",
+    word_source_random_tooltip: "Random words mode",
+    custom_words_menu_empty: "No saved word lists yet",
+    custom_words_menu_new: "New word list…",
+    custom_words_menu_clear: "Use built-in words",
+    custom_words_menu_manage: "Manage word lists…",
+    ultra_zen_button_label: "zoom",
+    stats_button_label: "stats",
+    custom_words_action_insert_sample: "Insert sample",
+    custom_words_action_export: "Export",
+    custom_words_action_export_all: "Export all",
+    custom_words_action_export_all_tooltip: "Download all word lists as JSON",
+    custom_words_action_import: "Import",
+    custom_words_action_import_tooltip: "Load word lists from a JSON file",
+    custom_words_import_success: "Imported {0} list(s).",
+    custom_words_import_error_json: "Import failed: the file isn't valid JSON.",
+    custom_words_import_error_format: "Import failed: unrecognized file format.",
+    custom_words_import_error_empty: "Import failed: no word lists found in this file.",
+    custom_words_import_error_generic: "Import failed: couldn't read this file.",
   },
   zh: {
     // Nav group labels
@@ -373,10 +451,13 @@ export const translations = {
     banner_keyboard_lab: "新功能：{键盘实验室} beta — 设计你的 3D 键盘！",
     banner_keyboard_lab_full:
       "键盘实验室 beta 版上线！支持 3D 可视化键盘设计、参数化外壳轮廓编辑、彩色边缘装饰、完整 JSON Schema 编辑。快来试试吧！",
+    banner_customization: "新功能：{自定义主题} 与 {自定义词组} — 打字体验由你定义。",
+    banner_customization_full:
+      "从配色到屏幕上出现的词，都可以由你定义。{自定义主题}与{自定义词组} —— 如果你恰好是位键盘博主，或许能让视频更接近你心里的样子；或者，你只是像我一样，单纯喜欢漂亮的色彩。",
 
     // Footer tooltips
     focus_mode: "专注模式",
-    ultra_zen_mode: "极简模式",
+    ultra_zen_mode: "专注模式",
     music_mode: "Spotify 播放器。需要先登录 Spotify 才能使用完整功能。",
     free_mode: "自由打字模式\n随便打，没有压力，来杯咖啡！",
     markdown_mode: "Markdown 编辑器\n支持实时预览的 Markdown 写作",
@@ -439,6 +520,10 @@ export const translations = {
     new_personal_best: "新的个人最佳！(之前: {0} WPM)",
     your_best_is: "你的最佳成绩是 {0} WPM — 继续加油！",
     leaderboard_unavailable: "排行榜不可用。",
+    leaderboard_custom_notice:
+      "自定义词组成绩（{0}）。为保持与随机模式玩家的可比性，自定义模式不上传排行榜，也不计入本地历史。结果仍然可以分享，或生成挑战链接发给朋友。",
+    history_custom_notice:
+      "自定义词组（{0}）的成绩不计入随机模式的本地历史。当前结果仍在屏幕上，可以随时分享或生成挑战链接。",
     loading_leaderboard: "加载排行榜中...",
     loading: "加载中...",
     no_scores_yet: "暂无成绩，成为第一个提交的人！",
@@ -488,7 +573,7 @@ export const translations = {
     site_focus_mode: "专注模式",
     site_sound: "打字音效",
     site_music: "音乐播放器",
-    site_ultra_zen: "极简模式",
+    site_ultra_zen: "专注模式",
     site_language: "界面语言",
 
     // Audio
@@ -508,6 +593,10 @@ export const translations = {
     rank_topre: "静电容匠",
     rank_hall_effect: "磁轴宗师",
     rank_custom_build: "客制化之神",
+    rank_switch_sommelier: "调音师",
+    rank_boutique_legend: "圈内传说",
+    rank_mythical_build: "未来之塑",
+    rank_eldritch_switch: "古神轴",
     rank_max_reached: "已达最高等级！",
 
     // Badge categories
@@ -708,5 +797,72 @@ export const translations = {
     theme_manager_active: "使用中",
     theme_manager_use_this: "使用此主题",
     theme_manager_note: "主题保存在浏览器本地。",
+
+    // Custom Words
+    tab_word_lists: "词组",
+    custom_words_editor_title: "自定义词组",
+    custom_words_editor_subtitle:
+      "在限时词组模式下使用你定义的词组。词不够时长会自动循环。",
+    custom_words_field_name: "名称",
+    custom_words_field_name_placeholder: "例如：键盘测评演示",
+    custom_words_field_language: "语言",
+    custom_words_field_words: "词组内容",
+    custom_words_lang_en: "英文",
+    custom_words_lang_zh: "中文拼音",
+    custom_words_placeholder_en:
+      "hello world quick brown fox\nlazy dog jumps over\nkeyboard mechanical switch",
+    custom_words_placeholder_zh:
+      "你好\n世界\n键盘\n机械\n汉字 mypinyin   (← 如需覆盖拼音才写)",
+    custom_words_format_hint_en:
+      "用空格或换行分隔；词组少于计时时长会循环。",
+    custom_words_format_hint_zh:
+      '每行一条。只写汉字即可，拼音会自动生成。如需指定不同读音，用 "汉字 拼音" 覆盖。',
+    custom_words_parsed_count: "已解析 {0} 个",
+    custom_words_resolving: "正在生成拼音…",
+    custom_words_preview_label: "预览（实际输入内容）",
+    custom_words_action_save: "保存",
+    custom_words_action_save_activate: "保存并激活",
+    custom_words_action_cancel: "取消",
+    custom_words_action_delete: "删除",
+    custom_words_action_new: "新建词组",
+    custom_words_action_edit: "编辑",
+    custom_words_action_activate: "激活",
+    custom_words_action_deactivate: "取消激活",
+    custom_words_confirm_delete: "确定删除该词组？此操作无法撤销。",
+    custom_words_name_required: "请输入名称。",
+    custom_words_name_duplicate: "已有同名词组。",
+    custom_words_empty_warning: "请至少输入一个词后再保存。",
+    custom_words_manager_no_lists: "暂无自定义词组，点击下方按钮新建。",
+    custom_words_manager_active: "使用中",
+    custom_words_manager_use_this: "激活此词组",
+    custom_words_manager_note:
+      "词组保存在浏览器本地。激活后将在词组模式中使用。",
+    custom_words_manager_lang_en: "英文",
+    custom_words_manager_lang_zh: "中文",
+    custom_words_manager_word_count: "{0} 词",
+    custom_words_create_tooltip: "自定义词组",
+    custom_words_active_clear_tooltip: "当前使用：{0} — 点击切换",
+    custom_words_button_label: "自定义词组",
+    custom_words_active_button_label: "取消词组",
+    custom_words_active_label: "自定义：{0}",
+    word_source_random_label: "随机词组",
+    word_source_random_tooltip: "随机词组模式",
+    custom_words_menu_empty: "暂无保存的词组",
+    custom_words_menu_new: "新建词组…",
+    custom_words_menu_clear: "改回内置词",
+    custom_words_menu_manage: "管理词组…",
+    ultra_zen_button_label: "聚焦",
+    stats_button_label: "排行",
+    custom_words_action_insert_sample: "插入示例",
+    custom_words_action_export: "导出",
+    custom_words_action_export_all: "全部导出",
+    custom_words_action_export_all_tooltip: "将全部词组导出为 JSON 文件",
+    custom_words_action_import: "导入",
+    custom_words_action_import_tooltip: "从 JSON 文件导入词组",
+    custom_words_import_success: "已导入 {0} 个词组。",
+    custom_words_import_error_json: "导入失败：不是有效的 JSON 文件。",
+    custom_words_import_error_format: "导入失败：无法识别的文件格式。",
+    custom_words_import_error_empty: "导入失败：文件中没有可用词组。",
+    custom_words_import_error_generic: "导入失败：无法读取该文件。",
   },
 };

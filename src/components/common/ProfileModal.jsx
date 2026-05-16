@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,17 @@ import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
+import { ENGLISH_MODE, CHINESE_MODE } from "../../constants/Constants";
+import {
+  parseCustomWordsText,
+  exportWordListsToJsonString,
+  parseImportedWordListsJson,
+  downloadJsonFile,
+  buildExportFilename,
+} from "../../scripts/customWords";
 import { getUserName, setUserName, getUserTag } from "../../services/userIdentity";
 import BadgeDisplay from "../features/Badges/BadgeDisplay";
 import StatsPanel from "../features/Stats/StatsPanel";
@@ -91,6 +102,7 @@ const TAB_LAB = "lab";
 const TAB_NEWS = "news";
 const TAB_SITE = "site";
 const TAB_THEMES = "themes";
+const TAB_WORDS = "wordlists";
 
 const ProfileModal = ({
   open,
@@ -113,10 +125,89 @@ const ProfileModal = ({
   onCreateTheme,
   onEditTheme,
   onDeleteTheme,
+  customWordLists = [],
+  activeWordListId,
+  onActivateWordList,
+  onDeactivateWordList,
+  onCreateWordList,
+  onEditWordList,
+  onDeleteWordList,
+  onImportWordLists,
 }) => {
   const { locale, setLocale, t } = useLocale();
   const tLab = useLabTranslation();
   const [activeTab, setActiveTab] = useState(TAB_PROFILE);
+  const importFileInputRef = useRef(null);
+  const [importMessage, setImportMessage] = useState("");
+
+  // Auto-dismiss the import status message after a few seconds so a stale
+  // success line doesn't linger after the user starts editing/deleting the
+  // imported list. Also wipe it on modal close.
+  React.useEffect(() => {
+    if (!importMessage) return;
+    const timer = setTimeout(() => setImportMessage(""), 4000);
+    return () => clearTimeout(timer);
+  }, [importMessage]);
+
+  React.useEffect(() => {
+    if (!open) setImportMessage("");
+  }, [open]);
+
+  // If the list count drops while a success message is showing, clear it —
+  // the message now contradicts what's on screen.
+  const wordListCountRef = useRef((customWordLists || []).length);
+  React.useEffect(() => {
+    const count = (customWordLists || []).length;
+    if (count < wordListCountRef.current && importMessage) {
+      setImportMessage("");
+    }
+    wordListCountRef.current = count;
+  }, [customWordLists, importMessage]);
+
+  const handleExportSingleWordList = (wl) => {
+    downloadJsonFile(buildExportFilename(wl), exportWordListsToJsonString(wl));
+  };
+
+  const handleExportAllWordLists = () => {
+    if (!customWordLists || customWordLists.length === 0) return;
+    downloadJsonFile(
+      buildExportFilename(customWordLists),
+      exportWordListsToJsonString(customWordLists)
+    );
+  };
+
+  const handleImportClick = () => {
+    setImportMessage("");
+    importFileInputRef.current && importFileInputRef.current.click();
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    // Reset so picking the same file twice still fires onChange.
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const lists = parseImportedWordListsJson(text, customWordLists);
+      if (onImportWordLists) {
+        const imported = onImportWordLists(lists);
+        if (imported && imported.length > 0) {
+          setImportMessage(t("custom_words_import_success", imported.length));
+        }
+      }
+    } catch (err) {
+      const code = err && err.message;
+      const key =
+        code === "invalid_json"
+          ? "custom_words_import_error_json"
+          : code === "unknown_format"
+          ? "custom_words_import_error_format"
+          : code === "no_lists"
+          ? "custom_words_import_error_empty"
+          : "custom_words_import_error_generic";
+      setImportMessage(t(key));
+    }
+  };
 
   // Force fresh data when modal opens
   const [refreshKey, setRefreshKey] = useState(0);
@@ -242,6 +333,12 @@ const ProfileModal = ({
             onClick={() => setActiveTab(TAB_THEMES)}
           >
             {t("tab_themes")}
+          </button>
+          <button
+            style={tabStyle(activeTab === TAB_WORDS)}
+            onClick={() => setActiveTab(TAB_WORDS)}
+          >
+            {t("tab_word_lists")}
           </button>
           <button
             style={tabStyle(activeTab === TAB_SITE)}
@@ -657,6 +754,209 @@ const ProfileModal = ({
 
             <p style={{ color: theme.textTypeBox, fontSize: 11, opacity: 0.6, marginTop: 18, marginBottom: 0 }}>
               {t("theme_manager_note")}
+            </p>
+          </div>
+        )}
+
+        {/* Word Lists tab */}
+        {activeTab === TAB_WORDS && (
+          <div>
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: "none" }}
+              onChange={handleImportFile}
+            />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 8, flexWrap: "wrap" }}>
+              <h4 className="profile-section-label" style={{ color: theme.textTypeBox, margin: 0 }}>
+                {t("tab_word_lists")}
+              </h4>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button
+                  onClick={handleImportClick}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    background: "transparent",
+                    border: `1px solid ${theme.textTypeBox}80`,
+                    color: theme.text,
+                    padding: "6px 12px",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: theme.fontFamily,
+                  }}
+                  title={t("custom_words_action_import_tooltip")}
+                >
+                  <FileUploadOutlinedIcon style={{ fontSize: 14 }} />
+                  {t("custom_words_action_import")}
+                </button>
+                {customWordLists && customWordLists.length > 0 && (
+                  <button
+                    onClick={handleExportAllWordLists}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      background: "transparent",
+                      border: `1px solid ${theme.textTypeBox}80`,
+                      color: theme.text,
+                      padding: "6px 12px",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontFamily: theme.fontFamily,
+                    }}
+                    title={t("custom_words_action_export_all_tooltip")}
+                  >
+                    <FileDownloadOutlinedIcon style={{ fontSize: 14 }} />
+                    {t("custom_words_action_export_all")}
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    if (onCreateWordList) {
+                      onClose && onClose();
+                      onCreateWordList();
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    background: "transparent",
+                    border: `1px solid ${theme.stats}`,
+                    color: theme.stats,
+                    padding: "6px 12px",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: theme.fontFamily,
+                  }}
+                >
+                  <FormatListBulletedIcon style={{ fontSize: 14 }} />
+                  {t("custom_words_action_new")}
+                </button>
+              </div>
+            </div>
+
+            {importMessage && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: importMessage.toLowerCase().includes("error") || importMessage.includes("失败") || importMessage.includes("无")
+                    ? "#ff6b6b"
+                    : theme.stats,
+                  marginBottom: 10,
+                  opacity: 0.9,
+                }}
+              >
+                {importMessage}
+              </div>
+            )}
+
+            {(!customWordLists || customWordLists.length === 0) ? (
+              <p style={{ color: theme.textTypeBox, fontSize: 13, opacity: 0.7 }}>
+                {t("custom_words_manager_no_lists")}
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {customWordLists.map((wl) => {
+                  const isActive = wl.id === activeWordListId;
+                  const parsedCount = parseCustomWordsText(wl).length;
+                  const langLabel =
+                    wl.language === CHINESE_MODE
+                      ? t("custom_words_manager_lang_zh")
+                      : t("custom_words_manager_lang_en");
+                  return (
+                    <div
+                      key={wl.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "8px 10px",
+                        border: `1px solid ${isActive ? theme.stats : theme.textTypeBox}40`,
+                        borderRadius: 6,
+                        background: isActive ? `${theme.stats}10` : "transparent",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: 1,
+                          textTransform: "uppercase",
+                          padding: "2px 6px",
+                          borderRadius: 3,
+                          border: `1px solid ${theme.textTypeBox}55`,
+                          color: theme.textTypeBox,
+                        }}
+                      >
+                        {langLabel}
+                      </span>
+                      <span
+                        onClick={() => {
+                          if (!isActive && onActivateWordList) onActivateWordList(wl.id);
+                          else if (isActive && onDeactivateWordList) onDeactivateWordList();
+                        }}
+                        style={{
+                          flex: 1,
+                          color: theme.text,
+                          fontSize: 14,
+                          cursor: "pointer",
+                          fontWeight: isActive ? 600 : 400,
+                        }}
+                        title={isActive ? t("custom_words_action_deactivate") : t("custom_words_manager_use_this")}
+                      >
+                        {wl.name}
+                        <span style={{ color: theme.textTypeBox, fontSize: 11, marginLeft: 8 }}>
+                          {t("custom_words_manager_word_count", parsedCount)}
+                        </span>
+                        {isActive && (
+                          <span style={{
+                            marginLeft: 8, fontSize: 10,
+                            color: theme.stats, opacity: 0.85,
+                            letterSpacing: 1, textTransform: "uppercase",
+                          }}>
+                            {t("custom_words_manager_active")}
+                          </span>
+                        )}
+                      </span>
+                      <MuiIconButton
+                        size="small"
+                        onClick={() => {
+                          if (onEditWordList) {
+                            onClose && onClose();
+                            onEditWordList(wl.id);
+                          }
+                        }}
+                        style={{ color: theme.textTypeBox }}
+                        title={t("custom_words_action_edit")}
+                      >
+                        <EditIcon fontSize="small" />
+                      </MuiIconButton>
+                      <MuiIconButton
+                        size="small"
+                        onClick={() => handleExportSingleWordList(wl)}
+                        style={{ color: theme.textTypeBox }}
+                        title={t("custom_words_action_export")}
+                      >
+                        <FileDownloadOutlinedIcon fontSize="small" />
+                      </MuiIconButton>
+                      <MuiIconButton
+                        size="small"
+                        onClick={() => {
+                          if (window.confirm(t("custom_words_confirm_delete")) && onDeleteWordList) {
+                            onDeleteWordList(wl.id);
+                          }
+                        }}
+                        style={{ color: theme.textTypeBox }}
+                        title={t("custom_words_action_delete")}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </MuiIconButton>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <p style={{ color: theme.textTypeBox, fontSize: 11, opacity: 0.6, marginTop: 18, marginBottom: 0 }}>
+              {t("custom_words_manager_note")}
             </p>
           </div>
         )}
