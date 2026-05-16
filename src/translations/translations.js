@@ -91,7 +91,7 @@ export const translations = {
     your_best_is: "Your best is {0} WPM — keep going!",
     leaderboard_unavailable: "Leaderboard unavailable.",
     leaderboard_custom_notice:
-      "Custom-words run ({0}). Leaderboard submission and local history are skipped for custom lists so they stay comparable across random-mode players. You can still share the result image and copy a challenge link.",
+      "Custom-words run ({0}). Leaderboard submission and local history are skipped for custom lists so they stay comparable across random-mode players. You can still share the result image.",
     history_custom_notice:
       "Custom-words runs ({0}) aren't tracked in the random-mode history. The result is still on screen — feel free to share or send as a challenge.",
     loading_leaderboard: "Loading leaderboard...",
@@ -521,9 +521,9 @@ export const translations = {
     your_best_is: "你的最佳成绩是 {0} WPM — 继续加油！",
     leaderboard_unavailable: "排行榜不可用。",
     leaderboard_custom_notice:
-      "自定义词组成绩（{0}）。为保持与随机模式玩家的可比性，自定义模式不上传排行榜，也不计入本地历史。结果仍然可以分享，或生成挑战链接发给朋友。",
+      "自定义词组成绩（{0}）。为保持与随机模式玩家的可比性，自定义模式不上传排行榜，也不计入本地历史。结果仍然可以分享。",
     history_custom_notice:
-      "自定义词组（{0}）的成绩不计入随机模式的本地历史。当前结果仍在屏幕上，可以随时分享或生成挑战链接。",
+      "自定义词组（{0}）的成绩不计入随机模式的本地历史。当前结果仍在屏幕上，可以随时分享。",
     loading_leaderboard: "加载排行榜中...",
     loading: "加载中...",
     no_scores_yet: "暂无成绩，成为第一个提交的人！",
