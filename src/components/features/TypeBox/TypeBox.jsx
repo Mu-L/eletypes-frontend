@@ -527,7 +527,22 @@ const TypeBox = ({
     // keydown count for KPM calculations to all types of operations
     if (status === "started") {
       setRawKeyStrokes(rawKeyStrokes + 1);
-      if (keyCode >= 65 && keyCode <= 90) {
+      // Count every printable single-character keystroke toward WPM, not
+      // just A-Z. Older versions limited this to keyCode 65–90 and silently
+      // under-counted digits and symbols in +number / +symbol modes.
+      // Space is intentionally excluded here — it's credited separately in
+      // checkPrev() only when the previous word completed correctly, so the
+      // user doesn't get a stroke for skipping a word with the spacebar.
+      // Modifier-held keystrokes (Ctrl+A, Cmd+C, etc.) are not real char
+      // input and would otherwise be miscounted.
+      if (
+        key &&
+        key.length === 1 &&
+        key !== " " &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
         setWpmKeyStrokes(wpmKeyStrokes + 1);
       }
     }
@@ -611,6 +626,23 @@ const TypeBox = ({
       }
       setCurrCharIndex(currCharIndex - 1);
       setCurrChar("");
+      // Anti-cheat: backspacing a printable char undoes the stroke we
+      // credited when it was typed. Without this, the "mash N keys →
+      // backspace all → type real words" pattern leaves wpmKeyStrokes
+      // inflated by N and yields WPM ≈ 300+ on a 60s test. Mirrors the
+      // increment rule above: any printable ASCII char except space
+      // refunds one stroke on deletion (space is only credited via
+      // checkPrev() on correct word completion, not here). The input is
+      // opacity:0 so selection-delete and Ctrl+Backspace word-delete have
+      // no visual affordance to be used as cheat vectors here, so a
+      // simple one-char-per-keydown decrement is sufficient.
+      if (status === "started") {
+        const inputValue = e.target.value || "";
+        const deletingChar = inputValue[inputValue.length - 1];
+        if (deletingChar && /^[\x21-\x7e]$/.test(deletingChar)) {
+          setWpmKeyStrokes((prev) => Math.max(0, prev - 1));
+        }
+      }
       return;
     } else {
       setCurrCharIndex(currCharIndex + 1);
